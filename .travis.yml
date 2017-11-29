@@ -15,11 +15,11 @@ install:
   - gem install coveralls-lcov
 
 before_script:
-  - /usr/bin/cc -v
+  - $CC -v
 
 script:
   - cd ref
-  - make test/test_dilithium CFLAGS="-fprofile-arcs -ftest-coverage -g -Wall -Wextra -O0 -fomit-frame-pointer -march=native -fPIC"
+  - make test/test_dilithium CC=$CC CFLAGS="-fprofile-arcs -ftest-coverage -g -Wall -Wextra -O0 -fomit-frame-pointer -march=native -fPIC"
   - ./test/test_dilithium
 
 after_success:
