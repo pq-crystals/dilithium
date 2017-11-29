@@ -15,10 +15,10 @@ keccak4x/KeccakP-1600-times4-SIMD256.o: keccak4x/KeccakP-1600-times4-SIMD256.c \
 	$(CC) $(CFLAGS) -c $< -o $@
 
 KAT_sign: $(SOURCES) rng.c KAT_sign.c $(HEADERS) rng.h
-	$(CC) $(CFLAGS) $(SOURCES) rng.c KAT_sign.c -o $@ -lcrypto -ldl
+	$(CC) $(NISTFLAGS) $(SOURCES) rng.c KAT_sign.c -o $@ -lcrypto -ldl
 
 test/test_vectors: $(SOURCES) rng.c test/test_vectors.c $(HEADERS) rng.h
-	$(CC) $(CFLAGS) $(SOURCES) rng.c test/test_vectors.c -o $@ -lcrypto -ldl
+	$(CC) $(NISTFLAGS) $(SOURCES) rng.c test/test_vectors.c -o $@ -lcrypto -ldl
 
 test/test_dilithium: $(SOURCES) randombytes.c test/test_dilithium.c \
   test/speed.c test/cpucycles.c $(HEADERS) randombytes.h test/speed.h \
