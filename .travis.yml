@@ -7,15 +7,19 @@ os:
 
 compiler:
   - gcc
+  - clang
 
 install:
   - sudo apt-get update
   - sudo apt-get install -y lcov
   - gem install coveralls-lcov
 
+before_script:
+  - $CC -v
+
 script:
   - cd ref
-  - make test/test_dilithium CFLAGS="-fprofile-arcs -ftest-coverage -g -Wall -Wextra -O0 -fomit-frame-pointer -march=native -fPIC"
+  - make test/test_dilithium CC=$CC CFLAGS="-fprofile-arcs -ftest-coverage -g -Wall -Wextra -O0 -fomit-frame-pointer -march=native -fPIC"
   - ./test/test_dilithium
 
 after_success:
