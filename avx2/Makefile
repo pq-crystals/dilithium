@@ -1,8 +1,6 @@
-CC = gcc
-CFLAGS += -Wall -Wextra -march=native -mtune=native -O3 -fomit-frame-pointer
-#CFLAGS += -static
-#CFLAGS += -g
-
+CC = /usr/bin/cc
+CFLAGS = -g -Wall -Wextra -march=native -mtune=native -O3 -fomit-frame-pointer
+NISTFLAGS = -O3 -fomit-frame-pointer -march=native -fPIC
 SOURCES = sign.c polyvec.c packing.c poly.c reduce.c ntt.s invntt.s \
   pointwise_mul.s consts.c rounding.c fips202.c fips202x4.c \
   keccak4x/KeccakP-1600-times4-SIMD256.o
