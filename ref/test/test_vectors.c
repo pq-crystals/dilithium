@@ -5,13 +5,14 @@
 #include "../polyvec.h"
 #include "../rng.h"
 
-#define NVECTORS 1
+#define NVECTORS 10
 
 int main(void) {
   unsigned int i, j, k, l;
   unsigned char seed[SEEDBYTES + CRHBYTES];
-  polyvecl mat[K];
-  poly p0, p1, p2, p3;
+  poly c;
+  polyvecl s, y, mat[K];
+  polyveck w, tmp;
 
   for (i = 0; i < 48; ++i)
     seed[i] = i;
@@ -35,52 +36,42 @@ int main(void) {
           printf("%.8X", mat[j].vec[k].coeffs[l]);
     printf("\n");
 
-    poly_uniform_gamma1m1(&p0, seed, 0);
-    poly_uniform_gamma1m1(&p1, seed, 1);
-    poly_uniform_gamma1m1(&p2, seed, 2);
-    poly_uniform_gamma1m1(&p3, seed, 3);
-    printf("p0_uniform_gamma1m1 = ");
-    for(j = 0; j < N; ++j)
-      printf("%.8X", p0.coeffs[j]);
+    for(j = 0; j < L; ++j)
+      poly_uniform_eta(&s.vec[j], seed, j);
+
+    printf("s = ");
+    for(j = 0; j < L; ++j)
+      for(k = 0; k < N; ++k)
+        printf("%.8X", s.vec[j].coeffs[k]);
     printf("\n");
 
-    printf("p1_uniform_gamma1m1 = ");
-    for(j = 0; j < N; ++j)
-      printf("%.8X", p1.coeffs[j]);
+    for(j = 0; j < L; ++j)
+      poly_uniform_gamma1m1(&y.vec[j], seed, j);
+
+    printf("y = ");
+    for(j = 0; j < L; ++j)
+      for(k = 0; k < N; ++k)
+        printf("%.8X", y.vec[j].coeffs[k]);
     printf("\n");
 
-    printf("p2_uniform_gamma1m1 = ");
-    for(j = 0; j < N; ++j)
-      printf("%.8X", p2.coeffs[j]);
+    polyvecl_ntt(&y);
+    for(j = 0; j < K; ++j) {
+      polyvecl_pointwise_acc_invmontgomery(w.vec+j, mat+j, &y);
+      poly_invntt_montgomery(w.vec+j);
+    }
+    polyveck_freeze(&w);
+    polyveck_decompose(&w, &tmp, &w);
+
+    printf("w1 = ");
+    for(j = 0; j < K; ++j)
+      for(k = 0; k < N; ++k)
+        printf("%.8X", w.vec[j].coeffs[k]);
     printf("\n");
 
-    printf("p3_uniform_gamma1m1 = ");
+    challenge(&c, seed + SEEDBYTES, &w);
+    printf("c = ");
     for(j = 0; j < N; ++j)
-      printf("%.8X", p3.coeffs[j]);
-    printf("\n");
-
-    poly_uniform_eta(&p0, seed, 0);
-    poly_uniform_eta(&p1, seed, 1);
-    poly_uniform_eta(&p2, seed, 2);
-    poly_uniform_eta(&p3, seed, 3);
-    printf("p0_uniform_eta = ");
-    for(j = 0; j < N; ++j)
-      printf("%.8X", p0.coeffs[j]);
-    printf("\n");
-
-    printf("p1_uniform_eta = ");
-    for(j = 0; j < N; ++j)
-      printf("%.8X", p1.coeffs[j]);
-    printf("\n");
-
-    printf("p2_uniform_eta = ");
-    for(j = 0; j < N; ++j)
-      printf("%.8X", p2.coeffs[j]);
-    printf("\n");
-
-    printf("p3_uniform_eta = ");
-    for(j = 0; j < N; ++j)
-      printf("%.8X", p3.coeffs[j]);
+      printf("%.8X", c.coeffs[j]);
     printf("\n");
   }
   

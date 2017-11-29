@@ -5,8 +5,8 @@
 #define MODE 2
 #endif
 
-#define SEEDBYTES 32
-#define CRHBYTES 48
+#define SEEDBYTES 32U
+#define CRHBYTES 48U
 #define N 256U
 #define Q 8380417U
 #define QBITS 23U

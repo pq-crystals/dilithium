@@ -48,7 +48,7 @@ void poly_ntt(poly *a) {
 
 /* Input coefficients are assumed to include Montgomery factor */
 void poly_invntt_montgomery(poly *a) {
-  invntt_frommontgomery(a->coeffs);
+  invntt_frominvmont(a->coeffs);
 }
 
 void poly_pointwise_invmontgomery(poly *c, const poly *a, const poly *b) {

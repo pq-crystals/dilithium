@@ -6,7 +6,8 @@
 #include "polyvec.h"
 
 void expand_mat(polyvecl mat[K], const unsigned char rho[SEEDBYTES]);
-void expand_mat_avx(polyvecl mat[K], const unsigned char rho[SEEDBYTES]);
+void challenge(poly *c, const unsigned char mu[CRHBYTES],
+               const polyveck *w1);
 
 int crypto_sign_keypair(unsigned char *pk, unsigned char *sk);
 

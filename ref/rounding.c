@@ -26,20 +26,17 @@ uint32_t decompose(uint32_t a, uint32_t *a0) {
   t -= ALPHA/2 + 1;
   t += (t >> 31) & ALPHA;
   t -= ALPHA/2 - 1;
-
   a -= t;
-  u = (Q - 2) - a;
-  u >>= 31;
-  t -= u & 1;
-  a &= ~u; 
-  
+
   /* Divide by ALPHA (possible to avoid) */
   u = a - 1;
   u >>= 31;
   a = (a >> 19) + 1;
   a -= u & 1;
 
-  *a0 = Q + t;
+  /* Border case */
+  *a0 = Q + t - (a >> 4);
+  a &= 0xF;
   return a;
 }
 

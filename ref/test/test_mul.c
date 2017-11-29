@@ -37,7 +37,7 @@ static void random_pol(poly *a) {
 
   i = 0;
   while(i < N) {
-    randombytes((unsigned char*)&t, 4);
+    randombytes(&t, 4);
     t &= 0x7FFFFF;
     if(t < Q) a->coeffs[i++] = t;
   }
@@ -70,6 +70,6 @@ int main(void) {
   }
 
   print_results("naive: ", t1, NTESTS);
-  print_results("fft_avx: ", t2, NTESTS);
+  print_results("fft_ref: ", t2, NTESTS);
   return 0;
 }

@@ -6,8 +6,8 @@
   mont = Mod(2^32,q);
 
   z = 0;
-  for(i = 1, q-1, z = Mod(i,q), if(znorder(z) == 512, break));
+  for(i = 1, q-1, z = Mod(i,q); if(znorder(z) == 512, break));
   zetas = vector(256, i, lift(mont * z^(brv[i])));
-  zetas_inv = vector(256, i, lift(mont * -z^(256-(brv[i]+1))));
+  zetas_inv = vector(256, i, lift(mont * z^(-(brv[i]+1))));
   \\zetas_inv[255] = lift(zetas_inv[255] * mont / 256);
 }

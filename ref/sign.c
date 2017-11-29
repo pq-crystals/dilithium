@@ -43,8 +43,8 @@ void expand_mat(polyvecl mat[K], const unsigned char rho[SEEDBYTES]) {
   }
 }
 
-static void challenge(poly *c, const unsigned char mu[CRHBYTES],
-                      const polyveck *w1) 
+void challenge(poly *c, const unsigned char mu[CRHBYTES],
+               const polyveck *w1) 
 {
   unsigned int i, b, pos;
   unsigned char inbuf[CRHBYTES + K*POLW1_SIZE_PACKED];
@@ -128,7 +128,7 @@ int crypto_sign_keypair(unsigned char *pk, unsigned char *sk) {
   pack_pk(pk, rho, &t1);
 
   /* Compute CRH(rho, t1) and write secret key */
-  shake256(tr, CRHBYTES, pk, PK_SIZE_PACKED);
+  shake256(tr, CRHBYTES, pk, CRYPTO_PUBLICKEYBYTES);
   pack_sk(sk, rho, key, tr, &s1, &s2, &t0);
 
   return 0;
@@ -179,7 +179,6 @@ int crypto_sign(unsigned char *sm, unsigned long long *smlen,
     polyvecl_pointwise_acc_invmontgomery(w.vec+i, mat+i, &yhat);
     poly_invntt_montgomery(w.vec+i);
   }
-
 
   /* Decompose w and call the random oracle */
   polyveck_freeze(&w);

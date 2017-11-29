@@ -25,7 +25,7 @@ void ntt(uint32_t *p)
   }
 }
 
-void invntt_frommontgomery(uint32_t *p) 
+void invntt_frominvmont(uint32_t *p) 
 {
   unsigned int start, len, j, k;
   uint32_t t, zeta;
