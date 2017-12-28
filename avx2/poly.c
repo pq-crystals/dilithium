@@ -205,25 +205,25 @@ static unsigned int rej_gamma1m1(uint32_t *a,
                                  unsigned int buflen)
 {
   unsigned int ctr, pos;
-  uint32_t t;
+  uint32_t t0,t1;
 
   ctr = pos = 0;
   while(ctr < len) {
-    t  = buf[pos];
-    t |= (uint32_t)buf[pos + 1] << 8;
-    t |= (uint32_t)buf[pos + 2] << 16;
-    t &= 0xFFFFF;
+    t0  = buf[pos];
+    t0 |= (uint32_t)buf[pos + 1] << 8;
+    t0 |= (uint32_t)buf[pos + 2] << 16;
+    t0 &= 0xFFFFF;
 
-    t  = buf[pos + 2] >> 4;
-    t |= (uint32_t)buf[pos + 3] << 4;
-    t |= (uint32_t)buf[pos + 4] << 12;
+    t1  = buf[pos + 2] >> 4;
+    t1 |= (uint32_t)buf[pos + 3] << 4;
+    t1 |= (uint32_t)buf[pos + 4] << 12;
 
     pos += 5;
 
-    if(t <= 2*GAMMA1 - 2)
-      a[ctr++] = Q + GAMMA1 - 1 - t;
-    if(t <= 2*GAMMA1 - 2 && ctr < len)
-      a[ctr++] = Q + GAMMA1 - 1 - t;
+    if(t0 <= 2*GAMMA1 - 2)
+      a[ctr++] = Q + GAMMA1 - 1 - t0;
+    if(t1 <= 2*GAMMA1 - 2 && ctr < len)
+      a[ctr++] = Q + GAMMA1 - 1 - t1;
 
     if(pos > buflen - 5)
       break;
