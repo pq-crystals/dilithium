@@ -37,7 +37,7 @@ static void random_pol(poly *a) {
 
   i = 0;
   while(i < N) {
-    randombytes(&t, 4);
+    randombytes((unsigned char *)&t, 4);
     t &= 0x7FFFFF;
     if(t < Q) a->coeffs[i++] = t;
   }
@@ -53,18 +53,18 @@ int main(void) {
     random_pol(&b);
 
     t1[i] = cpucycles();
-    pol_naivemul(&c1, &a, &b);
+    poly_naivemul(&c1, &a, &b);
     t1[i] = cpucycles() - t1[i];
 
     t2[i] = cpucycles();
     ntt(a.coeffs, a.coeffs, zetas);
     ntt(b.coeffs, b.coeffs, zetas);
     pointwise_mul(c2.coeffs, a.coeffs, b.coeffs);
-    invntt_frommontgomery(c2.coeffs, c2.coeffs, zetas_inv);
+    invntt(c2.coeffs, c2.coeffs, zetas_inv);
     t2[i] = cpucycles() - t2[i];
 
     for(j = 0; j < N; ++j)
-      if(freeze(c2.coeffs[j]) != c1.coeffs[j])
+      if(c2.coeffs[j] % Q != c1.coeffs[j])
         printf("FAILURE: c2[%u]: %u %u\n", j, c1.coeffs[j], c2.coeffs[j]);
   }
 

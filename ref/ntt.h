@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 
-void ntt(uint32_t *p);
-void invntt_frominvmont(uint32_t *p);
+void ntt(uint32_t p[N]);
+void invntt_frominvmont(uint32_t p[N]);
 
 #endif

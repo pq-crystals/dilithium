@@ -1,6 +1,7 @@
-#ifndef NTTASM_H
-#define NTTASM_H
+#ifndef NTT_H
+#define NTT_H
 
+#include <stdint.h>
 #include "params.h"
 
 extern uint32_t zetas[N];

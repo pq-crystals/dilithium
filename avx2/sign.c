@@ -9,14 +9,23 @@
 #include "polyvec.h"
 #include "packing.h"
 
-/* Generate entry a_{i,j} of matrix A as Parse(SHAKE128(seed|i|j) */
+/*************************************************
+* Name:        expand_mat_ref
+* 
+* Description: Implementation of ExpandA. Generates matrix A with uniformly
+*              random coefficients a_{i,j} by performing rejection
+*              sampling on the output stream of SHAKE128(rho|i|j).
+*              
+* Arguments:   - polyvecl mat[K]: output matrix
+*              - const unsigned char rho[]: byte array containing seed rho
+**************************************************/
 void expand_mat_ref(polyvecl mat[K], const unsigned char rho[SEEDBYTES]) {
   unsigned int i, j, pos, ctr;
   unsigned char inbuf[SEEDBYTES + 1];
   /* Don't change this to smaller values,
-     sampling later assumes sufficient SHAKE output!
-     Probability that we need more than 5 blocks: < 2^{-132}.
-     Probability that we need more than 6 blocks: < 2^{-546}. */
+   * sampling later assumes sufficient SHAKE output!
+   * Probability that we need more than 5 blocks: < 2^{-132}.
+   * Probability that we need more than 6 blocks: < 2^{-546}. */
   unsigned char outbuf[5*SHAKE128_RATE];
   uint32_t val;
 
@@ -65,7 +74,7 @@ void expand_mat(polyvecl mat[3], const unsigned char rho[SEEDBYTES])
   inbuf[3][SEEDBYTES] = 1 + (1 << 4);
 
   shake128_4x(outbuf[0], outbuf[1], outbuf[2], outbuf[3], 5*SHAKE128_RATE,
-                inbuf[0], inbuf[1], inbuf[2], inbuf[3], SEEDBYTES + 1);
+              inbuf[0], inbuf[1], inbuf[2], inbuf[3], SEEDBYTES + 1);
 
   poly_uniform(&mat[0].vec[0], outbuf[0]);
   poly_uniform(&mat[0].vec[1], outbuf[1]);
@@ -76,7 +85,7 @@ void expand_mat(polyvecl mat[3], const unsigned char rho[SEEDBYTES])
   inbuf[1][SEEDBYTES] = 2 + (1 << 4);
 
   shake128_4x(outbuf[0], outbuf[1], outbuf[2], outbuf[3], 5*SHAKE128_RATE,
-                inbuf[0], inbuf[1], inbuf[2], inbuf[3], SEEDBYTES + 1);
+              inbuf[0], inbuf[1], inbuf[2], inbuf[3], SEEDBYTES + 1);
 
   poly_uniform(&mat[2].vec[0], outbuf[0]);
   poly_uniform(&mat[2].vec[1], outbuf[1]);
@@ -227,7 +236,19 @@ void expand_mat(polyvecl mat[6], const unsigned char rho[SEEDBYTES])
 #error
 #endif
 
-void challenge(poly *c, const unsigned char mu[CRHBYTES],
+/*************************************************
+* Name:        challenge
+* 
+* Description: Implementation of H. Samples polynomial with 60 nonzero
+*              coefficients in {-1,1} using the output stream of
+*              SHAKE256(mu|w1).
+*              
+* Arguments:   - poly *c: pointer to output polynomial
+*              - const unsigned char mu[]: byte array containing mu
+*              - const polyveck *w1: pointer to vector w1
+**************************************************/
+void challenge(poly *c,
+               const unsigned char mu[CRHBYTES],
                const polyveck *w1) 
 {
   unsigned int i, b, pos;
@@ -269,6 +290,18 @@ void challenge(poly *c, const unsigned char mu[CRHBYTES],
   }
 }
 
+/*************************************************
+* Name:        crypto_sign_keypair
+*
+* Description: Generates public and private key.
+*
+* Arguments:   - unsigned char *pk: pointer to output public key (allocated
+*                                   array of CRYPTO_PUBLICKEYBYTES bytes)
+*              - unsigned char *sk: pointer to output private key (allocated
+*                                   array of CRYPTO_SECRETKEYBYTES bytes)
+*
+* Returns 0 (success)
+**************************************************/
 int crypto_sign_keypair(unsigned char *pk, unsigned char *sk) {
   unsigned int i;
   unsigned char seedbuf[3*SEEDBYTES];
@@ -343,8 +376,25 @@ int crypto_sign_keypair(unsigned char *pk, unsigned char *sk) {
   return 0;
 }
 
-int crypto_sign(unsigned char *sm, unsigned long long *smlen,
-                const unsigned char *m, unsigned long long mlen, 
+/*************************************************
+* Name:        crypto_sign
+*
+* Description: Compute signed message.
+*
+* Arguments:   - unsigned char *sm: pointer to output signed message (allocated
+*                                   array with CRYPTO_BYTES + mlen bytes)
+*              - unsigned long long *smlen: pointer to output length of signed
+*                                           message
+*              - const unsigned char *m: pointer to message to be signed
+*              - unsigned long long mlen: length of message
+*              - const unsigned char *sk: pointer to bit-packed secret key
+*
+* Returns 0 (success)
+**************************************************/
+int crypto_sign(unsigned char *sm,
+                unsigned long long *smlen,
+                const unsigned char *m,
+                unsigned long long mlen,
                 const unsigned char *sk) 
 {
   unsigned long long i, j;
@@ -449,7 +499,7 @@ int crypto_sign(unsigned char *sm, unsigned long long *smlen,
   }
 
   polyveck_freeze(&ct0);
-  if(polyveck_chknorm(&ct0, GAMMA2 - BETA))
+  if(polyveck_chknorm(&ct0, GAMMA2))
     goto rej;
 
   polyveck_add(&tmp, &wcs2, &ct0);
@@ -466,8 +516,24 @@ int crypto_sign(unsigned char *sm, unsigned long long *smlen,
   return 0;
 }
 
-int crypto_sign_open(unsigned char *m, unsigned long long *mlen,
-                     const unsigned char *sm, unsigned long long smlen,
+/*************************************************
+* Name:        crypto_sign_open
+*
+* Description: Verify signed message.
+*
+* Arguments:   - unsigned char *m: pointer to output message (allocated
+*                                  array with smlen bytes), can be equal to sm
+*              - unsigned long long *mlen: pointer to output length of message
+*              - const unsigned char *sm: pointer to signed message
+*              - unsigned long long smlen: length of signed message
+*              - const unsigned char *sk: pointer to bit-packed public key
+*
+* Returns 0 if signed message could be verified correctly and -1 otherwise
+**************************************************/
+int crypto_sign_open(unsigned char *m,
+                     unsigned long long *mlen,
+                     const unsigned char *sm,
+                     unsigned long long smlen,
                      const unsigned char *pk)
 {
   unsigned long long i;
@@ -514,7 +580,7 @@ int crypto_sign_open(unsigned char *m, unsigned long long *mlen,
     poly_pointwise_invmontgomery(tmp2.vec+i, &chat, t1.vec+i);
 
   polyveck_sub(&tmp1, &tmp1, &tmp2);
-  polyveck_freeze(&tmp1);
+  polyveck_freeze(&tmp1);  // reduce32 would be sufficient
   polyveck_invntt_montgomery(&tmp1);
 
   /* Reconstruct w1 */

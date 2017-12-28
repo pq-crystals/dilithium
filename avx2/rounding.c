@@ -2,6 +2,18 @@
 #include "params.h"
 #include "reduce.h"
 
+/*************************************************
+* Name:        power2round
+* 
+* Description: For finite field element a, compute a0, a1 such that
+*              a = a1*2^D + a0 with -2^{D/2} < a0 <= 2^{D/2}. Assumes a to be
+*              standard representative.
+*
+* Arguments:   - uint32_t a: input element
+*              - uint32_t *a0: pointer to output element Q + a0
+*
+* Returns a1.
+**************************************************/
 uint32_t power2round(uint32_t a, uint32_t *a0)  {
   int32_t t;
   /* Centralized remainder mod 2^D */
@@ -14,11 +26,23 @@ uint32_t power2round(uint32_t a, uint32_t *a0)  {
   return a;
 }
 
-#if GAMMA1 != (Q-1)/16
-#error "decompose assumes GAMMA1 == (Q-1)/16"
-#endif
-
+/*************************************************
+* Name:        decompose
+* 
+* Description: For finite field element a, compute high and low bits a0, a1 such
+*              that a = a1*ALPHA + a0 with -ALPHA/2 < a0 <= ALPHA/2 except
+*              if a = Q-1 where a1 = 0 and a0 = -1. Assumes a to be standard
+*              representative.
+*
+* Arguments:   - uint32_t a: input element
+*              - uint32_t *a0: pointer to output element Q + a0
+*
+* Returns a1.
+**************************************************/
 uint32_t decompose(uint32_t a, uint32_t *a0) {
+#if ALPHA != (Q-1)/16
+#error "decompose assumes ALPHA == (Q-1)/16"
+#endif
   int32_t t, u;
   /* Centralized remainder mod ALPHA */
   t = a & 0x7FFFF;
@@ -40,11 +64,32 @@ uint32_t decompose(uint32_t a, uint32_t *a0) {
   return a;
 }
 
+/*************************************************
+* Name:        make_hint
+* 
+* Description: Compute hint bit indicating whether or not high bits of two
+*              finite field elements differ.
+*
+* Arguments:   - uint32_t a: first input element
+*              - uint32_t b: second input element
+*
+* Returns 1 if high bits of a and b differ and 0 otherwise.
+**************************************************/
 unsigned int make_hint(const uint32_t a, const uint32_t b) {
   uint32_t t;
   return decompose(a, &t) != decompose(freeze(a + b), &t);
 }
 
+/*************************************************
+* Name:        use_hint
+* 
+* Description: Correct high bits according to hint.
+*
+* Arguments:   - uint32_t a: input element
+*              - unsigned int hint: hint bit
+*
+* Returns corrected high bits.
+**************************************************/
 uint32_t use_hint(const uint32_t a, const unsigned int hint) {
   uint32_t a0, a1;
   

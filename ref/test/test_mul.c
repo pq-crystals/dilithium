@@ -37,7 +37,7 @@ static void random_pol(poly *a) {
 
   i = 0;
   while(i < N) {
-    randombytes(&t, 4);
+    randombytes((unsigned char *)&t, 4);
     t &= 0x7FFFFF;
     if(t < Q) a->coeffs[i++] = t;
   }
@@ -61,7 +61,7 @@ int main(void) {
     ntt(b.coeffs);
     for(j = 0; j < N; ++j)
       c2.coeffs[j] = montgomery_reduce((uint64_t)a.coeffs[j] * b.coeffs[j]);
-    invntt_frommontgomery(c2.coeffs);
+    invntt_frominvmont(c2.coeffs);
     t2[i] = cpucycles() - t2[i];
 
     for(j = 0; j < N; ++j)
