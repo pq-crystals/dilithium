@@ -13,6 +13,7 @@ int main(void) {
   poly c;
   polyvecl s, y, mat[K];
   polyveck w, tmp;
+  int32_t u;
 
   for (i = 0; i < 48; ++i)
     seed[i] = i;
@@ -29,12 +30,18 @@ int main(void) {
     printf("\n");
 
     expand_mat(mat, seed);
-    printf("mat = ");
-    for(j = 0; j < K; ++j)
-      for(k = 0; k < L; ++k)
-        for(l = 0; l < N; ++l)
-          printf("%.8X", mat[j].vec[k].coeffs[l]);
-    printf("\n");
+    printf("A = ((");
+    for(j = 0; j < K; ++j) {
+      for(k = 0; k < L; ++k) {
+        for(l = 0; l < N; ++l) {
+          printf("%6d", mat[j].vec[k].coeffs[l]);
+          if(l < N-1) printf(", ");
+          else if(k < L-1) printf("), (");
+          else if(j < K-1) printf(");\n     (");
+          else printf("))\n");
+        }
+      }
+    }
 
 #if L == 2
     poly_uniform_eta_4x(&s.vec[0], &s.vec[1], &tmp.vec[0], &tmp.vec[1], seed,
@@ -54,11 +61,17 @@ int main(void) {
 #error
 #endif
 
-    printf("s = ");
-    for(j = 0; j < L; ++j)
-      for(k = 0; k < N; ++k)
-        printf("%.8X", s.vec[j].coeffs[k]);
-    printf("\n");
+    printf("s = ((");
+    for(j = 0; j < L; ++j) {
+      for(k = 0; k < N; ++k) {
+        u = s.vec[j].coeffs[k];
+        if(u > (Q-1)/2) u -= Q;
+        printf("%2d", u);
+        if(k < N-1) printf(", ");
+        else if(j < L-1) printf("),\n     (");
+        else printf(")\n");
+      }
+    }
 
 #if L == 2
     poly_uniform_gamma1m1_4x(&y.vec[0], &y.vec[1], &tmp.vec[0], &tmp.vec[1], seed,
@@ -77,12 +90,17 @@ int main(void) {
 #error
 #endif
 
-    printf("y = ");
-    for(j = 0; j < L; ++j)
-      for(k = 0; k < N; ++k)
-        printf("%.8X", y.vec[j].coeffs[k]);
-    printf("\n");
-
+    printf("y = ((");
+    for(j = 0; j < L; ++j) {
+      for(k = 0; k < N; ++k) {
+        u = y.vec[j].coeffs[k];
+        if(u > (Q-1)/2) u -= Q;
+        printf("%7d", u);
+        if(k < N-1) printf(", ");
+        else if(j < L-1) printf("),\n     (");
+        else printf(")\n");
+      }
+    }
     polyvecl_ntt(&y);
     for(j = 0; j < K; ++j) {
       polyvecl_pointwise_acc_invmontgomery(w.vec+j, mat+j, &y);
@@ -91,16 +109,26 @@ int main(void) {
     polyveck_freeze(&w);
     polyveck_decompose(&w, &tmp, &w);
 
-    printf("w1 = ");
-    for(j = 0; j < K; ++j)
-      for(k = 0; k < N; ++k)
-        printf("%.8X", w.vec[j].coeffs[k]);
-    printf("\n");
+    printf("w1 = ((");
+    for(j = 0; j < K; ++j) {
+      for(k = 0; k < N; ++k) {
+        printf("%2u", w.vec[j].coeffs[k]);
+        if(k < N-1) printf(", ");
+        else if(j < K-1) printf("),\n      (");
+        else printf(")\n");
+      }
+    }
 
     challenge(&c, seed + SEEDBYTES, &w);
-    printf("c = ");
-    for(j = 0; j < N; ++j)
-      printf("%.8X", c.coeffs[j]);
+    printf("c = (");
+    for(j = 0; j < N; ++j) {
+      u = c.coeffs[j];
+      if(u > (Q-1)/2) u -= Q;
+      printf("%d", u);
+      if(j < N-1) printf(", ");
+      else printf(")\n");
+    }
+
     printf("\n");
   }
   
