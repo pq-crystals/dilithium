@@ -5,7 +5,7 @@
 
 void pack_pk(unsigned char pk[PK_SIZE_PACKED],
              const unsigned char rho[SEEDBYTES], const polyveck *t1);
-void pack_sk(unsigned char pk[PK_SIZE_PACKED],
+void pack_sk(unsigned char sk[SK_SIZE_PACKED],
              const unsigned char rho[SEEDBYTES],
              const unsigned char key[SEEDBYTES],
              const unsigned char tr[CRHBYTES],
@@ -16,7 +16,7 @@ void pack_sig(unsigned char sig[SIG_SIZE_PACKED],
               const polyvecl *z, const polyveck *h, const poly *c);
 
 void unpack_pk(unsigned char rho[SEEDBYTES], polyveck *t1,
-               const unsigned char sk[SK_SIZE_PACKED]);
+               const unsigned char pk[PK_SIZE_PACKED]);
 void unpack_sk(unsigned char rho[SEEDBYTES],
                unsigned char key[SEEDBYTES],
                unsigned char tr[CRHBYTES],
