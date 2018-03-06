@@ -28,7 +28,7 @@ int main(int argc, const char **argv)
   for(i = 0; i < NTESTS; ++i) {
     crypto_sign(sm, &smlen, m, MLEN, sk);
     for (j = 0; j < fbits; j++)
-      sm[MLEN+rand()%CRYPTO_BYTES] ^= 1<<(rand()&7);
+      sm[rand()%CRYPTO_BYTES] ^= 1<<(rand()&7);
     ret = crypto_sign_open(m2, &mlen, sm, smlen, pk);
     under_radar += !ret;
   }
