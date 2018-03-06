@@ -5,7 +5,7 @@ SOURCES = sign.c polyvec.c packing.c poly.c reduce.c ntt.c rounding.c fips202.c
 HEADERS = api.h params.h sign.h polyvec.h packing.h poly.h reduce.h ntt.h \
   rounding.h fips202.h
 
-all: PQCgenKAT_sign test/test_vectors test/test_dilithium
+all: PQCgenKAT_sign test/test_vectors test/test_dilithium test/test_fuzz
 
 PQCgenKAT_sign: $(SOURCES) rng.c PQCgenKAT_sign.c $(HEADERS) rng.h
 	$(CC) $(NISTFLAGS) $(SOURCES) rng.c PQCgenKAT_sign.c -o $@ -lcrypto -ldl
@@ -18,6 +18,11 @@ test/test_dilithium: $(SOURCES) randombytes.c test/test_dilithium.c \
   test/cpucycles.h
 	$(CC) $(CFLAGS) $(SOURCES) randombytes.c test/test_dilithium.c \
 	  test/speed.c test/cpucycles.c -o $@
+
+test/test_fuzz: $(SOURCES) randombytes.c test/test_fuzz.c \
+  $(HEADERS) randombytes.h
+	$(CC) $(CFLAGS) $(SOURCES) randombytes.c test/test_fuzz.c -o $@
+
 
 test/test_mul: reduce.c ntt.c randombytes.c test/test_mul.c \
   test/speed.c test/cpucycles.c params.h reduce.h ntt.h randombytes.h \
@@ -33,3 +38,4 @@ clean:
 	rm -f test/test_vectors
 	rm -f test/test_dilithium
 	rm -f test/test_mul
+	rm -f test/test_fuzz

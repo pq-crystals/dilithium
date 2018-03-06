@@ -205,7 +205,7 @@ void pack_sig(unsigned char sig[SIG_SIZE_PACKED],
 *              - const poly *c: pointer to output challenge polynomial
 *              - unsigned char sig[]: byte array containing bit-packed signature
 **************************************************/
-void unpack_sig(polyvecl *z,
+int unpack_sig(polyvecl *z,
                 polyveck *h,
                 poly *c,
                 const unsigned char sig[SIG_SIZE_PACKED])
@@ -223,6 +223,8 @@ void unpack_sig(polyvecl *z,
     for(j = 0; j < N; ++j)
       h->vec[i].coeffs[j] = 0;
 
+    if ((sig + sig[OMEGA+i]) > (sig - L*POLZ_SIZE_PACKED + SIG_SIZE_PACKED))
+      return 0;
     for(j = k; j < sig[OMEGA + i]; ++j)
       h->vec[i].coeffs[sig[j]] = 1;
 
@@ -247,4 +249,5 @@ void unpack_sig(polyvecl *z,
       }
     }
   }
+  return 1;
 }

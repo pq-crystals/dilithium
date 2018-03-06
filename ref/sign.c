@@ -314,6 +314,7 @@ int crypto_sign_open(unsigned char *m,
   poly     c, chat, cp;
   polyvecl mat[K], z;
   polyveck t1, w1, h, tmp1, tmp2;
+  int      ret = -2;
 
   if(smlen < CRYPTO_BYTES)
     goto badsig;
@@ -321,7 +322,10 @@ int crypto_sign_open(unsigned char *m,
   *mlen = smlen - CRYPTO_BYTES;
 
   unpack_pk(rho, &t1, pk);
-  unpack_sig(&z, &h, &c, sm);
+  if (!unpack_sig(&z, &h, &c, sm))
+    goto badsig;
+  ret = -1;
+
   if(polyvecl_chknorm(&z, GAMMA1 - BETA))
     goto badsig;
 
@@ -377,5 +381,5 @@ int crypto_sign_open(unsigned char *m,
   for(i = 0; i < smlen; ++i)
     m[i] = 0;
   
-  return -1;
+  return ret;
 }
