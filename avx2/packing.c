@@ -204,11 +204,13 @@ void pack_sig(unsigned char sig[SIG_SIZE_PACKED],
 *              - const polyveck *h: pointer to output hint vector h
 *              - const poly *c: pointer to output challenge polynomial
 *              - unsigned char sig[]: byte array containing bit-packed signature
+*
+* Returns 1 in case of malformed signature; otherwise 0
 **************************************************/
-void unpack_sig(polyvecl *z,
-                polyveck *h,
-                poly *c,
-                const unsigned char sig[SIG_SIZE_PACKED])
+int unpack_sig(polyvecl *z,
+               polyveck *h,
+               poly *c,
+               const unsigned char sig[SIG_SIZE_PACKED])
 {
   unsigned int i, j, k;
   uint64_t signs, mask;
@@ -217,17 +219,35 @@ void unpack_sig(polyvecl *z,
     polyz_unpack(z->vec+i, sig + i*POLZ_SIZE_PACKED);
   sig += L*POLZ_SIZE_PACKED;
 
+  /* Enforce standard representatives for strong unforgeability */
+  for(i = 0; i < L; ++i)
+    for(j = 0; j < N; ++j)
+      if(z->vec[i].coeffs[j] >= Q)
+        return 1;
+
   /* Decode h */
   k = 0;
   for(i = 0; i < K; ++i) {
     for(j = 0; j < N; ++j)
       h->vec[i].coeffs[j] = 0;
 
-    for(j = k; j < sig[OMEGA + i]; ++j)
+    if(sig[OMEGA + i] < k || sig[OMEGA + i] > OMEGA)
+      return 1;
+
+    for(j = k; j < sig[OMEGA + i]; ++j) {
+      /* Coefficients are ordered for strong unforgeability */
+      if(j > k && sig[j] < sig[j-1]) return 1;
       h->vec[i].coeffs[sig[j]] = 1;
+    }
 
     k = sig[OMEGA + i];
   }
+
+  /* Extra indices are zero for strong unforgeability */
+  for(j = k; j < OMEGA; ++j)
+    if(sig[j])
+      return 1;
+
   sig += OMEGA + K;
 
   /* Decode c */
@@ -238,6 +258,10 @@ void unpack_sig(polyvecl *z,
   for(i = 0; i < 8; ++i)
     signs |= (uint64_t)sig[N/8+i] << 8*i;
 
+  /* Extra sign bits are zero for strong unforgeability */
+  if(signs >> 60)
+    return 1;
+
   mask = 1;
   for(i = 0; i < N/8; ++i) {
     for(j = 0; j < 8; ++j) {
@@ -247,4 +271,6 @@ void unpack_sig(polyvecl *z,
       }
     }
   }
+
+  return 0;
 }

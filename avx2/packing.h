@@ -24,7 +24,7 @@ void unpack_sk(unsigned char rho[SEEDBYTES],
                polyveck *s2,
                polyveck *t0,
                const unsigned char sk[SK_SIZE_PACKED]);
-void unpack_sig(polyvecl *z, polyveck *h, poly *c,
+int unpack_sig(polyvecl *z, polyveck *h, poly *c,
                 const unsigned char sig[SIG_SIZE_PACKED]);
 
 #endif
