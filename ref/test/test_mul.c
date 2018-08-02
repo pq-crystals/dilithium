@@ -1,15 +1,14 @@
 #include <stdint.h>
 #include <stdio.h>
-#include "speed.h"
 #include "cpucycles.h"
-#include "../poly.h"
-#include "../ntt.h"
-#include "../reduce.h"
+#include "speed.h"
+#include "../params.h"
 #include "../randombytes.h"
+#include "../poly.h"
 
 #define NTESTS 10000
 
-static void pol_naivemul(poly *c, const poly *a, const poly *b) {
+static void poly_naivemul(poly *c, const poly *a, const poly *b) {
   unsigned int i,j;
   uint32_t r[2*N];
 
@@ -31,45 +30,38 @@ static void pol_naivemul(poly *c, const poly *a, const poly *b) {
     c->coeffs[i] = r[i];
 }
 
-static void random_pol(poly *a) {
-  unsigned int i;
-  uint32_t t;
-
-  i = 0;
-  while(i < N) {
-    randombytes((unsigned char *)&t, 4);
-    t &= 0x7FFFFF;
-    if(t < Q) a->coeffs[i++] = t;
-  }
-}
-
 int main(void) {
   unsigned int i, j;
-  unsigned long long t1[NTESTS], t2[NTESTS];
+  unsigned long long t1[NTESTS], t2[NTESTS], overhead;
+  unsigned char rndbuf[840];  // 840 = 5*SHAKE128_RATE
   poly a, b, c1, c2;
-  
+
+  overhead = cpucycles_overhead();
+
   for(i = 0; i < NTESTS; ++i) {
-    random_pol(&a);
-    random_pol(&b);
+    randombytes(rndbuf, sizeof(rndbuf));
+    poly_uniform(&a, rndbuf);
+    randombytes(rndbuf, sizeof(rndbuf));
+    poly_uniform(&b, rndbuf);
 
-    t1[i] = cpucycles();
-    pol_naivemul(&c1, &a, &b);
-    t1[i] = cpucycles() - t1[i];
+    t1[i] = cpucycles_start();
+    poly_naivemul(&c1, &a, &b);
+    t1[i] = cpucycles_stop() - t1[i] - overhead;
 
-    t2[i] = cpucycles();
-    ntt(a.coeffs);
-    ntt(b.coeffs);
+    t2[i] = cpucycles_start();
+    poly_ntt(&a);
+    poly_ntt(&b);
+    poly_pointwise_invmontgomery(&c2, &a, &b);
+    poly_invntt_montgomery(&c2);
+    t2[i] = cpucycles_stop() - t2[i] - overhead;
+
+    poly_csubq(&c2);
     for(j = 0; j < N; ++j)
-      c2.coeffs[j] = montgomery_reduce((uint64_t)a.coeffs[j] * b.coeffs[j]);
-    invntt_frominvmont(c2.coeffs);
-    t2[i] = cpucycles() - t2[i];
-
-    for(j = 0; j < N; ++j)
-      if(freeze(c2.coeffs[j]) != c1.coeffs[j])
+      if(c2.coeffs[j] != c1.coeffs[j])
         printf("FAILURE: c2[%u]: %u %u\n", j, c1.coeffs[j], c2.coeffs[j]);
   }
 
   print_results("naive: ", t1, NTESTS);
-  print_results("fft_ref: ", t2, NTESTS);
+  print_results("fft: ", t2, NTESTS);
   return 0;
 }

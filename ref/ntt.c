@@ -11,7 +11,7 @@ static const uint32_t zetas_inv[N] = {6403635, 846154, 6979993, 4442679, 1362209
 
 /*************************************************
 * Name:        ntt
-* 
+*
 * Description: Forward NTT, in-place. No modular reduction is performed after
 *              additions or subtractions. Hence output coefficients can be up
 *              to 16*Q larger than the coefficients of the input polynomial.
@@ -38,7 +38,7 @@ void ntt(uint32_t p[N]) {
 
 /*************************************************
 * Name:        invntt_frominvmont
-* 
+*
 * Description: Inverse NTT and multiplication by Montgomery factor 2^32.
 *              In-place. No modular reductions after additions or
 *              subtractions. Input coefficient need to be smaller than 2*Q.

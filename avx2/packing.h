@@ -1,6 +1,7 @@
 #ifndef PACKING_H
 #define PACKING_H
 
+#include "params.h"
 #include "polyvec.h"
 
 void pack_pk(unsigned char pk[PK_SIZE_PACKED],

@@ -54,7 +54,7 @@ static void keccak_absorb4x(__m256i *s,
       ss[4*i + 2] ^= load64(m2 + 8*i);
       ss[4*i + 3] ^= load64(m3 + 8*i);
     }
-    
+
     KeccakF1600_StatePermute4x(s);
     mlen -= r;
     m0 += r;
@@ -167,7 +167,7 @@ void shake128_4x(unsigned char *h0,
                  unsigned char *h1,
                  unsigned char *h2,
                  unsigned char *h3,
-                 unsigned long long hlen, 
+                 unsigned long long hlen,
                  const unsigned char *m0,
                  const unsigned char *m1,
                  const unsigned char *m2,
@@ -203,7 +203,7 @@ void shake256_4x(unsigned char *h0,
                  unsigned char *h1,
                  unsigned char *h2,
                  unsigned char *h3,
-                 unsigned long long hlen, 
+                 unsigned long long hlen,
                  const unsigned char *m0,
                  const unsigned char *m1,
                  const unsigned char *m2,

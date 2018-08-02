@@ -5,7 +5,7 @@
 
 /*************************************************
 * Name:        pack_pk
-* 
+*
 * Description: Bit-pack public key pk = (rho, t1).
 *
 * Arguments:   - unsigned char pk[]: output byte array
@@ -28,7 +28,7 @@ void pack_pk(unsigned char pk[PK_SIZE_PACKED],
 
 /*************************************************
 * Name:        unpack_pk
-* 
+*
 * Description: Unpack public key pk = (rho, t1).
 *
 * Arguments:   - const unsigned char rho[]: output byte array for rho
@@ -51,7 +51,7 @@ void unpack_pk(unsigned char rho[SEEDBYTES],
 
 /*************************************************
 * Name:        pack_sk
-* 
+*
 * Description: Bit-pack secret key sk = (rho, key, tr, s1, s2, t0).
 *
 * Arguments:   - unsigned char sk[]: output byte array
@@ -98,7 +98,7 @@ void pack_sk(unsigned char sk[SK_SIZE_PACKED],
 
 /*************************************************
 * Name:        unpack_sk
-* 
+*
 * Description: Unpack secret key sk = (rho, key, tr, s1, s2, t0).
 *
 * Arguments:   - const unsigned char rho[]: output byte array for rho
@@ -134,7 +134,7 @@ void unpack_sk(unsigned char rho[SEEDBYTES],
   for(i=0; i < L; ++i)
     polyeta_unpack(s1->vec+i, sk + i*POLETA_SIZE_PACKED);
   sk += L*POLETA_SIZE_PACKED;
-  
+
   for(i=0; i < K; ++i)
     polyeta_unpack(s2->vec+i, sk + i*POLETA_SIZE_PACKED);
   sk += K*POLETA_SIZE_PACKED;
@@ -145,7 +145,7 @@ void unpack_sk(unsigned char rho[SEEDBYTES],
 
 /*************************************************
 * Name:        pack_sig
-* 
+*
 * Description: Bit-pack signature sig = (z, h, c).
 *
 * Arguments:   - unsigned char sig[]: output byte array
@@ -169,14 +169,14 @@ void pack_sig(unsigned char sig[SIG_SIZE_PACKED],
   k = 0;
   for(i = 0; i < K; ++i) {
     for(j = 0; j < N; ++j)
-      if(h->vec[i].coeffs[j] == 1)
+      if(h->vec[i].coeffs[j] != 0)
         sig[k++] = j;
 
     sig[OMEGA + i] = k;
   }
   while(k < OMEGA) sig[k++] = 0;
   sig += OMEGA + K;
-  
+
   /* Encode c */
   signs = 0;
   mask = 1;
@@ -184,7 +184,7 @@ void pack_sig(unsigned char sig[SIG_SIZE_PACKED],
     sig[i] = 0;
     for(j = 0; j < 8; ++j) {
       if(c->coeffs[8*i+j] != 0) {
-        sig[i] |= (1 << j);
+        sig[i] |= (1U << j);
         if(c->coeffs[8*i+j] == (Q - 1)) signs |= mask;
         mask <<= 1;
       }
@@ -197,15 +197,16 @@ void pack_sig(unsigned char sig[SIG_SIZE_PACKED],
 
 /*************************************************
 * Name:        unpack_sig
-* 
+*
 * Description: Unpack signature sig = (z, h, c).
 *
-* Arguments:   - const polyvecl *z: pointer to output vector z
-*              - const polyveck *h: pointer to output hint vector h
-*              - const poly *c: pointer to output challenge polynomial
-*              - unsigned char sig[]: byte array containing bit-packed signature
+* Arguments:   - polyvecl *z: pointer to output vector z
+*              - polyveck *h: pointer to output hint vector h
+*              - poly *c: pointer to output challenge polynomial
+*              - const unsigned char sig[]: byte array containing
+*                bit-packed signature
 *
-* Returns 1 in case of malformed signature; otherwise 0
+* Returns 1 in case of malformed signature; otherwise 0.
 **************************************************/
 int unpack_sig(polyvecl *z,
                polyveck *h,
@@ -219,12 +220,6 @@ int unpack_sig(polyvecl *z,
     polyz_unpack(z->vec+i, sig + i*POLZ_SIZE_PACKED);
   sig += L*POLZ_SIZE_PACKED;
 
-  /* Enforce standard representatives for strong unforgeability */
-  for(i = 0; i < L; ++i)
-    for(j = 0; j < N; ++j)
-      if(z->vec[i].coeffs[j] >= Q)
-        return 1;
-
   /* Decode h */
   k = 0;
   for(i = 0; i < K; ++i) {
@@ -236,7 +231,7 @@ int unpack_sig(polyvecl *z,
 
     for(j = k; j < sig[OMEGA + i]; ++j) {
       /* Coefficients are ordered for strong unforgeability */
-      if(j > k && sig[j] < sig[j-1]) return 1;
+      if(j > k && sig[j] <= sig[j-1]) return 1;
       h->vec[i].coeffs[sig[j]] = 1;
     }
 

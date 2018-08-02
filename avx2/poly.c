@@ -8,9 +8,39 @@
 #include "poly.h"
 
 /*************************************************
+* Name:        poly_reduce
+*
+* Description: Reduce all coefficients of input polynomial to representative
+*              in [0,2*Q[.
+*
+* Arguments:   - poly *a: pointer to input/output polynomial
+**************************************************/
+void poly_reduce(poly *a) {
+  unsigned int i;
+
+  for(i = 0; i < N; ++i)
+    a->coeffs[i] = reduce32(a->coeffs[i]);
+}
+
+/*************************************************
+* Name:        poly_csubq
+*
+* Description: For all coefficients of input polynomial subtract Q if
+*              coefficient is bigger than Q.
+*
+* Arguments:   - poly *a: pointer to input/output polynomial
+**************************************************/
+void poly_csubq(poly *a) {
+  unsigned int i;
+
+  for(i = 0; i < N; ++i)
+    a->coeffs[i] = csubq(a->coeffs[i]);
+}
+
+/*************************************************
 * Name:        poly_freeze
-* 
-* Description: Reduce all coefficients of polynomial to standard
+*
+* Description: Reduce all coefficients of the polynomial to standard
 *              representatives.
 *
 * Arguments:   - poly *a: pointer to input/output polynomial
@@ -24,12 +54,12 @@ void poly_freeze(poly *a) {
 
 /*************************************************
 * Name:        poly_add
-* 
+*
 * Description: Add polynomials. No modular reduction is performed.
 *
 * Arguments:   - poly *c: pointer to output polynomial
-*              - poly *a: pointer to first summand
-*              - poly *b: pointer to second summand
+*              - const poly *a: pointer to first summand
+*              - const poly *b: pointer to second summand
 **************************************************/
 void poly_add(poly *c, const poly *a, const poly *b)  {
   unsigned int i;
@@ -40,14 +70,15 @@ void poly_add(poly *c, const poly *a, const poly *b)  {
 
 /*************************************************
 * Name:        poly_sub
-* 
-* Description: Subtract polynomials. Assumes coefficients of input polynomials
-*              to be less than 2*Q. No modular reduction is performed.
+*
+* Description: Subtract polynomials. Assumes coefficients of second input
+*              polynomial to be less than 2*Q. No modular reduction is
+*              performed.
 *
 * Arguments:   - poly *c: pointer to output polynomial
-*              - poly *a: pointer to first input polynomial
-*              - poly *b: pointer to second input polynomial to be subtraced
-*                         from first input polynomial
+*              - const poly *a: pointer to first input polynomial
+*              - const poly *b: pointer to second input polynomial to be
+*                               subtraced from first input polynomial
 **************************************************/
 void poly_sub(poly *c, const poly *a, const poly *b) {
   unsigned int i;
@@ -58,7 +89,7 @@ void poly_sub(poly *c, const poly *a, const poly *b) {
 
 /*************************************************
 * Name:        poly_neg
-* 
+*
 * Description: Negate polynomial. Assumes input coefficients to be less
 *              than 2*Q.
 *
@@ -73,8 +104,9 @@ void poly_neg(poly *a) {
 
 /*************************************************
 * Name:        poly_shiftl
-* 
-* Description: Multiply polynomial by 2^k.
+*
+* Description: Multiply polynomial by 2^k without modular reduction. Assumes
+*              input coefficients to be less than 2^{32-k}.
 *
 * Arguments:   - poly *a: pointer to input/output polynomial
 *              - unsigned int k: exponent
@@ -88,38 +120,41 @@ void poly_shiftl(poly *a, unsigned int k) {
 
 /*************************************************
 * Name:        poly_ntt
-* 
+*
 * Description: Forward NTT. Output coefficients can be up to 16*Q larger than
 *              input coefficients.
 *
 * Arguments:   - poly *a: pointer to input/output polynomial
 **************************************************/
 void poly_ntt(poly *a) {
-  ntt(a->coeffs, a->coeffs, zetas);
+  //ntt(a->coeffs);
+  ntt(a->coeffs, a->coeffs, zetas); // FIXME
 }
 
 /*************************************************
 * Name:        poly_invntt_montgomery
-* 
-* Description: Inverse NTT and multiplication with 2^{32}. Output coefficients
-*              are less than 2*Q.
+*
+* Description: Inverse NTT and multiplication with 2^{32}. Input coefficients
+*              need to be less than 2*Q. Output coefficients are less than 2*Q.
 *
 * Arguments:   - poly *a: pointer to input/output polynomial
 **************************************************/
 void poly_invntt_montgomery(poly *a) {
-  invntt(a->coeffs, a->coeffs, zetas_inv);
+  //invntt_frominvmont(a->coeffs);
+  invntt(a->coeffs, a->coeffs, zetas_inv);  // FIXME
 }
 
 /*************************************************
 * Name:        poly_pointwise_invmontgomery
-* 
+*
 * Description: Pointwise multiplication of polynomials in NTT domain
 *              representation and multiplication of resulting polynomial
-*              with 2^{-32}.
+*              with 2^{-32}. Output coefficients are less than 2*Q if input
+*              coefficient are less than 22*Q.
 *
 * Arguments:   - poly *c: pointer to output polynomial
-*              - poly *a: pointer to first input polynomial
-*              - poly *b: pointer to second input polynomial
+*              - const poly *a: pointer to first input polynomial
+*              - const poly *b: pointer to second input polynomial
 **************************************************/
 void poly_pointwise_invmontgomery(poly *c, const poly *a, const poly *b) {
   pointwise_mul(c->coeffs, a->coeffs, b->coeffs);
@@ -127,7 +162,7 @@ void poly_pointwise_invmontgomery(poly *c, const poly *a, const poly *b) {
 
 /*************************************************
 * Name:        poly_chknorm
-* 
+*
 * Description: Check infinity norm of polynomial against given bound.
 *              Assumes input coefficients to be standard representatives.
 *
@@ -158,15 +193,15 @@ int poly_chknorm(const poly *a, uint32_t B) {
 
 /*************************************************
 * Name:        poly_uniform
-* 
+*
 * Description: Sample uniformly random polynomial using stream of random bytes.
 *              Assumes that enough random bytes are given (e.g.
 *              5*SHAKE128_RATE bytes).
 *
 * Arguments:   - poly *a: pointer to output polynomial
-*              - unsigned char *buf: array of random bytes
+*              - const unsigned char *buf: array of random bytes
 **************************************************/
-void poly_uniform(poly *a, unsigned char *buf) {
+void poly_uniform(poly *a, const unsigned char *buf) {
   unsigned int ctr, pos;
   uint32_t t;
 
@@ -184,7 +219,7 @@ void poly_uniform(poly *a, unsigned char *buf) {
 
 /*************************************************
 * Name:        rej_eta
-* 
+*
 * Description: Sample uniformly random coefficients in [-ETA, ETA] by
 *              performing rejection sampling using array of random bytes.
 *
@@ -208,7 +243,7 @@ static unsigned int rej_eta(uint32_t *a,
   unsigned char t0, t1;
 
   ctr = pos = 0;
-  while(ctr < len) {
+  while(ctr < len && pos < buflen) {
 #if ETA <= 3
     t0 = buf[pos] & 0x07;
     t1 = buf[pos++] >> 5;
@@ -221,9 +256,6 @@ static unsigned int rej_eta(uint32_t *a,
       a[ctr++] = Q + ETA - t0;
     if(t1 <= 2*ETA && ctr < len)
       a[ctr++] = Q + ETA - t1;
-
-    if(pos >= buflen)
-      break;
   }
 
   return ctr;
@@ -231,7 +263,7 @@ static unsigned int rej_eta(uint32_t *a,
 
 /*************************************************
 * Name:        poly_uniform_eta
-* 
+*
 * Description: Sample polynomial with uniformly random coefficients
 *              in [-ETA,ETA] by performing rejection sampling using the
 *              output stream from SHAKE256(seed|nonce).
@@ -242,12 +274,13 @@ static unsigned int rej_eta(uint32_t *a,
 *              - unsigned char nonce: nonce byte
 **************************************************/
 void poly_uniform_eta(poly *a,
-                      const unsigned char seed[SEEDBYTES], 
+                      const unsigned char seed[SEEDBYTES],
                       unsigned char nonce)
 {
   unsigned int i, ctr;
   unsigned char inbuf[SEEDBYTES + 1];
-  /* Probability that we need more than 2 blocks: < 2^{-84} */
+  /* Probability that we need more than 2 blocks: < 2^{-84}
+     Probability that we need more than 3 blocks: < ... */
   unsigned char outbuf[2*SHAKE256_RATE];
   uint64_t state[25];
 
@@ -269,7 +302,7 @@ void poly_uniform_eta_4x(poly *a0,
                          poly *a1,
                          poly *a2,
                          poly *a3,
-                         const unsigned char seed[SEEDBYTES], 
+                         const unsigned char seed[SEEDBYTES],
                          unsigned char nonce0,
                          unsigned char nonce1,
                          unsigned char nonce2,
@@ -308,7 +341,7 @@ void poly_uniform_eta_4x(poly *a0,
 
 /*************************************************
 * Name:        rej_gamma1m1
-* 
+*
 * Description: Sample uniformly random coefficients
 *              in [-(GAMMA1 - 1), GAMMA1 - 1] by performing rejection sampling
 *              using array of random bytes.
@@ -333,7 +366,7 @@ static unsigned int rej_gamma1m1(uint32_t *a,
   uint32_t t0, t1;
 
   ctr = pos = 0;
-  while(ctr < len) {
+  while(ctr < len && pos + 5 <= buflen) {
     t0  = buf[pos];
     t0 |= (uint32_t)buf[pos + 1] << 8;
     t0 |= (uint32_t)buf[pos + 2] << 16;
@@ -349,9 +382,6 @@ static unsigned int rej_gamma1m1(uint32_t *a,
       a[ctr++] = Q + GAMMA1 - 1 - t0;
     if(t1 <= 2*GAMMA1 - 2 && ctr < len)
       a[ctr++] = Q + GAMMA1 - 1 - t1;
-
-    if(pos > buflen - 5)
-      break;
   }
 
   return ctr;
@@ -359,7 +389,7 @@ static unsigned int rej_gamma1m1(uint32_t *a,
 
 /*************************************************
 * Name:        poly_uniform_gamma1m1
-* 
+*
 * Description: Sample polynomial with uniformly random coefficients
 *              in [-(GAMMA1 - 1), GAMMA1 - 1] by performing rejection
 *              sampling on output stream of SHAKE256(seed|nonce).
@@ -443,9 +473,9 @@ void poly_uniform_gamma1m1_4x(poly *a0,
 
 /*************************************************
 * Name:        polyeta_pack
-* 
+*
 * Description: Bit-pack polynomial with coefficients in [-ETA,ETA].
-*              Input coefficients are assumed to be standard representatives.
+*              Input coefficients are assumed to lie in [Q-ETA,Q+ETA].
 *
 * Arguments:   - unsigned char *r: pointer to output byte array with at least
 *                                  POLETA_SIZE_PACKED bytes
@@ -491,11 +521,10 @@ void polyeta_pack(unsigned char *r, const poly *a) {
 
 /*************************************************
 * Name:        polyeta_unpack
-* 
+*
 * Description: Unpack polynomial with coefficients in [-ETA,ETA].
-*              Output coefficients are not standard representatives but
-*              no greater than Q + ETA.
-*              
+*              Output coefficients lie in [Q-ETA,Q+ETA].
+*
 * Arguments:   - poly *r: pointer to output polynomial
 *              - const unsigned char *a: byte array with bit-packed polynomial
 **************************************************/
@@ -534,7 +563,7 @@ void polyeta_unpack(poly *r, const unsigned char *a) {
 
 /*************************************************
 * Name:        polyt1_pack
-* 
+*
 * Description: Bit-pack polynomial t1 with coefficients fitting in 9 bits.
 *              Input coefficients are assumed to be standard representatives.
 *
@@ -563,10 +592,10 @@ void polyt1_pack(unsigned char *r, const poly *a) {
 
 /*************************************************
 * Name:        polyt1_unpack
-* 
+*
 * Description: Unpack polynomial t1 with 9-bit coefficients.
-*              Output coefficients are not standard representatives.
-*              
+*              Output coefficients are standard representatives.
+*
 * Arguments:   - poly *r: pointer to output polynomial
 *              - const unsigned char *a: byte array with bit-packed polynomial
 **************************************************/
@@ -587,9 +616,9 @@ void polyt1_unpack(poly *r, const unsigned char *a) {
 
 /*************************************************
 * Name:        polyt0_pack
-* 
-* Description: Bit-pack polynomial t0 with coefficients in ]-2^{D/2}, 2^{D/2}].
-*              Input coefficients are assumed to be standard representatives.
+*
+* Description: Bit-pack polynomial t0 with coefficients in ]-2^{D-1}, 2^{D-1}].
+*              Input coefficients are assumed to lie in ]Q-2^{D-1}, Q+2^{D-1}].
 *
 * Arguments:   - unsigned char *r: pointer to output byte array with at least
 *                                  POLT0_SIZE_PACKED bytes
@@ -620,11 +649,10 @@ void polyt0_pack(unsigned char *r, const poly *a) {
 
 /*************************************************
 * Name:        polyt0_unpack
-* 
-* Description: Unpack polynomial t0 with coefficients in ]-2^{D/2}, 2^{D/2}].
-*              Output coefficients are not standard representatives but at most
-*              Q + 2^{D/2}.
-*              
+*
+* Description: Unpack polynomial t0 with coefficients in ]-2^{D-1}, 2^{D-1}].
+*              Output coefficients lie in ]Q-2^{D-1},Q+2^{D-1}].
+*
 * Arguments:   - poly *r: pointer to output polynomial
 *              - const unsigned char *a: byte array with bit-packed polynomial
 **************************************************/
@@ -638,7 +666,7 @@ void polyt0_unpack(poly *r, const unsigned char *a) {
     r->coeffs[4*i+1]  = a[7*i+1] >> 6;
     r->coeffs[4*i+1] |= (uint32_t)a[7*i+2] << 2;
     r->coeffs[4*i+1] |= (uint32_t)(a[7*i+3] & 0x0F) << 10;
-    
+
     r->coeffs[4*i+2]  = a[7*i+3] >> 4;
     r->coeffs[4*i+2] |= (uint32_t)a[7*i+4] << 4;
     r->coeffs[4*i+2] |= (uint32_t)(a[7*i+5] & 0x03) << 12;
@@ -655,7 +683,7 @@ void polyt0_unpack(poly *r, const unsigned char *a) {
 
 /*************************************************
 * Name:        polyz_pack
-* 
+*
 * Description: Bit-pack polynomial z with coefficients
 *              in [-(GAMMA1 - 1), GAMMA1 - 1].
 *              Input coefficients are assumed to be standard representatives.
@@ -689,12 +717,11 @@ void polyz_pack(unsigned char *r, const poly *a) {
 
 /*************************************************
 * Name:        polyz_unpack
-* 
+*
 * Description: Unpack polynomial z with coefficients
 *              in [-(GAMMA1 - 1), GAMMA1 - 1].
-*              Output coefficients are not standard representatives but at
-*              most Q + GAMMA1 - 1.
-*              
+*              Output coefficients are standard representatives.
+*
 * Arguments:   - poly *r: pointer to output polynomial
 *              - const unsigned char *a: byte array with bit-packed polynomial
 **************************************************/
@@ -719,7 +746,7 @@ void polyz_unpack(poly *r, const unsigned char *a) {
 
 /*************************************************
 * Name:        polyw1_pack
-* 
+*
 * Description: Bit-pack polynomial w1 with coefficients in [0, 15].
 *              Input coefficients are assumed to be standard representatives.
 *

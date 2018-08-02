@@ -28,6 +28,8 @@ typedef struct {
   poly vec[K];
 } polyveck;
 
+void polyveck_reduce(polyveck *v);
+void polyveck_csubq(polyveck *v);
 void polyveck_freeze(polyveck *v);
 
 void polyveck_add(polyveck *w, const polyveck *u, const polyveck *v);

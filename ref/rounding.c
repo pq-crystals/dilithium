@@ -4,10 +4,10 @@
 
 /*************************************************
 * Name:        power2round
-* 
+*
 * Description: For finite field element a, compute a0, a1 such that
-*              a = a1*2^D + a0 with -2^{D/2} < a0 <= 2^{D/2}. Assumes a to be
-*              standard representative.
+*              a mod Q = a1*2^D + a0 with -2^{D-1} < a0 <= 2^{D-1}.
+*              Assumes a to be standard representative.
 *
 * Arguments:   - uint32_t a: input element
 *              - uint32_t *a0: pointer to output element Q + a0
@@ -16,6 +16,7 @@
 **************************************************/
 uint32_t power2round(uint32_t a, uint32_t *a0)  {
   int32_t t;
+
   /* Centralized remainder mod 2^D */
   t = a & ((1 << D) - 1);
   t -= (1 << (D-1)) + 1;
@@ -28,10 +29,11 @@ uint32_t power2round(uint32_t a, uint32_t *a0)  {
 
 /*************************************************
 * Name:        decompose
-* 
+*
 * Description: For finite field element a, compute high and low bits a0, a1 such
-*              that a = a1*ALPHA + a0 with -ALPHA/2 < a0 <= ALPHA/2 except
-*              if a = Q-1 where a1 = 0 and a0 = -1. Assumes a to be standard
+*              that a mod Q = a1*ALPHA + a0 with -ALPHA/2 < a0 <= ALPHA/2 except
+*              if a1 = (Q-1)/ALPHA where we set a1 = 0 and
+*              -ALPHA/2 <= a0 = a mod Q - Q < 0. Assumes a to be standard
 *              representative.
 *
 * Arguments:   - uint32_t a: input element
@@ -44,6 +46,7 @@ uint32_t decompose(uint32_t a, uint32_t *a0) {
 #error "decompose assumes ALPHA == (Q-1)/16"
 #endif
   int32_t t, u;
+
   /* Centralized remainder mod ALPHA */
   t = a & 0x7FFFF;
   t += (a >> 19) << 9;
@@ -66,9 +69,10 @@ uint32_t decompose(uint32_t a, uint32_t *a0) {
 
 /*************************************************
 * Name:        make_hint
-* 
+*
 * Description: Compute hint bit indicating whether or not high bits of two
-*              finite field elements differ.
+*              finite field elements differ. Assumes input elements to be
+*              standard representatives.
 *
 * Arguments:   - uint32_t a: first input element
 *              - uint32_t b: second input element
@@ -77,12 +81,13 @@ uint32_t decompose(uint32_t a, uint32_t *a0) {
 **************************************************/
 unsigned int make_hint(const uint32_t a, const uint32_t b) {
   uint32_t t;
-  return decompose(a, &t) != decompose(freeze(a + b), &t);
+
+  return decompose(a, &t) != decompose(csubq(a + b), &t); //TODO: move sum out
 }
 
 /*************************************************
 * Name:        use_hint
-* 
+*
 * Description: Correct high bits according to hint.
 *
 * Arguments:   - uint32_t a: input element
@@ -92,21 +97,21 @@ unsigned int make_hint(const uint32_t a, const uint32_t b) {
 **************************************************/
 uint32_t use_hint(const uint32_t a, const unsigned int hint) {
   uint32_t a0, a1;
-  
+
   a1 = decompose(a, &a0);
   if(hint == 0)
     return a1;
   else if(a0 > Q)
-    return (a1 == (Q - 1)/ALPHA - 1) ? 0 : a1 + 1;
+    return (a1 + 1) & 0xF;
   else
-    return (a1 == 0) ? (Q - 1)/ALPHA - 1 : a1 - 1;
+    return (a1 - 1) & 0xF;
 
-  /* If decompose does not divide out ALPHA: 
+  /* If decompose does not divide out ALPHA:
   if(hint == 0)
     return a1;
   else if(a0 > Q)
-    return (a1 == Q - 1 - ALPHA) ? 0 : a1 + ALPHA;
+    return (a1 + ALPHA) % (Q - 1);
   else
-    return (a1 == 0) ? Q - 1 - ALPHA : a1 - ALPHA;
+    return (a1 - ALPHA) % (Q - 1);
   */
 }

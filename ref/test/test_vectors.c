@@ -34,7 +34,7 @@ int main(void) {
     for(j = 0; j < K; ++j) {
       for(k = 0; k < L; ++k) {
         for(l = 0; l < N; ++l) {
-          printf("%6d", mat[j].vec[k].coeffs[l]);
+          printf("%7u", mat[j].vec[k].coeffs[l]);
           if(l < N-1) printf(", ");
           else if(k < L-1) printf("), (");
           else if(j < K-1) printf(");\n     (");
@@ -76,9 +76,10 @@ int main(void) {
     polyvecl_ntt(&y);
     for(j = 0; j < K; ++j) {
       polyvecl_pointwise_acc_invmontgomery(w.vec+j, mat+j, &y);
+      poly_reduce(w.vec+j);
       poly_invntt_montgomery(w.vec+j);
     }
-    polyveck_freeze(&w);
+    polyveck_csubq(&w);
     polyveck_decompose(&w, &tmp, &w);
 
     printf("w1 = ((");
@@ -96,13 +97,13 @@ int main(void) {
     for(j = 0; j < N; ++j) {
       u = c.coeffs[j];
       if(u > (Q-1)/2) u -= Q;
-      printf("%d", u);
+      printf("%2d", u);
       if(j < N-1) printf(", ");
       else printf(")\n");
     }
 
     printf("\n");
   }
-  
+
   return 0;
 }
