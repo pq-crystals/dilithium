@@ -279,7 +279,7 @@ void poly_uniform_eta(poly *a,
   unsigned int i, ctr;
   unsigned char inbuf[SEEDBYTES + 1];
   /* Probability that we need more than 2 blocks: < 2^{-84}
-     Probability that we need more than 3 blocks: < ... */
+     Probability that we need more than 3 blocks: < 2^{-352} */
   unsigned char outbuf[2*SHAKE256_RATE];
   uint64_t state[25];
 
@@ -364,7 +364,7 @@ void poly_uniform_gamma1m1(poly *a,
   unsigned int i, ctr;
   unsigned char inbuf[SEEDBYTES + CRHBYTES + 2];
   /* Probability that we need more than 5 blocks: < 2^{-81}
-     Probability that we need more than 6 blocks: < ... */
+     Probability that we need more than 6 blocks: < 2^{-467} */
   unsigned char outbuf[5*SHAKE256_RATE];
   uint64_t state[25];
 
