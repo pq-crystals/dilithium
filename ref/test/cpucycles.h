@@ -1,6 +1,30 @@
 #ifndef CPUCYCLES_H
 #define CPUCYCLES_H
 
+#ifdef USE_RDPMC
+
+static inline unsigned long long cpucycles_start(void) {
+  const unsigned int ecx = (1U << 30) + 1;
+  unsigned long long result;
+
+  asm volatile("cpuid; movl %1,%%ecx; rdpmc; shlq $32,%%rdx; orq %%rdx,%%rax"
+    : "=&a" (result) : "r" (ecx) : "rbx", "rcx", "rdx");
+
+  return result;
+}
+
+static inline unsigned long long cpucycles_stop(void) {
+  const unsigned int ecx = (1U << 30) + 1;
+  unsigned long long result, dummy;
+
+  asm volatile("rdpmc; shlq $32,%%rdx; orq %%rdx,%%rax; movq %%rax,%0; cpuid"
+    : "=&r" (result), "=c" (dummy) : "c" (ecx) : "rax", "rbx", "rdx");
+
+  return result;
+}
+
+#else
+
 static inline unsigned long long cpucycles_start(void) {
   unsigned long long result;
 
@@ -18,6 +42,8 @@ static inline unsigned long long cpucycles_stop(void) {
 
   return result;
 }
+
+#endif
 
 static unsigned long long cpucycles_overhead(void) {
   unsigned long long t0, t1, overhead = -1;
