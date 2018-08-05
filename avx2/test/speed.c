@@ -29,9 +29,20 @@ void print_results(const char *s, unsigned long long *t, size_t tlen) {
   unsigned long long tmp;
 
   printf("%s\n", s);
+
   tmp = median(t, tlen);
+#ifdef USE_RDPMC
+  printf("median: %llu cycles\n", tmp);
+#else
   printf("median: %llu ticks @ 2.6 GHz (%.4g msecs)\n", tmp, MSECS(tmp));
+#endif
+
   tmp = average(t, tlen);
+#ifdef USE_RDPMC
+  printf("average: %llu cycles\n", tmp);
+#else
   printf("average: %llu ticks @ 2.6 GHz (%.4g msecs)\n", tmp, MSECS(tmp));
+#endif
+
   printf("\n");
 }
