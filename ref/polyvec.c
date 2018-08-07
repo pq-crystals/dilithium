@@ -1,6 +1,5 @@
 #include <stdint.h>
 #include "params.h"
-#include "rounding.h"
 #include "poly.h"
 #include "polyvec.h"
 
@@ -288,12 +287,10 @@ int polyveck_chknorm(const polyveck *v, uint32_t bound) {
 *              - const polyveck *v: pointer to input vector
 **************************************************/
 void polyveck_power2round(polyveck *v1, polyveck *v0, const polyveck *v) {
-  unsigned int i, j;
+  unsigned int i;
 
   for(i = 0; i < K; ++i)
-    for(j = 0; j < N; ++j)
-      v1->vec[i].coeffs[j] = power2round(v->vec[i].coeffs[j],
-                                         &v0->vec[i].coeffs[j]);
+    poly_power2round(v1->vec+i, v0->vec+i, v->vec+i);
 }
 
 /*************************************************
@@ -312,20 +309,16 @@ void polyveck_power2round(polyveck *v1, polyveck *v0, const polyveck *v) {
 *              - const polyveck *v: pointer to input vector
 **************************************************/
 void polyveck_decompose(polyveck *v1, polyveck *v0, const polyveck *v) {
-  unsigned int i, j;
+  unsigned int i;
 
   for(i = 0; i < K; ++i)
-    for(j = 0; j < N; ++j)
-      v1->vec[i].coeffs[j] = decompose(v->vec[i].coeffs[j],
-                                       &v0->vec[i].coeffs[j]);
+    poly_decompose(v1->vec+i, v0->vec+i, v->vec+i);
 }
 
 /*************************************************
 * Name:        polyveck_make_hint
 *
-* Description: Compute hint vector. The coefficients of the polynomials indicate
-*              whether or not the high bits of the corresponding coefficients
-*              of the input polynomials differ.
+* Description: Compute hint vector.
 *
 * Arguments:   - polyveck *h: pointer to output vector
 *              - const polyveck *u: pointer to first input vector
@@ -337,13 +330,10 @@ unsigned int polyveck_make_hint(polyveck *h,
                                 const polyveck *u,
                                 const polyveck *v)
 {
-  unsigned int i, j, s = 0;
+  unsigned int i, s = 0;
 
   for(i = 0; i < K; ++i)
-    for(j = 0; j < N; ++j) {
-      h->vec[i].coeffs[j] = make_hint(u->vec[i].coeffs[j], v->vec[i].coeffs[j]);
-      s += h->vec[i].coeffs[j];
-    }
+    s += poly_make_hint(h->vec+i, u->vec+i, v->vec+i);
 
   return s;
 }
@@ -359,9 +349,8 @@ unsigned int polyveck_make_hint(polyveck *h,
 *              - const polyveck *h: pointer to input hint vector
 **************************************************/
 void polyveck_use_hint(polyveck *w, const polyveck *u, const polyveck *h) {
-  unsigned int i, j;
+  unsigned int i;
 
   for(i = 0; i < K; ++i)
-    for(j = 0; j < N; ++j)
-      w->vec[i].coeffs[j] = use_hint(u->vec[i].coeffs[j], h->vec[i].coeffs[j]);
+    poly_use_hint(w->vec+i, u->vec+i, h->vec+i);
 }

@@ -7,7 +7,12 @@
 
 #include <stdint.h>
 #include <stdlib.h>
+#include "test/cpucycles.h"
 #include "fips202.h"
+
+#ifdef DBENCH
+extern unsigned long long timing_overhead, *tshake;
+#endif
 
 #define NROUNDS 24
 #define ROL(a, offset) ((a << offset) ^ (a >> (64-offset)))
@@ -81,7 +86,7 @@ static const uint64_t KeccakF_RoundConstants[NROUNDS] = {
 *
 * Arguments:   - uint64_t *state: pointer to input/output Keccak state
 **************************************************/
-void KeccakF1600_StatePermute(uint64_t *state)
+static void KeccakF1600_StatePermute(uint64_t *state)
 {
         int round;
 
@@ -367,6 +372,7 @@ static void keccak_absorb(uint64_t *s,
 {
   unsigned int i;
   unsigned char t[200];
+  DBENCH_START();
 
   /* Zero state */
   for(i = 0; i < 25; ++i)
@@ -389,6 +395,8 @@ static void keccak_absorb(uint64_t *s,
   t[r-1] |= 128;
   for(i = 0; i < r/8; ++i)
     s[i] ^= load64(t + 8*i);
+
+  DBENCH_STOP(*tshake);
 }
 
 /*************************************************
@@ -410,6 +418,7 @@ static void keccak_squeezeblocks(unsigned char *h,
                                  unsigned int r)
 {
   unsigned int i;
+  DBENCH_START();
 
   while(nblocks > 0) {
     KeccakF1600_StatePermute(s);
@@ -419,6 +428,8 @@ static void keccak_squeezeblocks(unsigned char *h,
     h += r;
     --nblocks;
   }
+
+  DBENCH_STOP(*tshake);
 }
 
 /*************************************************

@@ -1,11 +1,18 @@
 #include <stdint.h>
 #include <immintrin.h>
+#include "test/cpucycles.h"
 #include "fips202.h"
 #include "fips202x4.h"
 #include "params.h"
 #include "reduce.h"
+#include "rounding.h"
 #include "ntt.h"
 #include "poly.h"
+
+#ifdef DBENCH
+extern unsigned long long timing_overhead;
+extern unsigned long long *tred, *tadd, *tmul, *tround, *tsample, *tpack;
+#endif
 
 /*************************************************
 * Name:        poly_reduce
@@ -17,9 +24,12 @@
 **************************************************/
 void poly_reduce(poly *a) {
   unsigned int i;
+  DBENCH_START();
 
   for(i = 0; i < N; ++i)
     a->coeffs[i] = reduce32(a->coeffs[i]);
+
+  DBENCH_STOP(*tred);
 }
 
 /*************************************************
@@ -32,9 +42,12 @@ void poly_reduce(poly *a) {
 **************************************************/
 void poly_csubq(poly *a) {
   unsigned int i;
+  DBENCH_START();
 
   for(i = 0; i < N; ++i)
     a->coeffs[i] = csubq(a->coeffs[i]);
+
+  DBENCH_STOP(*tred);
 }
 
 /*************************************************
@@ -47,9 +60,12 @@ void poly_csubq(poly *a) {
 **************************************************/
 void poly_freeze(poly *a) {
   unsigned int i;
+  DBENCH_START();
 
   for(i = 0; i < N; ++i)
     a->coeffs[i] = freeze(a->coeffs[i]);
+
+  DBENCH_STOP(*tred);
 }
 
 /*************************************************
@@ -63,9 +79,12 @@ void poly_freeze(poly *a) {
 **************************************************/
 void poly_add(poly *c, const poly *a, const poly *b)  {
   unsigned int i;
+  DBENCH_START();
 
   for(i = 0; i < N; ++i)
     c->coeffs[i] = a->coeffs[i] + b->coeffs[i];
+
+  DBENCH_STOP(*tadd);
 }
 
 /*************************************************
@@ -82,9 +101,12 @@ void poly_add(poly *c, const poly *a, const poly *b)  {
 **************************************************/
 void poly_sub(poly *c, const poly *a, const poly *b) {
   unsigned int i;
+  DBENCH_START();
 
   for(i = 0; i < N; ++i)
     c->coeffs[i] = a->coeffs[i] + 2*Q - b->coeffs[i];
+
+  DBENCH_STOP(*tadd);
 }
 
 /*************************************************
@@ -97,9 +119,12 @@ void poly_sub(poly *c, const poly *a, const poly *b) {
 **************************************************/
 void poly_neg(poly *a) {
   unsigned int i;
+  DBENCH_START();
 
   for(i = 0; i < N; ++i)
     a->coeffs[i] = 2*Q - a->coeffs[i];
+
+  DBENCH_STOP(*tadd);
 }
 
 /*************************************************
@@ -127,8 +152,12 @@ void poly_shiftl(poly *a, unsigned int k) {
 * Arguments:   - poly *a: pointer to input/output polynomial
 **************************************************/
 void poly_ntt(poly *a) {
+  DBENCH_START();
+
   //ntt(a->coeffs);
   ntt(a->coeffs, a->coeffs, zetas); // FIXME
+
+  DBENCH_STOP(*tmul);
 }
 
 /*************************************************
@@ -140,8 +169,12 @@ void poly_ntt(poly *a) {
 * Arguments:   - poly *a: pointer to input/output polynomial
 **************************************************/
 void poly_invntt_montgomery(poly *a) {
+  DBENCH_START();
+
   //invntt_frominvmont(a->coeffs);
   invntt(a->coeffs, a->coeffs, zetas_inv);  // FIXME
+
+  DBENCH_STOP(*tmul);
 }
 
 /*************************************************
@@ -157,7 +190,102 @@ void poly_invntt_montgomery(poly *a) {
 *              - const poly *b: pointer to second input polynomial
 **************************************************/
 void poly_pointwise_invmontgomery(poly *c, const poly *a, const poly *b) {
+  DBENCH_START();
+
   pointwise_mul(c->coeffs, a->coeffs, b->coeffs);
+
+  DBENCH_STOP(*tmul);
+}
+
+/*************************************************
+* Name:        poly_power2round
+*
+* Description: For all coefficients c of the input polynomial,
+*              compute c0, c1 such that c mod Q = c1*2^D + c0
+*              with -2^{D-1} < c0 <= 2^{D-1}. Assumes coefficients to be
+*              standard representatives.
+*
+* Arguments:   - poly *a1: pointer to output polynomial with coefficients c1
+*              - poly *a0: pointer to output polynomial with coefficients Q + a0
+*              - const poly *v: pointer to input polynomial
+**************************************************/
+void poly_power2round(poly *a1, poly *a0, const poly *a) {
+  unsigned int i;
+  DBENCH_START();
+  
+  for(i = 0; i < N; ++i)
+    a1->coeffs[i] = power2round(a->coeffs[i], a0->coeffs+i);
+
+  DBENCH_STOP(*tround);
+}
+
+/*************************************************
+* Name:        poly_decompose
+*
+* Description: For all coefficients c of the input polynomial,
+*              compute high and low bits c0, c1 such c mod Q = c1*ALPHA + c0
+*              with -ALPHA/2 < c0 <= ALPHA/2 except c1 = (Q-1)/ALPHA where we
+*              set c1 = 0 and -ALPHA/2 <= c0 = c mod Q - Q < 0.
+*              Assumes coefficients to be standard representatives.
+*
+* Arguments:   - poly *a1: pointer to output polynomial with coefficients c1
+*              - poly *a0: pointer to output polynomial with coefficients Q + a0
+*              - const poly *c: pointer to input polynomial
+**************************************************/
+void poly_decompose(poly *a1, poly *a0, const poly *a) {
+  unsigned int i;
+  DBENCH_START();
+
+  for(i = 0; i < N; ++i)
+    a1->coeffs[i] = decompose(a->coeffs[i], a0->coeffs+i);
+
+  DBENCH_STOP(*tround);
+}
+
+/*************************************************
+* Name:        poly_make_hint
+*
+* Description: Compute hint polynomial. The coefficients of which indicate
+*              whether the high bits of the corresponding coefficients
+*              of the first input polynomial and of the sum of the input
+*              polynomials differ.
+*
+* Arguments:   - poly *h: pointer to output hint polynomial
+*              - const poly *a: pointer to first input polynomial
+*              - const poly *b: pointer to second input polynomial
+*
+* Returns number of 1 bits.
+**************************************************/
+unsigned int poly_make_hint(poly *h, const poly *a, const poly *b) {
+  unsigned int i, s = 0;
+  DBENCH_START();
+
+  for(i = 0; i < N; ++i) {
+    h->coeffs[i] = make_hint(a->coeffs[i], b->coeffs[i]);
+    s += h->coeffs[i];
+  }
+
+  DBENCH_STOP(*tround);
+  return s;
+}
+
+/*************************************************
+* Name:        poly_use_hint
+*
+* Description: Use hint polynomial to correct the high bits of a polynomial.
+*
+* Arguments:   - poly *a: pointer to output polynomial with corrected high bits
+*              - const poly *b: pointer to input polynomial
+*              - const poly *h: pointer to input hint polynomial
+**************************************************/
+void poly_use_hint(poly *a, const poly *b, const poly *h) {
+  unsigned int i;
+  DBENCH_START();
+
+  for(i = 0; i < N; ++i)
+    a->coeffs[i] = use_hint(b->coeffs[i], h->coeffs[i]);
+
+  DBENCH_STOP(*tround);
 }
 
 /*************************************************
@@ -204,6 +332,7 @@ int poly_chknorm(const poly *a, uint32_t B) {
 void poly_uniform(poly *a, const unsigned char *buf) {
   unsigned int ctr, pos;
   uint32_t t;
+  DBENCH_START();
 
   ctr = pos = 0;
   while(ctr < N) {
@@ -215,6 +344,8 @@ void poly_uniform(poly *a, const unsigned char *buf) {
     if(t < Q)
       a->coeffs[ctr++] = t;
   }
+
+  DBENCH_STOP(*tsample);
 }
 
 /*************************************************
@@ -241,6 +372,7 @@ static unsigned int rej_eta(uint32_t *a,
 #endif
   unsigned int ctr, pos;
   unsigned char t0, t1;
+  DBENCH_START();
 
   ctr = pos = 0;
   while(ctr < len && pos < buflen) {
@@ -258,6 +390,7 @@ static unsigned int rej_eta(uint32_t *a,
       a[ctr++] = Q + ETA - t1;
   }
 
+  DBENCH_STOP(*tsample);
   return ctr;
 }
 
@@ -364,6 +497,7 @@ static unsigned int rej_gamma1m1(uint32_t *a,
 #endif
   unsigned int ctr, pos;
   uint32_t t0, t1;
+  DBENCH_START();
 
   ctr = pos = 0;
   while(ctr < len && pos + 5 <= buflen) {
@@ -384,6 +518,7 @@ static unsigned int rej_gamma1m1(uint32_t *a,
       a[ctr++] = Q + GAMMA1 - 1 - t1;
   }
 
+  DBENCH_STOP(*tsample);
   return ctr;
 }
 
@@ -487,6 +622,7 @@ void polyeta_pack(unsigned char *r, const poly *a) {
 #endif
   unsigned int i;
   unsigned char t[8];
+  DBENCH_START();
 
 #if ETA <= 3
   for(i = 0; i < N/8; ++i) {
@@ -517,6 +653,8 @@ void polyeta_pack(unsigned char *r, const poly *a) {
     r[i] = t[0] | (t[1] << 4);
   }
 #endif
+
+  DBENCH_STOP(*tpack);
 }
 
 /*************************************************
@@ -530,6 +668,7 @@ void polyeta_pack(unsigned char *r, const poly *a) {
 **************************************************/
 void polyeta_unpack(poly *r, const unsigned char *a) {
   unsigned int i;
+  DBENCH_START();
 
 #if ETA <= 3
   for(i = 0; i < N/8; ++i) {
@@ -559,6 +698,8 @@ void polyeta_unpack(poly *r, const unsigned char *a) {
     r->coeffs[2*i+1] = Q + ETA - r->coeffs[2*i+1];
   }
 #endif
+
+  DBENCH_STOP(*tpack);
 }
 
 /*************************************************
@@ -576,6 +717,7 @@ void polyt1_pack(unsigned char *r, const poly *a) {
 #error "polyt1_pack() assumes D == 14"
 #endif
   unsigned int i;
+  DBENCH_START();
 
   for(i = 0; i < N/8; ++i) {
     r[9*i+0]  =  a->coeffs[8*i+0] & 0xFF;
@@ -588,6 +730,8 @@ void polyt1_pack(unsigned char *r, const poly *a) {
     r[9*i+7]  = (a->coeffs[8*i+6] >> 2) | ((a->coeffs[8*i+7] & 0x01) << 7);
     r[9*i+8]  =  a->coeffs[8*i+7] >> 1;
   }
+
+  DBENCH_STOP(*tpack);
 }
 
 /*************************************************
@@ -601,6 +745,7 @@ void polyt1_pack(unsigned char *r, const poly *a) {
 **************************************************/
 void polyt1_unpack(poly *r, const unsigned char *a) {
   unsigned int i;
+  DBENCH_START();
 
   for(i = 0; i < N/8; ++i) {
     r->coeffs[8*i+0] =  a[9*i+0]       | ((uint32_t)(a[9*i+1] & 0x01) << 8);
@@ -612,6 +757,8 @@ void polyt1_unpack(poly *r, const unsigned char *a) {
     r->coeffs[8*i+6] = (a[9*i+6] >> 6) | ((uint32_t)(a[9*i+7] & 0x7F) << 2);
     r->coeffs[8*i+7] = (a[9*i+7] >> 7) | ((uint32_t)(a[9*i+8] & 0xFF) << 1);
   }
+
+  DBENCH_STOP(*tpack);
 }
 
 /*************************************************
@@ -627,6 +774,7 @@ void polyt1_unpack(poly *r, const unsigned char *a) {
 void polyt0_pack(unsigned char *r, const poly *a) {
   unsigned int i;
   uint32_t t[4];
+  DBENCH_START();
 
   for(i = 0; i < N/4; ++i) {
     t[0] = Q + (1 << (D-1)) - a->coeffs[4*i+0];
@@ -645,6 +793,8 @@ void polyt0_pack(unsigned char *r, const poly *a) {
     r[7*i+5] |=  t[3] << 2;
     r[7*i+6]  =  t[3] >> 6;
   }
+
+  DBENCH_STOP(*tpack);
 }
 
 /*************************************************
@@ -658,6 +808,7 @@ void polyt0_pack(unsigned char *r, const poly *a) {
 **************************************************/
 void polyt0_unpack(poly *r, const unsigned char *a) {
   unsigned int i;
+  DBENCH_START();
 
   for(i = 0; i < N/4; ++i) {
     r->coeffs[4*i+0]  = a[7*i+0];
@@ -679,6 +830,8 @@ void polyt0_unpack(poly *r, const unsigned char *a) {
     r->coeffs[4*i+2] = Q + (1 << (D-1)) - r->coeffs[4*i+2];
     r->coeffs[4*i+3] = Q + (1 << (D-1)) - r->coeffs[4*i+3];
   }
+
+  DBENCH_STOP(*tpack);
 }
 
 /*************************************************
@@ -698,6 +851,7 @@ void polyz_pack(unsigned char *r, const poly *a) {
 #endif
   unsigned int i;
   uint32_t t[2];
+  DBENCH_START();
 
   for(i = 0; i < N/2; ++i) {
     /* Map to {0,...,2*GAMMA1 - 2} */
@@ -713,6 +867,8 @@ void polyz_pack(unsigned char *r, const poly *a) {
     r[5*i+3]  = t[1] >> 4;
     r[5*i+4]  = t[1] >> 12;
   }
+
+  DBENCH_STOP(*tpack);
 }
 
 /*************************************************
@@ -727,6 +883,7 @@ void polyz_pack(unsigned char *r, const poly *a) {
 **************************************************/
 void polyz_unpack(poly *r, const unsigned char *a) {
   unsigned int i;
+  DBENCH_START();
 
   for(i = 0; i < N/2; ++i) {
     r->coeffs[2*i+0]  = a[5*i+0];
@@ -742,6 +899,8 @@ void polyz_unpack(poly *r, const unsigned char *a) {
     r->coeffs[2*i+1] = GAMMA1 - 1 - r->coeffs[2*i+1];
     r->coeffs[2*i+1] += ((int32_t)r->coeffs[2*i+1] >> 31) & Q;
   }
+
+  DBENCH_STOP(*tpack);
 }
 
 /*************************************************
@@ -756,7 +915,10 @@ void polyz_unpack(poly *r, const unsigned char *a) {
 **************************************************/
 void polyw1_pack(unsigned char *r, const poly *a) {
   unsigned int i;
+  DBENCH_START();
 
   for(i = 0; i < N/2; ++i)
     r[i] = a->coeffs[2*i+0] | (a->coeffs[2*i+1] << 4);
+
+  DBENCH_STOP(*tpack);
 }

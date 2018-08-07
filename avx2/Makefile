@@ -1,6 +1,6 @@
 CC = /usr/bin/cc
 CFLAGS += -Wall -Wextra -march=native -mtune=native -O3 -fomit-frame-pointer
-NISTFLAGS += -march=native -mtune=native -O3 -fomit-frame-pointer -fPIC
+NISTFLAGS = -march=native -mtune=native -O3 -fomit-frame-pointer -fPIC
 SOURCES = sign.c polyvec.c packing.c poly.c reduce.c ntt.s invntt.s \
   pointwise_mul.s consts.c rounding.c fips202.c fips202x4.c \
   keccak4x/KeccakP-1600-times4-SIMD256.o
@@ -20,13 +20,15 @@ PQCgenKAT_sign: PQCgenKAT_sign.c rng.c $(SOURCES) rng.h $(HEADERS)
 test/test_vectors: test/test_vectors.c rng.c $(SOURCES) rng.h $(HEADERS)
 	$(CC) $(NISTFLAGS) $< rng.c $(SOURCES) -o $@ -lcrypto -ldl
 
-test/test_dilithium: test/test_dilithium.c randombytes.c test/speed.c $(SOURCES) \
-  randombytes.h test/cpucycles.h test/speed.h $(HEADERS)
-	$(CC) $(CFLAGS) $< randombytes.c test/speed.c $(SOURCES) -o $@
+test/test_dilithium: test/test_dilithium.c randombytes.c test/cpucycles.c \
+  test/speed.c $(SOURCES) randombytes.h test/cpucycles.h test/speed.h $(HEADERS)
+	$(CC) $(CFLAGS) $< randombytes.c test/cpucycles.c test/speed.c \
+	  $(SOURCES) -o $@
 
-test/test_mul: test/test_mul.c randombytes.c test/speed.c $(SOURCES) \
-  randombytes.h test/cpucycles.h test/speed.h $(HEADERS)
-	$(CC) $(CFLAGS) $< randombytes.c test/speed.c $(SOURCES) -o $@
+test/test_mul: test/test_mul.c randombytes.c test/cpucycles.c test/speed.c \
+  $(SOURCES) randombytes.h test/cpucycles.h test/speed.h $(HEADERS)
+	$(CC) $(CFLAGS) -UDBENCH $< randombytes.c test/cpucycles.c \
+	  test/speed.c $(SOURCES) -o $@
 
 .PHONY: clean
 

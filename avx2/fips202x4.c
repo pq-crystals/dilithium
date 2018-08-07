@@ -1,11 +1,16 @@
 #include <stdint.h>
 #include <immintrin.h>
 #include "params.h"
+#include "test/cpucycles.h"
 #include "fips202x4.h"
 #include "fips202.h"
 
 #define NROUNDS 24
 #define ROL(a, offset) ((a << offset) ^ (a >> (64-offset)))
+
+#ifdef DBENCH
+extern unsigned long long timing_overhead, *tshake;
+#endif
 
 static uint64_t load64(const unsigned char *x) {
   unsigned int i;
@@ -43,6 +48,7 @@ static void keccak_absorb4x(__m256i *s,
   unsigned char t2[200];
   unsigned char t3[200];
   uint64_t *ss = (uint64_t *)s;
+  DBENCH_START();
 
   for(i = 0; i < 25; ++i)
     s[i] = _mm256_xor_si256(s[i], s[i]);
@@ -92,6 +98,8 @@ static void keccak_absorb4x(__m256i *s,
     ss[4*i + 2] ^= load64(t2 + 8*i);
     ss[4*i + 3] ^= load64(t3 + 8*i);
   }
+
+  DBENCH_STOP(*tshake);
 }
 
 
@@ -105,6 +113,7 @@ static void keccak_squeezeblocks4x(unsigned char *h0,
 {
   unsigned int i;
   uint64_t *ss = (uint64_t *)s;
+  DBENCH_START();
 
   while(nblocks > 0) {
     KeccakF1600_StatePermute4x(s);
@@ -121,6 +130,8 @@ static void keccak_squeezeblocks4x(unsigned char *h0,
     h3 += r;
     --nblocks;
   }
+
+  DBENCH_STOP(*tshake);
 }
 
 void shake128_absorb4x(__m256i *s,
