@@ -193,7 +193,7 @@ void polyveck_sub(polyveck *w, const polyveck *u, const polyveck *v) {
 * Name:        polyveck_neg
 *
 * Description: Negate vector of polynomials of length K.
-*              Assumes input coefficients to be less than 2*Q.
+*              Assumes input coefficients to be standard representatives.
 *
 * Arguments:   - polyveck *v: pointer to input/output vector
 **************************************************/

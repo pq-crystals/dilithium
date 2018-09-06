@@ -11,7 +11,8 @@
 #include "fips202.h"
 
 #ifdef DBENCH
-extern unsigned long long timing_overhead, *tshake;
+extern const unsigned long long timing_overhead;
+extern unsigned long long * const tshake;
 #endif
 
 #define NROUNDS 24

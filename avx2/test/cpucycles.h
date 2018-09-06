@@ -9,8 +9,8 @@
 #define DBENCH_STOP(t)
 #endif
 
-#ifdef USE_RDPMC
-#ifdef SERIALIZE
+#ifdef USE_RDPMC  /* Needs echo 2 > /sys/devices/cpu/rdpmc */
+#ifdef SERIALIZE_RDC
 
 static inline unsigned long long cpucycles_start(void) {
   const unsigned int ecx = (1U << 30) + 1;
@@ -56,7 +56,7 @@ static inline unsigned long long cpucycles_stop(void) {
 
 #endif
 #else
-#ifdef SERIALIZE
+#ifdef SERIALIZE_RDC
 
 static inline unsigned long long cpucycles_start(void) {
   unsigned long long result;

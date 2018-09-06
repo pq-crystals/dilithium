@@ -9,7 +9,8 @@
 #define ROL(a, offset) ((a << offset) ^ (a >> (64-offset)))
 
 #ifdef DBENCH
-extern unsigned long long timing_overhead, *tshake;
+extern const unsigned long long timing_overhead;
+extern unsigned long long * const tshake;
 #endif
 
 static uint64_t load64(const unsigned char *x) {

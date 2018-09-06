@@ -359,15 +359,15 @@ int crypto_sign(unsigned char *sm,
                 unsigned long long mlen,
                 const unsigned char *sk)
 {
-  unsigned long long i, j;
+  unsigned long long i;
   unsigned int n;
   unsigned char seedbuf[2*SEEDBYTES + CRHBYTES]; // TODO: nonce in seedbuf (2x)
   unsigned char *rho, *key, *mu, *tr;
   uint16_t nonce = 0;
   poly     c, chat;
   polyvecl mat[K], s1, y, yhat, z;
-  polyveck s2, t0, w, w1;
-  polyveck h, wcs2, wcs20, ct0, tmp;
+  polyveck t0, s2, w, w1, w0;
+  polyveck h, cs2, ct0;
 
   rho = seedbuf;
   key = seedbuf + SEEDBYTES;
@@ -420,14 +420,25 @@ int crypto_sign(unsigned char *sm,
     poly_invntt_montgomery(w.vec+i);
   }
 
-  /* Decompose w and call the random oracle */
+  /* Decompose w and call random oracle */
   polyveck_csubq(&w);
-  polyveck_decompose(&w1, &tmp, &w);
+  polyveck_decompose(&w1, &w0, &w);
   challenge(&c, mu, &w1);
-
-  /* Compute z, reject if it reveals secret */
   chat = c;
   poly_ntt(&chat);
+
+  /* Check that subtracting cs2 does not change high bits of w and low bits
+   * do not reveal secret information */
+  for(i = 0; i < K; ++i) {
+    poly_pointwise_invmontgomery(cs2.vec+i, &chat, s2.vec+i);
+    poly_invntt_montgomery(cs2.vec+i);
+  }
+  polyveck_sub(&w0, &w0, &cs2);
+  polyveck_freeze(&w0);
+  if(polyveck_chknorm(&w0, GAMMA2 - BETA))
+    goto rej;
+
+  /* Compute z, reject if it reveals secret */
   for(i = 0; i < L; ++i) {
     poly_pointwise_invmontgomery(z.vec+i, &chat, s1.vec+i);
     poly_invntt_montgomery(z.vec+i);
@@ -436,23 +447,6 @@ int crypto_sign(unsigned char *sm,
   polyvecl_freeze(&z);
   if(polyvecl_chknorm(&z, GAMMA1 - BETA))
     goto rej;
-
-  /* Compute w - cs2, reject if w1 can not be computed from it */
-  for(i = 0; i < K; ++i) {
-    poly_pointwise_invmontgomery(wcs2.vec+i, &chat, s2.vec+i);
-    poly_invntt_montgomery(wcs2.vec+i);
-  }
-  polyveck_sub(&wcs2, &w, &wcs2);
-  polyveck_freeze(&wcs2);
-  polyveck_decompose(&tmp, &wcs20, &wcs2);
-  polyveck_csubq(&wcs20);
-  if(polyveck_chknorm(&wcs20, GAMMA2 - BETA))
-    goto rej;
-
-  for(i = 0; i < K; ++i)
-    for(j = 0; j < N; ++j)
-      if(tmp.vec[i].coeffs[j] != w1.vec[i].coeffs[j])
-        goto rej;
 
   /* Compute hints for w1 */
   for(i = 0; i < K; ++i) {
@@ -464,10 +458,9 @@ int crypto_sign(unsigned char *sm,
   if(polyveck_chknorm(&ct0, GAMMA2))
     goto rej;
 
-  polyveck_add(&tmp, &wcs2, &ct0);
-  polyveck_neg(&ct0);
-  polyveck_csubq(&tmp);
-  n = polyveck_make_hint(&h, &tmp, &ct0);
+  polyveck_add(&w0, &w0, &ct0);
+  polyveck_csubq(&w0);
+  n = polyveck_make_hint(&h, &w0, &w1);
   if(n > OMEGA)
     goto rej;
 
@@ -524,19 +517,19 @@ int crypto_sign_open(unsigned char *m,
   shake256(m + CRYPTO_BYTES - CRHBYTES, CRHBYTES, pk, CRYPTO_PUBLICKEYBYTES);
   shake256(mu, CRHBYTES, m + CRYPTO_BYTES - CRHBYTES, CRHBYTES + *mlen);
 
-  /* Matrix-vector multiplication; compute Az - c2^dt1 */
+  /* Expand Matrix and transform vectors */
   expand_mat_avx(mat, rho);
-  polyvecl_ntt(&z);
-  for(i = 0; i < K ; ++i)
-    polyvecl_pointwise_acc_invmontgomery(tmp1.vec+i, mat+i, &z);
-
   chat = c;
   poly_ntt(&chat);
   polyveck_shiftl(&t1, D);
   polyveck_ntt(&t1);
+  polyvecl_ntt(&z);
+
+  /* Matrix-vector multiplication; compute Az - c2^dt1 */
+  for(i = 0; i < K ; ++i)
+    polyvecl_pointwise_acc_invmontgomery(tmp1.vec+i, mat+i, &z);
   for(i = 0; i < K; ++i)
     poly_pointwise_invmontgomery(tmp2.vec+i, &chat, t1.vec+i);
-
   polyveck_sub(&tmp1, &tmp1, &tmp2);
   polyveck_reduce(&tmp1);
   polyveck_invntt_montgomery(&tmp1);

@@ -9,7 +9,9 @@
 #define NTESTS 5000
 
 unsigned long long timing_overhead;
+#ifdef DBENCH
 unsigned long long *tred, *tadd, *tmul, *tround, *tsample, *tpack, *tshake;
+#endif
 
 int main(void)
 {
@@ -25,7 +27,7 @@ int main(void)
 #ifdef DBENCH
   unsigned long long t[7][NTESTS];
 
-  memset(t, 0, 7*NTESTS*sizeof(unsigned long long));
+  memset(t, 0, sizeof(t));
   tred = t[0];
   tadd = t[1];
   tmul = t[2];
@@ -36,7 +38,7 @@ int main(void)
 #endif
 
   timing_overhead = cpucycles_overhead();
-  
+
   for(i = 0; i < NTESTS; ++i) {
     randombytes(m, MLEN);
 
@@ -77,7 +79,7 @@ int main(void)
     ++tsample;
     ++tpack;
     ++tshake;
-#endif    
+#endif
   }
 
   print_results("keygen:", tkeygen, NTESTS);

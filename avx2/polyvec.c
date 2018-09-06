@@ -8,6 +8,36 @@
 /**************************************************************/
 
 /*************************************************
+* Name:        polyvecl_reduce
+*
+* Description: Reduce coefficients of polynomials in vector of length L
+*              to representatives in [0,2*Q[.
+*
+* Arguments:   - polyvecl *v: pointer to input/output vector
+**************************************************/
+void polyvecl_reduce(polyvecl *v) {
+  unsigned int i;
+
+  for(i = 0; i < L; ++i)
+    poly_reduce(v->vec+i);
+}
+
+/*************************************************
+* Name:        polyvecl_csubq
+*
+* Description: For all coefficients of polynomials in vector of length L
+*              subtract Q if coefficient is bigger than Q.
+*
+* Arguments:   - polyvecl *v: pointer to input/output vector
+**************************************************/
+void polyvecl_csubq(polyvecl *v) {
+  unsigned int i;
+
+  for(i = 0; i < L; ++i)
+    poly_csubq(v->vec+i);
+}
+
+/*************************************************
 * Name:        polyvecl_freeze
 *
 * Description: Reduce coefficients of polynomials in vector of length L
@@ -95,12 +125,12 @@ void polyvecl_pointwise_acc_invmontgomery(poly *w,
 **************************************************/
 int polyvecl_chknorm(const polyvecl *v, uint32_t bound)  {
   unsigned int i;
-  int ret = 0;
 
   for(i = 0; i < L; ++i)
-    ret |= poly_chknorm(v->vec+i, bound);
+    if(poly_chknorm(v->vec+i, bound))
+      return 1;
 
-  return ret;
+  return 0;
 }
 
 /**************************************************************/
@@ -190,21 +220,6 @@ void polyveck_sub(polyveck *w, const polyveck *u, const polyveck *v) {
 }
 
 /*************************************************
-* Name:        polyveck_neg
-*
-* Description: Negate vector of polynomials of length K.
-*              Assumes input coefficients to be less than 2*Q.
-*
-* Arguments:   - polyveck *v: pointer to input/output vector
-**************************************************/
-void polyveck_neg(polyveck *v) {
-  unsigned int i;
-
-  for(i = 0; i < K; ++i)
-    poly_neg(v->vec+i);
-}
-
-/*************************************************
 * Name:        polyveck_shiftl
 *
 * Description: Multiply vector of polynomials of Length K by 2^k without modular
@@ -264,12 +279,12 @@ void polyveck_invntt_montgomery(polyveck *v) {
 **************************************************/
 int polyveck_chknorm(const polyveck *v, uint32_t bound) {
   unsigned int i;
-  int ret = 0;
 
   for(i = 0; i < K; ++i)
-    ret |= poly_chknorm(v->vec+i, bound);
+    if(poly_chknorm(v->vec+i, bound))
+      return 1;
 
-  return ret;
+  return 0;
 }
 
 /*************************************************
@@ -321,19 +336,19 @@ void polyveck_decompose(polyveck *v1, polyveck *v0, const polyveck *v) {
 * Description: Compute hint vector.
 *
 * Arguments:   - polyveck *h: pointer to output vector
-*              - const polyveck *u: pointer to first input vector
-*              - const polyveck *u: pointer to second input vector
+*              - const polyveck *v0: pointer to low part of input vector
+*              - const polyveck *v1: pointer to high part of input vector
 *
 * Returns number of 1 bits.
 **************************************************/
 unsigned int polyveck_make_hint(polyveck *h,
-                                const polyveck *u,
-                                const polyveck *v)
+                                const polyveck *v0,
+                                const polyveck *v1)
 {
   unsigned int i, s = 0;
 
   for(i = 0; i < K; ++i)
-    s += poly_make_hint(h->vec+i, u->vec+i, v->vec+i);
+    s += poly_make_hint(h->vec+i, v0->vec+i, v1->vec+i);
 
   return s;
 }

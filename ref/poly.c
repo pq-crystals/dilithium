@@ -8,7 +8,7 @@
 #include "poly.h"
 
 #ifdef DBENCH
-extern unsigned long long timing_overhead;
+extern const unsigned long long timing_overhead;
 extern unsigned long long *tred, *tadd, *tmul, *tround, *tsample, *tpack;
 #endif
 
@@ -110,8 +110,8 @@ void poly_sub(poly *c, const poly *a, const poly *b) {
 /*************************************************
 * Name:        poly_neg
 *
-* Description: Negate polynomial. Assumes input coefficients to be less
-*              than 2*Q.
+* Description: Negate polynomial. Assumes input coefficients to be standard
+*              representatives.
 *
 * Arguments:   - poly *a: pointer to input/output polynomial
 **************************************************/
@@ -120,7 +120,7 @@ void poly_neg(poly *a) {
   DBENCH_START();
 
   for(i = 0; i < N; ++i)
-    a->coeffs[i] = 2*Q - a->coeffs[i];
+    a->coeffs[i] = Q - a->coeffs[i];
 
   DBENCH_STOP(*tadd);
 }
@@ -136,9 +136,12 @@ void poly_neg(poly *a) {
 **************************************************/
 void poly_shiftl(poly *a, unsigned int k) {
   unsigned int i;
+  DBENCH_START();
 
   for(i = 0; i < N; ++i)
     a->coeffs[i] <<= k;
+
+  DBENCH_STOP(*tmul);
 }
 
 /*************************************************
@@ -300,6 +303,7 @@ void poly_use_hint(poly *a, const poly *b, const poly *h) {
 int poly_chknorm(const poly *a, uint32_t B) {
   unsigned int i;
   int32_t t;
+  DBENCH_START();
 
   /* It is ok to leak which coefficient violates the bound since
      the probability for each coefficient is independent of secret
@@ -310,10 +314,13 @@ int poly_chknorm(const poly *a, uint32_t B) {
     t ^= (t >> 31);
     t = (Q-1)/2 - t;
 
-    if((uint32_t)t >= B)
+    if((uint32_t)t >= B) {
+      DBENCH_STOP(*tsample);
       return 1;
+    }
   }
 
+  DBENCH_STOP(*tsample);
   return 0;
 }
 

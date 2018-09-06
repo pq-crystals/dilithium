@@ -10,7 +10,7 @@
 #include "poly.h"
 
 #ifdef DBENCH
-extern unsigned long long timing_overhead;
+extern const unsigned long long timing_overhead;
 extern unsigned long long *tred, *tadd, *tmul, *tround, *tsample, *tpack;
 #endif
 
@@ -110,24 +110,6 @@ void poly_sub(poly *c, const poly *a, const poly *b) {
 }
 
 /*************************************************
-* Name:        poly_neg
-*
-* Description: Negate polynomial. Assumes input coefficients to be less
-*              than 2*Q.
-*
-* Arguments:   - poly *a: pointer to input/output polynomial
-**************************************************/
-void poly_neg(poly *a) {
-  unsigned int i;
-  DBENCH_START();
-
-  for(i = 0; i < N; ++i)
-    a->coeffs[i] = 2*Q - a->coeffs[i];
-
-  DBENCH_STOP(*tadd);
-}
-
-/*************************************************
 * Name:        poly_shiftl
 *
 * Description: Multiply polynomial by 2^k without modular reduction. Assumes
@@ -138,9 +120,12 @@ void poly_neg(poly *a) {
 **************************************************/
 void poly_shiftl(poly *a, unsigned int k) {
   unsigned int i;
+  DBENCH_START();
 
   for(i = 0; i < N; ++i)
     a->coeffs[i] <<= k;
+
+  DBENCH_STOP(*tmul);
 }
 
 /*************************************************
@@ -154,8 +139,7 @@ void poly_shiftl(poly *a, unsigned int k) {
 void poly_ntt(poly *a) {
   DBENCH_START();
 
-  //ntt(a->coeffs);
-  ntt(a->coeffs, a->coeffs, zetas); // FIXME
+  ntt(a->coeffs, a->coeffs, zetas);
 
   DBENCH_STOP(*tmul);
 }
@@ -171,8 +155,7 @@ void poly_ntt(poly *a) {
 void poly_invntt_montgomery(poly *a) {
   DBENCH_START();
 
-  //invntt_frominvmont(a->coeffs);
-  invntt(a->coeffs, a->coeffs, zetas_inv);  // FIXME
+  invntt(a->coeffs, a->coeffs, zetas_inv);
 
   DBENCH_STOP(*tmul);
 }
@@ -246,22 +229,21 @@ void poly_decompose(poly *a1, poly *a0, const poly *a) {
 * Name:        poly_make_hint
 *
 * Description: Compute hint polynomial. The coefficients of which indicate
-*              whether the high bits of the corresponding coefficients
-*              of the first input polynomial and of the sum of the input
-*              polynomials differ.
+*              whether the low bits of the corresponding coefficient of
+*              the input polynomial overflow into the high bits.
 *
 * Arguments:   - poly *h: pointer to output hint polynomial
-*              - const poly *a: pointer to first input polynomial
-*              - const poly *b: pointer to second input polynomial
+*              - const poly *a0: pointer to low part of input polynomial
+*              - const poly *a1: pointer to high part of input polynomial
 *
 * Returns number of 1 bits.
 **************************************************/
-unsigned int poly_make_hint(poly *h, const poly *a, const poly *b) {
+unsigned int poly_make_hint(poly *h, const poly *a0, const poly *a1) {
   unsigned int i, s = 0;
   DBENCH_START();
 
   for(i = 0; i < N; ++i) {
-    h->coeffs[i] = make_hint(a->coeffs[i], b->coeffs[i]);
+    h->coeffs[i] = make_hint(a0->coeffs[i], a1->coeffs[i]);
     s += h->coeffs[i];
   }
 
@@ -302,6 +284,7 @@ void poly_use_hint(poly *a, const poly *b, const poly *h) {
 int poly_chknorm(const poly *a, uint32_t B) {
   unsigned int i;
   int32_t t;
+  DBENCH_START();
 
   /* It is ok to leak which coefficient violates the bound since
      the probability for each coefficient is independent of secret
@@ -312,10 +295,13 @@ int poly_chknorm(const poly *a, uint32_t B) {
     t ^= (t >> 31);
     t = (Q-1)/2 - t;
 
-    if((uint32_t)t >= B)
+    if((uint32_t)t >= B) {
+      DBENCH_STOP(*tsample);
       return 1;
+    }
   }
 
+  DBENCH_STOP(*tsample);
   return 0;
 }
 

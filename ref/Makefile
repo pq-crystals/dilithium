@@ -1,5 +1,6 @@
 CC = /usr/bin/cc
 CFLAGS += -Wall -Wextra -march=native -mtune=native -O3 -fomit-frame-pointer
+CFLAGS += -DUSE_RDPMC
 NISTFLAGS = -march=native -mtune=native -O3 -fomit-frame-pointer -fPIC
 SOURCES = sign.c polyvec.c packing.c poly.c reduce.c ntt.c rounding.c fips202.c
 HEADERS = api.h params.h sign.h polyvec.h packing.h poly.h reduce.h ntt.h \
