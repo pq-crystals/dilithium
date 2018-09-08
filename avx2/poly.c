@@ -23,11 +23,9 @@ extern unsigned long long *tred, *tadd, *tmul, *tround, *tsample, *tpack;
 * Arguments:   - poly *a: pointer to input/output polynomial
 **************************************************/
 void poly_reduce(poly *a) {
-  unsigned int i;
   DBENCH_START();
 
-  for(i = 0; i < N; ++i)
-    a->coeffs[i] = reduce32(a->coeffs[i]);
+  reduce32(a->coeffs, a->coeffs);
 
   DBENCH_STOP(*tred);
 }
@@ -41,11 +39,9 @@ void poly_reduce(poly *a) {
 * Arguments:   - poly *a: pointer to input/output polynomial
 **************************************************/
 void poly_csubq(poly *a) {
-  unsigned int i;
   DBENCH_START();
 
-  for(i = 0; i < N; ++i)
-    a->coeffs[i] = csubq(a->coeffs[i]);
+  csubq(a->coeffs, a->coeffs);
 
   DBENCH_STOP(*tred);
 }
@@ -59,11 +55,10 @@ void poly_csubq(poly *a) {
 * Arguments:   - poly *a: pointer to input/output polynomial
 **************************************************/
 void poly_freeze(poly *a) {
-  unsigned int i;
   DBENCH_START();
 
-  for(i = 0; i < N; ++i)
-    a->coeffs[i] = freeze(a->coeffs[i]);
+  reduce32(a->coeffs, a->coeffs); //FIXME
+  csubq(a->coeffs, a->coeffs);
 
   DBENCH_STOP(*tred);
 }
