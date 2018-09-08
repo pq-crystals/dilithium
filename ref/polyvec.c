@@ -190,21 +190,6 @@ void polyveck_sub(polyveck *w, const polyveck *u, const polyveck *v) {
 }
 
 /*************************************************
-* Name:        polyveck_neg
-*
-* Description: Negate vector of polynomials of length K.
-*              Assumes input coefficients to be standard representatives.
-*
-* Arguments:   - polyveck *v: pointer to input/output vector
-**************************************************/
-void polyveck_neg(polyveck *v) {
-  unsigned int i;
-
-  for(i = 0; i < K; ++i)
-    poly_neg(v->vec+i);
-}
-
-/*************************************************
 * Name:        polyveck_shiftl
 *
 * Description: Multiply vector of polynomials of Length K by 2^k without modular

@@ -1,6 +1,5 @@
 #include <stdint.h>
 #include "params.h"
-#include "reduce.h"
 
 /*************************************************
 * Name:        power2round
@@ -82,7 +81,7 @@ uint32_t decompose(uint32_t a, uint32_t *a0) {
 unsigned int make_hint(const uint32_t a, const uint32_t b) {
   uint32_t t;
 
-  return decompose(a, &t) != decompose(csubq(a + b), &t); //TODO: move sum out
+  return decompose(a, &t) != decompose(b, &t);
 }
 
 /*************************************************

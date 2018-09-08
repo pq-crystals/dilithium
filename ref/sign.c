@@ -264,9 +264,8 @@ int crypto_sign(unsigned char *sm,
     goto rej;
 
   polyveck_add(&tmp, &wcs2, &ct0);
-  polyveck_neg(&ct0);
   polyveck_csubq(&tmp);
-  n = polyveck_make_hint(&h, &tmp, &ct0);
+  n = polyveck_make_hint(&h, &wcs2, &tmp);
   if(n > OMEGA)
     goto rej;
 

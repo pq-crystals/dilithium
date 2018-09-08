@@ -34,7 +34,6 @@ void polyveck_freeze(polyveck *v);
 
 void polyveck_add(polyveck *w, const polyveck *u, const polyveck *v);
 void polyveck_sub(polyveck *w, const polyveck *u, const polyveck *v);
-void polyveck_neg(polyveck *v);
 void polyveck_shiftl(polyveck *v, unsigned int k);
 
 void polyveck_ntt(polyveck *v);
