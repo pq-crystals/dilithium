@@ -25,9 +25,10 @@ int main(void)
   unsigned char sk[CRYPTO_SECRETKEYBYTES];
   unsigned long long tkeygen[NTESTS], tsign[NTESTS], tverify[NTESTS];
 #ifdef DBENCH
-  unsigned long long t[7][NTESTS];
+  unsigned long long t[7][NTESTS], dummy;
 
   memset(t, 0, sizeof(t));
+  tred = tadd = tmul = tround = tsample = tpack = tshake = &dummy;
 #endif
 
   timing_overhead = cpucycles_overhead();
@@ -48,6 +49,10 @@ int main(void)
     tkeygen[i] = cpucycles_start();
     crypto_sign_keypair(pk, sk);
     tkeygen[i] = cpucycles_stop() - tkeygen[i] - timing_overhead;
+
+#ifdef DBENCH
+    // tred = tadd = tmul = tround = tsample = tpack = tshake = &dummy;
+#endif
 
     tsign[i] = cpucycles_start();
     crypto_sign(sm, &smlen, m, MLEN, sk);

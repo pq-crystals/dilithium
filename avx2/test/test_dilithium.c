@@ -25,16 +25,10 @@ int main(void)
   unsigned char sk[CRYPTO_SECRETKEYBYTES];
   unsigned long long tkeygen[NTESTS], tsign[NTESTS], tverify[NTESTS];
 #ifdef DBENCH
-  unsigned long long t[7][NTESTS];
+  unsigned long long t[7][NTESTS], dummy;
 
   memset(t, 0, sizeof(t));
-  tred = t[0];
-  tadd = t[1];
-  tmul = t[2];
-  tround = t[3];
-  tsample = t[4];
-  tpack = t[5];
-  tshake = t[6];
+  tred = tadd = tmul = tround = tsample = tpack = tshake = &dummy;
 #endif
 
   timing_overhead = cpucycles_overhead();
@@ -42,9 +36,23 @@ int main(void)
   for(i = 0; i < NTESTS; ++i) {
     randombytes(m, MLEN);
 
+#ifdef DBENCH
+    tred = t[0] + i;
+    tadd = t[1] + i;
+    tmul = t[2] + i;
+    tround = t[3] + i;
+    tsample = t[4] + i;
+    tpack = t[5] + i;
+    tshake = t[6] + i;
+#endif
+
     tkeygen[i] = cpucycles_start();
     crypto_sign_keypair(pk, sk);
     tkeygen[i] = cpucycles_stop() - tkeygen[i] - timing_overhead;
+
+#ifdef DBENCH
+    // tred = tadd = tmul = tround = tsample = tpack = tshake = &dummy;
+#endif
 
     tsign[i] = cpucycles_start();
     crypto_sign(sm, &smlen, m, MLEN, sk);
@@ -70,16 +78,6 @@ int main(void)
         return -1;
       }
     }
-
-#ifdef DBENCH
-    ++tred;
-    ++tadd;
-    ++tmul;
-    ++tround;
-    ++tsample;
-    ++tpack;
-    ++tshake;
-#endif
   }
 
   print_results("keygen:", tkeygen, NTESTS);
