@@ -1,7 +1,7 @@
 CC = /usr/bin/cc
 CFLAGS += -Wall -Wextra -march=native -mtune=native -O3 -fomit-frame-pointer
 CFLAGS += -DUSE_RDPMC -DDBENCH
-NISTFLAGS = -march=native -mtune=native -O3 -fomit-frame-pointer -fPIC
+NISTFLAGS += -march=native -mtune=native -O3 -fomit-frame-pointer -fPIC
 SOURCES = sign.c polyvec.c packing.c poly.c reduce.s ntt.s invntt.s \
   pointwise_mul.s consts.c rounding.c fips202.c fips202x4.c \
   keccak4x/KeccakP-1600-times4-SIMD256.o

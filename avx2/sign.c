@@ -391,11 +391,11 @@ int crypto_sign(unsigned char *sm,
   rej:
   /* Sample intermediate vector y */
 #if L == 2
-  poly_uniform_gamma1m1_4x(&y.vec[0], &y.vec[1], &tmp.vec[0], &tmp.vec[1], key,
+  poly_uniform_gamma1m1_4x(&y.vec[0], &y.vec[1], &yhat.vec[0], &yhat.vec[1], key,
                            nonce, nonce + 1, nonce + 2, nonce + 3);
   nonce += 2;
 #elif L == 3
-  poly_uniform_gamma1m1_4x(&y.vec[0], &y.vec[1], &y.vec[2], &tmp.vec[0], key,
+  poly_uniform_gamma1m1_4x(&y.vec[0], &y.vec[1], &y.vec[2], &yhat.vec[0], key,
                            nonce, nonce + 1, nonce + 2, nonce + 3);
   nonce += 3;
 #elif L == 4
