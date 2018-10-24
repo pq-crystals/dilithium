@@ -87,7 +87,8 @@ void polyvecl_ntt(polyvecl *v) {
 /*************************************************
 * Name:        polyvecl_pointwise_acc_invmontgomery
 *
-* Description: Pointwise multiply vectors of polynomials of length L, multiply *              resulting vector by 2^{-32} and add (accumulate) polynomials
+* Description: Pointwise multiply vectors of polynomials of length L, multiply
+*              resulting vector by 2^{-32} and add (accumulate) polynomials
 *              in it. Input/output vectors are in NTT domain representation.
 *              Input coefficients are assumed to be less than 22*Q. Output
 *              coeffcient are less than 2*L*Q.
@@ -238,7 +239,8 @@ void polyveck_shiftl(polyveck *v, unsigned int k) {
 /*************************************************
 * Name:        polyveck_ntt
 *
-* Description: Forward NTT of all polynomials in vector of length K. Output *              coefficients can be up to 16*Q larger than input coefficients.
+* Description: Forward NTT of all polynomials in vector of length K. Output
+*              coefficients can be up to 16*Q larger than input coefficients.
 *
 * Arguments:   - polyveck *v: pointer to input/output vector
 **************************************************/
