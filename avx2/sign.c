@@ -1,5 +1,4 @@
 #include <stdint.h>
-#include "api.h"
 #include "params.h"
 #include "sign.h"
 #include "randombytes.h"
@@ -344,7 +343,8 @@ int crypto_sign_keypair(unsigned char *pk, unsigned char *sk) {
 * Description: Compute signed message.
 *
 * Arguments:   - unsigned char *sm: pointer to output signed message (allocated
-*                                   array with CRYPTO_BYTES + mlen bytes)
+*                                   array with CRYPTO_BYTES + mlen bytes),
+*                                   can be equal to m
 *              - unsigned long long *smlen: pointer to output length of signed
 *                                           message
 *              - const unsigned char *m: pointer to message to be signed
@@ -362,9 +362,10 @@ int crypto_sign(unsigned char *sm,
   unsigned long long i;
   unsigned int n;
   unsigned char seedbuf[2*SEEDBYTES + CRHBYTES]; // TODO: nonce in seedbuf (2x)
-  unsigned char *rho, *key, *mu, *tr;
+  unsigned char tr[CRHBYTES];
+  unsigned char *rho, *key, *mu;
   uint16_t nonce = 0;
-  poly     c, chat;
+  poly c, chat;
   polyvecl mat[K], s1, y, yhat, z;
   polyveck t0, s2, w, w1, w0;
   polyveck h, cs2, ct0;
@@ -372,12 +373,14 @@ int crypto_sign(unsigned char *sm,
   rho = seedbuf;
   key = seedbuf + SEEDBYTES;
   mu = seedbuf + 2*SEEDBYTES;
-  tr = sm + CRYPTO_BYTES - CRHBYTES;
   unpack_sk(rho, key, tr, &s1, &s2, &t0, sk);
 
-  /* Copy message at the end of the sm buffer */
-  for(i = 0; i < mlen; ++i)
-    sm[CRYPTO_BYTES + i] = m[i];
+  /* Copy tr and message into the sm buffer,
+   * backwards since m and sm can be equal in SUPERCOP API */
+  for(i = 1; i <= mlen; ++i)
+    sm[CRYPTO_BYTES + mlen - i] = m[mlen - i];
+  for(i = 0; i < CRHBYTES; ++i)
+    sm[CRYPTO_BYTES - CRHBYTES + i] = tr[i];
 
   /* Compute CRH(tr, msg) */
   shake256(mu, CRHBYTES, sm + CRYPTO_BYTES - CRHBYTES, CRHBYTES + mlen);
@@ -494,7 +497,7 @@ int crypto_sign_open(unsigned char *m,
   unsigned long long i;
   unsigned char rho[SEEDBYTES];
   unsigned char mu[CRHBYTES];
-  poly     c, chat, cp;
+  poly c, chat, cp;
   polyvecl mat[K], z;
   polyveck t1, w1, h, tmp1, tmp2;
 

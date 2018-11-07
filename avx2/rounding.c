@@ -1,5 +1,5 @@
 #include <stdint.h>
-#include "reduce.h"
+#include "rounding.h"
 
 extern uint32_t power2round(const uint32_t a, uint32_t *a0);
 extern uint32_t decompose(uint32_t a, uint32_t *a0);

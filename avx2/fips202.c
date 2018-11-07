@@ -6,7 +6,6 @@
  * by Gilles Van Assche, Daniel J. Bernstein, and Peter Schwabe */
 
 #include <stdint.h>
-#include <stdlib.h>
 #include "test/cpucycles.h"
 #include "fips202.h"
 

@@ -12,7 +12,7 @@
 *              - const unsigned char rho[]: byte array containing rho
 *              - const polyveck *t1: pointer to vector t1
 **************************************************/
-void pack_pk(unsigned char pk[PK_SIZE_PACKED],
+void pack_pk(unsigned char pk[CRYPTO_PUBLICKEYBYTES],
              const unsigned char rho[SEEDBYTES],
              const polyveck *t1)
 {
@@ -37,7 +37,7 @@ void pack_pk(unsigned char pk[PK_SIZE_PACKED],
 **************************************************/
 void unpack_pk(unsigned char rho[SEEDBYTES],
                polyveck *t1,
-               const unsigned char pk[PK_SIZE_PACKED])
+               const unsigned char pk[CRYPTO_PUBLICKEYBYTES])
 {
   unsigned int i;
 
@@ -62,7 +62,7 @@ void unpack_pk(unsigned char rho[SEEDBYTES],
 *              - const polyveck *s2: pointer to vector s2
 *              - const polyveck *t0: pointer to vector t0
 **************************************************/
-void pack_sk(unsigned char sk[SK_SIZE_PACKED],
+void pack_sk(unsigned char sk[CRYPTO_SECRETKEYBYTES],
              const unsigned char rho[SEEDBYTES],
              const unsigned char key[SEEDBYTES],
              const unsigned char tr[CRHBYTES],
@@ -115,7 +115,7 @@ void unpack_sk(unsigned char rho[SEEDBYTES],
                polyvecl *s1,
                polyveck *s2,
                polyveck *t0,
-               const unsigned char sk[SK_SIZE_PACKED])
+               const unsigned char sk[CRYPTO_SECRETKEYBYTES])
 {
   unsigned int i;
 
@@ -153,7 +153,7 @@ void unpack_sk(unsigned char rho[SEEDBYTES],
 *              - const polyveck *h: pointer to hint vector h
 *              - const poly *c: pointer to challenge polynomial
 **************************************************/
-void pack_sig(unsigned char sig[SIG_SIZE_PACKED],
+void pack_sig(unsigned char sig[CRYPTO_BYTES],
               const polyvecl *z,
               const polyveck *h,
               const poly *c)
@@ -211,7 +211,7 @@ void pack_sig(unsigned char sig[SIG_SIZE_PACKED],
 int unpack_sig(polyvecl *z,
                polyveck *h,
                poly *c,
-               const unsigned char sig[SIG_SIZE_PACKED])
+               const unsigned char sig[CRYPTO_BYTES])
 {
   unsigned int i, j, k;
   uint64_t signs, mask;
