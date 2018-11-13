@@ -3,7 +3,8 @@
 #include "cpucycles.h"
 #include "speed.h"
 #include "../randombytes.h"
-#include "../api.h"
+#include "../params.h"
+#include "../sign.h"
 
 #define MLEN 59
 #define NTESTS 5000
