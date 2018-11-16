@@ -108,24 +108,6 @@ void poly_sub(poly *c, const poly *a, const poly *b) {
 }
 
 /*************************************************
-* Name:        poly_neg
-*
-* Description: Negate polynomial. Assumes input coefficients to be standard
-*              representatives.
-*
-* Arguments:   - poly *a: pointer to input/output polynomial
-**************************************************/
-void poly_neg(poly *a) {
-  unsigned int i;
-  DBENCH_START();
-
-  for(i = 0; i < N; ++i)
-    a->coeffs[i] = Q - a->coeffs[i];
-
-  DBENCH_STOP(*tadd);
-}
-
-/*************************************************
 * Name:        poly_shiftl
 *
 * Description: Multiply polynomial by 2^k without modular reduction. Assumes

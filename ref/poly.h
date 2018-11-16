@@ -15,7 +15,6 @@ void poly_freeze(poly *a);
 
 void poly_add(poly *c, const poly *a, const poly *b);
 void poly_sub(poly *c, const poly *a, const poly *b);
-void poly_neg(poly *a);
 void poly_shiftl(poly *a, unsigned int k);
 
 void poly_ntt(poly *a);
