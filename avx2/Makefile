@@ -1,4 +1,4 @@
-CC = /usr/bin/cc
+CC ?= /usr/bin/cc
 CFLAGS += -Wall -Wextra -march=native -mtune=native -O3 -fomit-frame-pointer
 #CFLAGS += -DUSE_RDPMC -DDBENCH
 NISTFLAGS += -march=native -mtune=native -O3 -fomit-frame-pointer -fPIC

@@ -79,6 +79,15 @@ int main(void)
         return -1;
       }
     }
+
+    randombytes((unsigned char *) &j, sizeof(j));
+    randombytes(m2, 1);
+    sm[j % CRYPTO_BYTES] += 1 + (m2[0] % 255);
+    ret = crypto_sign_open(m2, &mlen, sm, smlen, pk);
+    if(!ret) {
+      printf("Trivial forgeries possible\n");
+      return -1;
+    }
   }
 
   print_results("keygen:", tkeygen, NTESTS);
