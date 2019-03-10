@@ -20,176 +20,128 @@
 **************************************************/
 void expand_mat(polyvecl mat[K], const unsigned char rho[SEEDBYTES]) {
   unsigned int i, j;
-  unsigned char inbuf[SEEDBYTES + 1];
-  /* Don't change this to smaller values,
-   * sampling later assumes sufficient SHAKE output!
-   * Probability that we need more than 5 blocks: < 2^{-132}.
-   * Probability that we need more than 6 blocks: < 2^{-546}. */
-  unsigned char outbuf[5*SHAKE128_RATE];
 
-  for(i = 0; i < SEEDBYTES; ++i)
-    inbuf[i] = rho[i];
-
-  for(i = 0; i < K; ++i) {
-    for(j = 0; j < L; ++j) {
-      inbuf[SEEDBYTES] = i + (j << 4);
-      shake128(outbuf, sizeof(outbuf), inbuf, SEEDBYTES + 1);
-      poly_uniform(mat[i].vec+j, outbuf);
-    }
-  }
+  for(i = 0; i < K; ++i)
+    for(j = 0; j < L; ++j)
+      poly_uniform(&mat[i].vec[j], rho, i + (j << 4));
 }
 
 #if L == 2 && K == 3
 
 void expand_mat_avx(polyvecl mat[3], const unsigned char rho[SEEDBYTES])
 {
-  unsigned int i;
-  unsigned char inbuf[4][SEEDBYTES + 1];
-  unsigned char outbuf[4][5*SHAKE128_RATE];
+  poly t0, t1;
 
-  for(i = 0; i < SEEDBYTES; ++i) {
-    inbuf[0][i] = rho[i];
-    inbuf[1][i] = rho[i];
-    inbuf[2][i] = rho[i];
-    inbuf[3][i] = rho[i];
-  }
-
-  inbuf[0][SEEDBYTES] = 0 + (0 << 4);
-  inbuf[1][SEEDBYTES] = 0 + (1 << 4);
-  inbuf[2][SEEDBYTES] = 1 + (0 << 4);
-  inbuf[3][SEEDBYTES] = 1 + (1 << 4);
-
-  shake128_4x(outbuf[0], outbuf[1], outbuf[2], outbuf[3], 5*SHAKE128_RATE,
-              inbuf[0], inbuf[1], inbuf[2], inbuf[3], SEEDBYTES + 1);
-
-  poly_uniform(&mat[0].vec[0], outbuf[0]);
-  poly_uniform(&mat[0].vec[1], outbuf[1]);
-  poly_uniform(&mat[1].vec[0], outbuf[2]);
-  poly_uniform(&mat[1].vec[1], outbuf[3]);
-
-  inbuf[0][SEEDBYTES] = 2 + (0 << 4);
-  inbuf[1][SEEDBYTES] = 2 + (1 << 4);
-
-  shake128_4x(outbuf[0], outbuf[1], outbuf[2], outbuf[3], 5*SHAKE128_RATE,
-              inbuf[0], inbuf[1], inbuf[2], inbuf[3], SEEDBYTES + 1);
-
-  poly_uniform(&mat[2].vec[0], outbuf[0]);
-  poly_uniform(&mat[2].vec[1], outbuf[1]);
+  poly_uniform_4x(&mat[0].vec[0],
+                  &mat[0].vec[1],
+                  &mat[1].vec[0],
+                  &mat[1].vec[1],
+                  rho, 0, 16, 1, 17);
+  poly_uniform_4x(&mat[2].vec[0],
+                  &mat[2].vec[1],
+                  &t0,
+                  &t1,
+                  rho, 2, 18, 0, 0);
 }
 
 #elif L == 3 && K == 4
 
 void expand_mat_avx(polyvecl mat[4], const unsigned char rho[SEEDBYTES])
 {
-  unsigned int i;
-  unsigned char inbuf[4][SEEDBYTES + 1];
-  unsigned char outbuf[4][5*SHAKE128_RATE];
-
-  for(i = 0; i < SEEDBYTES; ++i) {
-    inbuf[0][i] = rho[i];
-    inbuf[1][i] = rho[i];
-    inbuf[2][i] = rho[i];
-    inbuf[3][i] = rho[i];
-  }
-
-  for(i = 0; i < 3; ++i) {
-    inbuf[0][SEEDBYTES] = 0 + (i << 4);
-    inbuf[1][SEEDBYTES] = 1 + (i << 4);
-    inbuf[2][SEEDBYTES] = 2 + (i << 4);
-    inbuf[3][SEEDBYTES] = 3 + (i << 4);
-
-    shake128_4x(outbuf[0], outbuf[1], outbuf[2], outbuf[3], 5*SHAKE128_RATE,
-                inbuf[0], inbuf[1], inbuf[2], inbuf[3], SEEDBYTES + 1);
-
-    poly_uniform(&mat[0].vec[i], outbuf[0]);
-    poly_uniform(&mat[1].vec[i], outbuf[1]);
-    poly_uniform(&mat[2].vec[i], outbuf[2]);
-    poly_uniform(&mat[3].vec[i], outbuf[3]);
-  }
+  poly_uniform_4x(&mat[0].vec[0],
+                  &mat[0].vec[1],
+                  &mat[0].vec[2],
+                  &mat[1].vec[0],
+                  rho, 0, 16, 32, 1);
+  poly_uniform_4x(&mat[1].vec[1],
+                  &mat[1].vec[2],
+                  &mat[2].vec[0],
+                  &mat[2].vec[1],
+                  rho, 17, 33, 2, 18);
+  poly_uniform_4x(&mat[2].vec[2],
+                  &mat[3].vec[0],
+                  &mat[3].vec[1],
+                  &mat[3].vec[2],
+                  rho, 34, 3, 19, 35);
 }
 
 #elif L == 4 && K == 5
 
 void expand_mat_avx(polyvecl mat[5], const unsigned char rho[SEEDBYTES])
 {
-  unsigned int i;
-  unsigned char inbuf[4][SEEDBYTES + 1];
-  unsigned char outbuf[4][5*SHAKE128_RATE];
-
-  for(i = 0; i < SEEDBYTES; ++i) {
-    inbuf[0][i] = rho[i];
-    inbuf[1][i] = rho[i];
-    inbuf[2][i] = rho[i];
-    inbuf[3][i] = rho[i];
-  }
-
-  for(i = 0; i < 5; ++i) {
-    inbuf[0][SEEDBYTES] = i + (0 << 4);
-    inbuf[1][SEEDBYTES] = i + (1 << 4);
-    inbuf[2][SEEDBYTES] = i + (2 << 4);
-    inbuf[3][SEEDBYTES] = i + (3 << 4);
-
-    shake128_4x(outbuf[0], outbuf[1], outbuf[2], outbuf[3], 5*SHAKE128_RATE,
-                inbuf[0], inbuf[1], inbuf[2], inbuf[3], SEEDBYTES + 1);
-
-    poly_uniform(&mat[i].vec[0], outbuf[0]);
-    poly_uniform(&mat[i].vec[1], outbuf[1]);
-    poly_uniform(&mat[i].vec[2], outbuf[2]);
-    poly_uniform(&mat[i].vec[3], outbuf[3]);
-  }
+  poly_uniform_4x(&mat[0].vec[0],
+                  &mat[0].vec[1],
+                  &mat[0].vec[2],
+                  &mat[0].vec[3],
+                  rho, 0, 16, 32, 48);
+  poly_uniform_4x(&mat[1].vec[0],
+                  &mat[1].vec[1],
+                  &mat[1].vec[2],
+                  &mat[1].vec[3],
+                  rho, 1, 17, 33, 49);
+  poly_uniform_4x(&mat[2].vec[0],
+                  &mat[2].vec[1],
+                  &mat[2].vec[2],
+                  &mat[2].vec[3],
+                  rho, 2, 18, 34, 50);
+  poly_uniform_4x(&mat[3].vec[0],
+                  &mat[3].vec[1],
+                  &mat[3].vec[2],
+                  &mat[3].vec[3],
+                  rho, 3, 19, 35, 51);
+  poly_uniform_4x(&mat[4].vec[0],
+                  &mat[4].vec[1],
+                  &mat[4].vec[2],
+                  &mat[4].vec[3],
+                  rho, 4, 20, 36, 52);
 }
 
 #elif L == 5 && K == 6
 
 void expand_mat_avx(polyvecl mat[6], const unsigned char rho[SEEDBYTES])
 {
-  unsigned int i;
-  unsigned char inbuf[4][SEEDBYTES + 1];
-  unsigned char outbuf[4][5*SHAKE128_RATE];
+  poly t0, t1;
 
-  for(i = 0; i < SEEDBYTES; ++i) {
-    inbuf[0][i] = rho[i];
-    inbuf[1][i] = rho[i];
-    inbuf[2][i] = rho[i];
-    inbuf[3][i] = rho[i];
-  }
-
-  for(i = 0; i < 6; ++i) {
-    inbuf[0][SEEDBYTES] = i + (0 << 4);
-    inbuf[1][SEEDBYTES] = i + (1 << 4);
-    inbuf[2][SEEDBYTES] = i + (2 << 4);
-    inbuf[3][SEEDBYTES] = i + (3 << 4);
-
-    shake128_4x(outbuf[0], outbuf[1], outbuf[2], outbuf[3], 5*SHAKE128_RATE,
-                inbuf[0], inbuf[1], inbuf[2], inbuf[3], SEEDBYTES + 1);
-
-    poly_uniform(&mat[i].vec[0], outbuf[0]);
-    poly_uniform(&mat[i].vec[1], outbuf[1]);
-    poly_uniform(&mat[i].vec[2], outbuf[2]);
-    poly_uniform(&mat[i].vec[3], outbuf[3]);
-  }
-
-  inbuf[0][SEEDBYTES] = 0 + (4 << 4);
-  inbuf[1][SEEDBYTES] = 1 + (4 << 4);
-  inbuf[2][SEEDBYTES] = 2 + (4 << 4);
-  inbuf[3][SEEDBYTES] = 3 + (4 << 4);
-
-  shake128_4x(outbuf[0], outbuf[1], outbuf[2], outbuf[3], 5*SHAKE128_RATE,
-              inbuf[0], inbuf[1], inbuf[2], inbuf[3], SEEDBYTES + 1);
-
-  poly_uniform(&mat[0].vec[4], outbuf[0]);
-  poly_uniform(&mat[1].vec[4], outbuf[1]);
-  poly_uniform(&mat[2].vec[4], outbuf[2]);
-  poly_uniform(&mat[3].vec[4], outbuf[3]);
-
-  inbuf[0][SEEDBYTES] = 4 + (4 << 4);
-  inbuf[1][SEEDBYTES] = 5 + (4 << 4);
-
-  shake128_4x(outbuf[0], outbuf[1], outbuf[2], outbuf[3], 5*SHAKE128_RATE,
-              inbuf[0], inbuf[1], inbuf[2], inbuf[3], SEEDBYTES + 1);
-
-  poly_uniform(&mat[4].vec[4], outbuf[0]);
-  poly_uniform(&mat[5].vec[4], outbuf[1]);
+  poly_uniform_4x(&mat[0].vec[0],
+                  &mat[0].vec[1],
+                  &mat[0].vec[2],
+                  &mat[0].vec[3],
+                  rho, 0, 16, 32, 48);
+  poly_uniform_4x(&mat[0].vec[4],
+                  &mat[1].vec[0],
+                  &mat[1].vec[1],
+                  &mat[1].vec[2],
+                  rho, 64, 1, 17, 33);
+  poly_uniform_4x(&mat[1].vec[3],
+                  &mat[1].vec[4],
+                  &mat[2].vec[0],
+                  &mat[2].vec[1],
+                  rho, 49, 65, 2, 18);
+  poly_uniform_4x(&mat[2].vec[2],
+                  &mat[2].vec[3],
+                  &mat[2].vec[4],
+                  &mat[3].vec[0],
+                  rho, 34, 50, 66, 3);
+  poly_uniform_4x(&mat[3].vec[1],
+                  &mat[3].vec[2],
+                  &mat[3].vec[3],
+                  &mat[3].vec[4],
+                  rho, 19, 35, 51, 67);
+  poly_uniform_4x(&mat[4].vec[0],
+                  &mat[4].vec[1],
+                  &mat[4].vec[2],
+                  &mat[4].vec[3],
+                  rho, 4, 20, 36, 52);
+  poly_uniform_4x(&mat[4].vec[4],
+                  &mat[5].vec[0],
+                  &mat[5].vec[1],
+                  &mat[5].vec[2],
+                  rho, 68, 5, 21, 37);
+  poly_uniform_4x(&mat[5].vec[3],
+                  &mat[5].vec[4],
+                  &t0,
+                  &t1,
+                  rho, 53, 69, 0, 0);
 }
 
 #else

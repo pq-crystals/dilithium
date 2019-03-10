@@ -8,6 +8,7 @@
 #include "rounding.h"
 #include "ntt.h"
 #include "poly.h"
+#include "rejsample.h"
 
 #ifdef DBENCH
 extern const unsigned long long timing_overhead;
@@ -300,33 +301,96 @@ int poly_chknorm(const poly *a, uint32_t B) {
   return 0;
 }
 
-/*************************************************
-* Name:        poly_uniform
-*
-* Description: Sample uniformly random polynomial using stream of random bytes.
-*              Assumes that enough random bytes are given (e.g.
-*              5*SHAKE128_RATE bytes).
-*
-* Arguments:   - poly *a: pointer to output polynomial
-*              - const unsigned char *buf: array of random bytes
-**************************************************/
-void poly_uniform(poly *a, const unsigned char *buf) {
+static unsigned int rej_uniform_ref(uint32_t *a,
+                                    unsigned int len,
+                                    const unsigned char *buf,
+                                    unsigned int buflen)
+{
   unsigned int ctr, pos;
   uint32_t t;
   DBENCH_START();
 
   ctr = pos = 0;
-  while(ctr < N) {
+  while(ctr < len && pos + 3 <= buflen) {
     t  = buf[pos++];
     t |= (uint32_t)buf[pos++] << 8;
     t |= (uint32_t)buf[pos++] << 16;
     t &= 0x7FFFFF;
 
     if(t < Q)
-      a->coeffs[ctr++] = t;
+      a[ctr++] = t;
   }
 
   DBENCH_STOP(*tsample);
+  return ctr;
+}
+
+void poly_uniform(poly *a,
+                  const unsigned char seed[SEEDBYTES],
+                  unsigned char nonce)
+{
+  unsigned int i, ctr;
+  unsigned char inbuf[SEEDBYTES + 1];
+  /* Probability that we need more than 5 blocks: < 2^{-132}.
+   * Probability that we need more than 6 blocks: < 2^{-546}. */
+  unsigned char outbuf[5*SHAKE128_RATE];
+  uint64_t state[25];
+
+  for(i= 0; i < SEEDBYTES; ++i)
+    inbuf[i] = seed[i];
+  inbuf[SEEDBYTES] = nonce;
+
+  shake128_absorb(state, inbuf, SEEDBYTES + 1);
+  shake128_squeezeblocks(outbuf, 5, state);
+
+  ctr = rej_uniform(a->coeffs, N, outbuf, 5*SHAKE128_RATE);
+  if(ctr < N) {
+    /* There are no bytes left in outbuf
+       since SHAKE128_RATE is divisible by 3 */
+    shake128_squeezeblocks(outbuf, 1, state);
+    rej_uniform(a->coeffs + ctr, N - ctr, outbuf, SHAKE128_RATE);
+  }
+}
+
+void poly_uniform_4x(poly *a0,
+                     poly *a1,
+                     poly *a2,
+                     poly *a3,
+                     const unsigned char seed[SEEDBYTES],
+                     unsigned char nonce0,
+                     unsigned char nonce1,
+                     unsigned char nonce2,
+                     unsigned char nonce3)
+{
+  unsigned int i;
+  unsigned char inbuf[4][SEEDBYTES + 1];
+  unsigned char outbuf[4][5*SHAKE128_RATE];
+  __m256i state[25];
+
+  for(i= 0; i < SEEDBYTES; ++i) {
+    inbuf[0][i] = seed[i];
+    inbuf[1][i] = seed[i];
+    inbuf[2][i] = seed[i];
+    inbuf[3][i] = seed[i];
+  }
+  inbuf[0][SEEDBYTES] = nonce0;
+  inbuf[1][SEEDBYTES] = nonce1;
+  inbuf[2][SEEDBYTES] = nonce2;
+  inbuf[3][SEEDBYTES] = nonce3;
+
+  shake128_absorb4x(state, inbuf[0], inbuf[1], inbuf[2], inbuf[3],
+                    SEEDBYTES + 1);
+  shake128_squeezeblocks4x(outbuf[0], outbuf[1], outbuf[2], outbuf[3], 5,
+                           state);
+
+  if(rej_uniform(a0->coeffs, N, outbuf[0], 5*SHAKE128_RATE) < N)
+    poly_uniform(a0, seed, nonce0);
+  if(rej_uniform(a1->coeffs, N, outbuf[1], 5*SHAKE128_RATE) < N)
+    poly_uniform(a1, seed, nonce1);
+  if(rej_uniform(a2->coeffs, N, outbuf[2], 5*SHAKE128_RATE) < N)
+    poly_uniform(a2, seed, nonce2);
+  if(rej_uniform(a3->coeffs, N, outbuf[3], 5*SHAKE128_RATE) < N)
+    poly_uniform(a3, seed, nonce3);
 }
 
 /*************************************************
@@ -343,10 +407,10 @@ void poly_uniform(poly *a, const unsigned char *buf) {
 * Returns number of sampled coefficients. Can be smaller than len if not enough
 * random bytes were given.
 **************************************************/
-static unsigned int rej_eta(uint32_t *a,
-                            unsigned int len,
-                            const unsigned char *buf,
-                            unsigned int buflen)
+static unsigned int rej_eta_ref(uint32_t *a,
+                                unsigned int len,
+                                const unsigned char *buf,
+                                unsigned int buflen)
 {
 #if ETA > 7
 #error "rej_eta() assumes ETA <= 7"
@@ -468,10 +532,10 @@ void poly_uniform_eta_4x(poly *a0,
 * Returns number of sampled coefficients. Can be smaller than len if not enough
 * random bytes were given.
 **************************************************/
-static unsigned int rej_gamma1m1(uint32_t *a,
-                                 unsigned int len,
-                                 const unsigned char *buf,
-                                 unsigned int buflen)
+static unsigned int rej_gamma1m1_ref(uint32_t *a,
+                                     unsigned int len,
+                                     const unsigned char *buf,
+                                     unsigned int buflen)
 {
 #if GAMMA1 > (1 << 19)
 #error "rej_gamma1m1() assumes GAMMA1 - 1 fits in 19 bits"

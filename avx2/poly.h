@@ -27,7 +27,18 @@ unsigned int poly_make_hint(poly *h, const poly *a0, const poly *a1);
 void poly_use_hint(poly *a, const poly *b, const poly *h);
 
 int  poly_chknorm(const poly *a, uint32_t B);
-void poly_uniform(poly *a, const unsigned char *buf);
+void poly_uniform(poly *a,
+                  const unsigned char seed[SEEDBYTES],
+                  unsigned char nonce);
+void poly_uniform_4x(poly *a0,
+                     poly *a1,
+                     poly *a2,
+                     poly *a3,
+                     const unsigned char seed[SEEDBYTES],
+                     unsigned char nonce0,
+                     unsigned char nonce1,
+                     unsigned char nonce2,
+                     unsigned char nonce3);
 void poly_uniform_eta(poly *a,
                       const unsigned char seed[SEEDBYTES],
                       unsigned char nonce);

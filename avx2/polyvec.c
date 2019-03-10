@@ -106,7 +106,7 @@ void polyvecl_pointwise_acc_invmontgomery(poly *w,
 
   poly_pointwise_invmontgomery(w, u->vec+0, v->vec+0);
 
-  for(i = 1; i < L; ++i) {
+  for(i = 1; i < L; ++i) { // FIXME: Only one reduction
     poly_pointwise_invmontgomery(&t, u->vec+i, v->vec+i);
     poly_add(w, w, &t);
   }
