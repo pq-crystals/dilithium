@@ -348,7 +348,7 @@ void poly_uniform(poly *a,
     /* There are no bytes left in outbuf
        since SHAKE128_RATE is divisible by 3 */
     shake128_squeezeblocks(outbuf, 1, state);
-    rej_uniform(a->coeffs + ctr, N - ctr, outbuf, SHAKE128_RATE);
+    rej_uniform_ref(a->coeffs + ctr, N - ctr, outbuf, SHAKE128_RATE);
   }
 }
 
@@ -472,7 +472,7 @@ void poly_uniform_eta(poly *a,
   ctr = rej_eta(a->coeffs, N, outbuf, 2*SHAKE256_RATE);
   if(ctr < N) {
     shake256_squeezeblocks(outbuf, 1, state);
-    rej_eta(a->coeffs + ctr, N - ctr, outbuf, SHAKE256_RATE);
+    rej_eta_ref(a->coeffs + ctr, N - ctr, outbuf, SHAKE256_RATE);
   }
 }
 
@@ -603,7 +603,7 @@ void poly_uniform_gamma1m1(poly *a,
     /* There are no bytes left in outbuf
        since 5*SHAKE256_RATE is divisible by 5 */
     shake256_squeezeblocks(outbuf, 1, state);
-    rej_gamma1m1(a->coeffs + ctr, N - ctr, outbuf, SHAKE256_RATE);
+    rej_gamma1m1_ref(a->coeffs + ctr, N - ctr, outbuf, SHAKE256_RATE);
   }
 }
 
