@@ -1,10 +1,10 @@
 #include <stdint.h>
 #include "test/cpucycles.h"
-#include "fips202.h"
 #include "params.h"
+#include "symmetric.h"
+#include "ntt.h"
 #include "reduce.h"
 #include "rounding.h"
-#include "ntt.h"
 #include "poly.h"
 
 #ifdef DBENCH
@@ -197,7 +197,7 @@ void poly_power2round(poly *a1, poly *a0, const poly *a) {
   DBENCH_START();
 
   for(i = 0; i < N; ++i)
-    a1->coeffs[i] = power2round(a->coeffs[i], a0->coeffs+i);
+    a1->coeffs[i] = power2round(a->coeffs[i], &a0->coeffs[i]);
 
   DBENCH_STOP(*tround);
 }
@@ -220,7 +220,7 @@ void poly_decompose(poly *a1, poly *a0, const poly *a) {
   DBENCH_START();
 
   for(i = 0; i < N; ++i)
-    a1->coeffs[i] = decompose(a->coeffs[i], a0->coeffs+i);
+    a1->coeffs[i] = decompose(a->coeffs[i], &a0->coeffs[i]);
 
   DBENCH_STOP(*tround);
 }
@@ -306,33 +306,56 @@ int poly_chknorm(const poly *a, uint32_t B) {
   return 0;
 }
 
-/*************************************************
-* Name:        poly_uniform
-*
-* Description: Sample uniformly random polynomial using stream of random bytes.
-*              Assumes that enough random bytes are given (e.g.
-*              5*SHAKE128_RATE bytes).
-*
-* Arguments:   - poly *a: pointer to output polynomial
-*              - const unsigned char *buf: array of random bytes
-**************************************************/
-void poly_uniform(poly *a, const unsigned char *buf) {
+//FIXME
+static unsigned int rej_uniform(uint32_t *a,
+                                unsigned int len,
+                                const unsigned char *buf,
+                                unsigned int buflen)
+{
   unsigned int ctr, pos;
   uint32_t t;
   DBENCH_START();
 
   ctr = pos = 0;
-  while(ctr < N) {
+  while(ctr < len && pos + 3 <= buflen) {
     t  = buf[pos++];
     t |= (uint32_t)buf[pos++] << 8;
     t |= (uint32_t)buf[pos++] << 16;
     t &= 0x7FFFFF;
 
     if(t < Q)
-      a->coeffs[ctr++] = t;
+      a[ctr++] = t;
   }
 
   DBENCH_STOP(*tsample);
+  return ctr;
+}
+
+//FIXME
+void poly_uniform(poly *a,
+                  const unsigned char seed[SEEDBYTES],
+                  uint16_t nonce)
+{
+  unsigned int i, ctr, off;
+  unsigned int nblocks = (769 + STREAM128_BLOCKBYTES)/STREAM128_BLOCKBYTES;
+  unsigned int buflen = nblocks*STREAM128_BLOCKBYTES;
+  unsigned char buf[buflen + 2];
+  stream128_state state;
+
+  stream128_init(&state, seed, nonce);
+  stream128_squeezeblocks(buf, nblocks, &state);
+
+  ctr = rej_uniform(a->coeffs, N, buf, buflen);
+  
+  while(ctr < N) {
+    off = buflen % 3;
+    for(i = 0; i < off; ++i)
+      buf[i] = buf[buflen - off + i];
+
+    buflen = STREAM128_BLOCKBYTES + off;
+    stream128_squeezeblocks(buf + off, 1, &state);
+    ctr += rej_uniform(a->coeffs + ctr, N - ctr, buf, buflen);
+  }
 }
 
 /*************************************************
@@ -358,7 +381,7 @@ static unsigned int rej_eta(uint32_t *a,
 #error "rej_eta() assumes ETA <= 7"
 #endif
   unsigned int ctr, pos;
-  unsigned char t0, t1;
+  uint32_t t0, t1;
   DBENCH_START();
 
   ctr = pos = 0;
@@ -395,26 +418,23 @@ static unsigned int rej_eta(uint32_t *a,
 **************************************************/
 void poly_uniform_eta(poly *a,
                       const unsigned char seed[SEEDBYTES],
-                      unsigned char nonce)
+                      uint16_t nonce)
 {
-  unsigned int i, ctr;
-  unsigned char inbuf[SEEDBYTES + 1];
-  /* Probability that we need more than 2 blocks: < 2^{-84}
-     Probability that we need more than 3 blocks: < 2^{-352} */
-  unsigned char outbuf[2*SHAKE256_RATE];
-  uint64_t state[25];
+  unsigned int ctr;
+  unsigned int nblocks = ((N/2 * (1U << SETABITS)) / (2*ETA + 1)
+                          + STREAM256_BLOCKBYTES) / STREAM256_BLOCKBYTES;
+  unsigned int buflen = nblocks*STREAM256_BLOCKBYTES;
+  unsigned char buf[buflen];
+  stream256_state state;
 
-  for(i= 0; i < SEEDBYTES; ++i)
-    inbuf[i] = seed[i];
-  inbuf[SEEDBYTES] = nonce;
-
-  shake256_absorb(state, inbuf, SEEDBYTES + 1);
-  shake256_squeezeblocks(outbuf, 2, state);
-
-  ctr = rej_eta(a->coeffs, N, outbuf, 2*SHAKE256_RATE);
-  if(ctr < N) {
-    shake256_squeezeblocks(outbuf, 1, state);
-    rej_eta(a->coeffs + ctr, N - ctr, outbuf, SHAKE256_RATE);
+  stream256_init(&state, seed, nonce);
+  stream256_squeezeblocks(buf, nblocks, &state);
+  
+  ctr = rej_eta(a->coeffs, N, buf, buflen);
+  
+  while(ctr < N) {
+    stream256_squeezeblocks(buf, 1, &state);
+    ctr += rej_eta(a->coeffs + ctr, N - ctr, buf, STREAM256_BLOCKBYTES);
   }
 }
 
@@ -481,30 +501,28 @@ static unsigned int rej_gamma1m1(uint32_t *a,
 *              - uint16_t nonce: 16-bit nonce
 **************************************************/
 void poly_uniform_gamma1m1(poly *a,
-                           const unsigned char seed[SEEDBYTES + CRHBYTES],
+                           const unsigned char seed[SEEDBYTES],
                            uint16_t nonce)
 {
-  unsigned int i, ctr;
-  unsigned char inbuf[SEEDBYTES + CRHBYTES + 2];
-  /* Probability that we need more than 5 blocks: < 2^{-81}
-     Probability that we need more than 6 blocks: < 2^{-467} */
-  unsigned char outbuf[5*SHAKE256_RATE];
-  uint64_t state[25];
+  unsigned int i, ctr, off;
+  unsigned int nblocks = (641 + STREAM256_BLOCKBYTES) / STREAM256_BLOCKBYTES;
+  unsigned int buflen = nblocks * STREAM256_BLOCKBYTES;
+  unsigned char buf[buflen + 4];
+  stream256_state state;
 
-  for(i = 0; i < SEEDBYTES + CRHBYTES; ++i)
-    inbuf[i] = seed[i];
-  inbuf[SEEDBYTES + CRHBYTES] = nonce & 0xFF;
-  inbuf[SEEDBYTES + CRHBYTES + 1] = nonce >> 8;
+  stream256_init(&state, seed, nonce);
+  stream256_squeezeblocks(buf, nblocks, &state);
 
-  shake256_absorb(state, inbuf, SEEDBYTES + CRHBYTES + 2);
-  shake256_squeezeblocks(outbuf, 5, state);
+  ctr = rej_gamma1m1(a->coeffs, N, buf, buflen);
+  
+  while(ctr < N) {
+    off = buflen % 5;
+    for(i = 0; i < off; ++i)
+      buf[i] = buf[buflen - off + i];
 
-  ctr = rej_gamma1m1(a->coeffs, N, outbuf, 5*SHAKE256_RATE);
-  if(ctr < N) {
-    /* There are no bytes left in outbuf
-       since 5*SHAKE256_RATE is divisible by 5 */
-    shake256_squeezeblocks(outbuf, 1, state);
-    rej_gamma1m1(a->coeffs + ctr, N - ctr, outbuf, SHAKE256_RATE);
+    buflen = STREAM256_BLOCKBYTES + off;
+    stream256_squeezeblocks(buf + off, 1, &state);
+    ctr += rej_gamma1m1(a->coeffs + ctr, N - ctr, buf, buflen);
   }
 }
 
@@ -519,14 +537,14 @@ void poly_uniform_gamma1m1(poly *a,
 *              - const poly *a: pointer to input polynomial
 **************************************************/
 void polyeta_pack(unsigned char *r, const poly *a) {
-#if ETA > 7
+#if 2*ETA > 15
 #error "polyeta_pack() assumes ETA <= 7"
 #endif
   unsigned int i;
   unsigned char t[8];
   DBENCH_START();
 
-#if ETA <= 3
+#if 2*ETA <= 7
   for(i = 0; i < N/8; ++i) {
     t[0] = Q + ETA - a->coeffs[8*i+0];
     t[1] = Q + ETA - a->coeffs[8*i+1];
@@ -537,16 +555,9 @@ void polyeta_pack(unsigned char *r, const poly *a) {
     t[6] = Q + ETA - a->coeffs[8*i+6];
     t[7] = Q + ETA - a->coeffs[8*i+7];
 
-    r[3*i+0]  = t[0];
-    r[3*i+0] |= t[1] << 3;
-    r[3*i+0] |= t[2] << 6;
-    r[3*i+1]  = t[2] >> 2;
-    r[3*i+1] |= t[3] << 1;
-    r[3*i+1] |= t[4] << 4;
-    r[3*i+1] |= t[5] << 7;
-    r[3*i+2]  = t[5] >> 1;
-    r[3*i+2] |= t[6] << 2;
-    r[3*i+2] |= t[7] << 5;
+    r[3*i+0]  = (t[0] >> 0) | (t[1] << 3) | (t[2] << 6);
+    r[3*i+1]  = (t[2] >> 2) | (t[3] << 1) | (t[4] << 4) | (t[5] << 7);
+    r[3*i+2]  = (t[5] >> 1) | (t[6] << 2) | (t[7] << 5);
   }
 #else
   for(i = 0; i < N/2; ++i) {
@@ -572,16 +583,16 @@ void polyeta_unpack(poly *r, const unsigned char *a) {
   unsigned int i;
   DBENCH_START();
 
-#if ETA <= 3
+#if 2*ETA <= 7
   for(i = 0; i < N/8; ++i) {
     r->coeffs[8*i+0] = a[3*i+0] & 0x07;
     r->coeffs[8*i+1] = (a[3*i+0] >> 3) & 0x07;
-    r->coeffs[8*i+2] = (a[3*i+0] >> 6) | ((a[3*i+1] & 0x01) << 2);
+    r->coeffs[8*i+2] = ((a[3*i+0] >> 6) | (a[3*i+1] << 2)) & 0x07;
     r->coeffs[8*i+3] = (a[3*i+1] >> 1) & 0x07;
     r->coeffs[8*i+4] = (a[3*i+1] >> 4) & 0x07;
-    r->coeffs[8*i+5] = (a[3*i+1] >> 7) | ((a[3*i+2] & 0x03) << 1);
+    r->coeffs[8*i+5] = ((a[3*i+1] >> 7) | (a[3*i+2] << 1)) & 0x07;
     r->coeffs[8*i+6] = (a[3*i+2] >> 2) & 0x07;
-    r->coeffs[8*i+7] = (a[3*i+2] >> 5);
+    r->coeffs[8*i+7] = (a[3*i+2] >> 5) & 0x07;
 
     r->coeffs[8*i+0] = Q + ETA - r->coeffs[8*i+0];
     r->coeffs[8*i+1] = Q + ETA - r->coeffs[8*i+1];
@@ -622,15 +633,15 @@ void polyt1_pack(unsigned char *r, const poly *a) {
   DBENCH_START();
 
   for(i = 0; i < N/8; ++i) {
-    r[9*i+0]  =  a->coeffs[8*i+0] & 0xFF;
-    r[9*i+1]  = (a->coeffs[8*i+0] >> 8) | ((a->coeffs[8*i+1] & 0x7F) << 1);
-    r[9*i+2]  = (a->coeffs[8*i+1] >> 7) | ((a->coeffs[8*i+2] & 0x3F) << 2);
-    r[9*i+3]  = (a->coeffs[8*i+2] >> 6) | ((a->coeffs[8*i+3] & 0x1F) << 3);
-    r[9*i+4]  = (a->coeffs[8*i+3] >> 5) | ((a->coeffs[8*i+4] & 0x0F) << 4);
-    r[9*i+5]  = (a->coeffs[8*i+4] >> 4) | ((a->coeffs[8*i+5] & 0x07) << 5);
-    r[9*i+6]  = (a->coeffs[8*i+5] >> 3) | ((a->coeffs[8*i+6] & 0x03) << 6);
-    r[9*i+7]  = (a->coeffs[8*i+6] >> 2) | ((a->coeffs[8*i+7] & 0x01) << 7);
-    r[9*i+8]  =  a->coeffs[8*i+7] >> 1;
+    r[9*i+0]  = (a->coeffs[8*i+0] >> 0);
+    r[9*i+1]  = (a->coeffs[8*i+0] >> 8) | (a->coeffs[8*i+1] << 1);
+    r[9*i+2]  = (a->coeffs[8*i+1] >> 7) | (a->coeffs[8*i+2] << 2);
+    r[9*i+3]  = (a->coeffs[8*i+2] >> 6) | (a->coeffs[8*i+3] << 3);
+    r[9*i+4]  = (a->coeffs[8*i+3] >> 5) | (a->coeffs[8*i+4] << 4);
+    r[9*i+5]  = (a->coeffs[8*i+4] >> 4) | (a->coeffs[8*i+5] << 5);
+    r[9*i+6]  = (a->coeffs[8*i+5] >> 3) | (a->coeffs[8*i+6] << 6);
+    r[9*i+7]  = (a->coeffs[8*i+6] >> 2) | (a->coeffs[8*i+7] << 7);
+    r[9*i+8]  = (a->coeffs[8*i+7] >> 1);
   }
 
   DBENCH_STOP(*tpack);
@@ -650,14 +661,14 @@ void polyt1_unpack(poly *r, const unsigned char *a) {
   DBENCH_START();
 
   for(i = 0; i < N/8; ++i) {
-    r->coeffs[8*i+0] =  a[9*i+0]       | ((uint32_t)(a[9*i+1] & 0x01) << 8);
-    r->coeffs[8*i+1] = (a[9*i+1] >> 1) | ((uint32_t)(a[9*i+2] & 0x03) << 7);
-    r->coeffs[8*i+2] = (a[9*i+2] >> 2) | ((uint32_t)(a[9*i+3] & 0x07) << 6);
-    r->coeffs[8*i+3] = (a[9*i+3] >> 3) | ((uint32_t)(a[9*i+4] & 0x0F) << 5);
-    r->coeffs[8*i+4] = (a[9*i+4] >> 4) | ((uint32_t)(a[9*i+5] & 0x1F) << 4);
-    r->coeffs[8*i+5] = (a[9*i+5] >> 5) | ((uint32_t)(a[9*i+6] & 0x3F) << 3);
-    r->coeffs[8*i+6] = (a[9*i+6] >> 6) | ((uint32_t)(a[9*i+7] & 0x7F) << 2);
-    r->coeffs[8*i+7] = (a[9*i+7] >> 7) | ((uint32_t)(a[9*i+8] & 0xFF) << 1);
+    r->coeffs[8*i+0] = ((a[9*i+0] >> 0) | ((uint32_t)a[9*i+1] << 8)) & 0x1FF;
+    r->coeffs[8*i+1] = ((a[9*i+1] >> 1) | ((uint32_t)a[9*i+2] << 7)) & 0x1FF;
+    r->coeffs[8*i+2] = ((a[9*i+2] >> 2) | ((uint32_t)a[9*i+3] << 6)) & 0x1FF;
+    r->coeffs[8*i+3] = ((a[9*i+3] >> 3) | ((uint32_t)a[9*i+4] << 5)) & 0x1FF;
+    r->coeffs[8*i+4] = ((a[9*i+4] >> 4) | ((uint32_t)a[9*i+5] << 4)) & 0x1FF;
+    r->coeffs[8*i+5] = ((a[9*i+5] >> 5) | ((uint32_t)a[9*i+6] << 3)) & 0x1FF;
+    r->coeffs[8*i+6] = ((a[9*i+6] >> 6) | ((uint32_t)a[9*i+7] << 2)) & 0x1FF;
+    r->coeffs[8*i+7] = ((a[9*i+7] >> 7) | ((uint32_t)a[9*i+8] << 1)) & 0x1FF;
   }
 
   DBENCH_STOP(*tpack);
@@ -679,10 +690,10 @@ void polyt0_pack(unsigned char *r, const poly *a) {
   DBENCH_START();
 
   for(i = 0; i < N/4; ++i) {
-    t[0] = Q + (1 << (D-1)) - a->coeffs[4*i+0];
-    t[1] = Q + (1 << (D-1)) - a->coeffs[4*i+1];
-    t[2] = Q + (1 << (D-1)) - a->coeffs[4*i+2];
-    t[3] = Q + (1 << (D-1)) - a->coeffs[4*i+3];
+    t[0] = Q + (1U << (D-1)) - a->coeffs[4*i+0];
+    t[1] = Q + (1U << (D-1)) - a->coeffs[4*i+1];
+    t[2] = Q + (1U << (D-1)) - a->coeffs[4*i+2];
+    t[3] = Q + (1U << (D-1)) - a->coeffs[4*i+3];
 
     r[7*i+0]  =  t[0];
     r[7*i+1]  =  t[0] >> 8;
@@ -727,10 +738,10 @@ void polyt0_unpack(poly *r, const unsigned char *a) {
     r->coeffs[4*i+3]  = a[7*i+5] >> 2;
     r->coeffs[4*i+3] |= (uint32_t)a[7*i+6] << 6;
 
-    r->coeffs[4*i+0] = Q + (1 << (D-1)) - r->coeffs[4*i+0];
-    r->coeffs[4*i+1] = Q + (1 << (D-1)) - r->coeffs[4*i+1];
-    r->coeffs[4*i+2] = Q + (1 << (D-1)) - r->coeffs[4*i+2];
-    r->coeffs[4*i+3] = Q + (1 << (D-1)) - r->coeffs[4*i+3];
+    r->coeffs[4*i+0] = Q + (1U << (D-1)) - r->coeffs[4*i+0];
+    r->coeffs[4*i+1] = Q + (1U << (D-1)) - r->coeffs[4*i+1];
+    r->coeffs[4*i+2] = Q + (1U << (D-1)) - r->coeffs[4*i+2];
+    r->coeffs[4*i+3] = Q + (1U << (D-1)) - r->coeffs[4*i+3];
   }
 
   DBENCH_STOP(*tpack);

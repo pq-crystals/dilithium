@@ -3,7 +3,6 @@
 
 #include <stdint.h>
 #include "params.h"
-#include "fips202.h"
 
 typedef struct {
   uint32_t coeffs[N];
@@ -27,12 +26,14 @@ unsigned int poly_make_hint(poly *h, const poly *a, const poly *b);
 void poly_use_hint(poly *a, const poly *b, const poly *h);
 
 int  poly_chknorm(const poly *a, uint32_t B);
-void poly_uniform(poly *a, const unsigned char *buf);
+void poly_uniform(poly *a,
+                  const unsigned char seed[SEEDBYTES],
+                  uint16_t nonce);
 void poly_uniform_eta(poly *a,
                       const unsigned char seed[SEEDBYTES],
-                      unsigned char nonce);
+                      uint16_t nonce);
 void poly_uniform_gamma1m1(poly *a,
-                           const unsigned char seed[SEEDBYTES + CRHBYTES],
+                           const unsigned char seed[SEEDBYTES],
                            uint16_t nonce);
 
 void polyeta_pack(unsigned char *r, const poly *a);
@@ -48,4 +49,5 @@ void polyz_pack(unsigned char *r, const poly *a);
 void polyz_unpack(poly *r, const unsigned char *a);
 
 void polyw1_pack(unsigned char *r, const poly *a);
+
 #endif

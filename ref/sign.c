@@ -1,8 +1,9 @@
 #include <stdint.h>
+#include "fips202.h"
 #include "params.h"
 #include "sign.h"
 #include "randombytes.h"
-#include "fips202.h"
+#include "symmetric.h"
 #include "poly.h"
 #include "polyvec.h"
 #include "packing.h"
@@ -19,23 +20,10 @@
 **************************************************/
 void expand_mat(polyvecl mat[K], const unsigned char rho[SEEDBYTES]) {
   unsigned int i, j;
-  unsigned char inbuf[SEEDBYTES + 1];
-  /* Don't change this to smaller values,
-   * sampling later assumes sufficient SHAKE output!
-   * Probability that we need more than 5 blocks: < 2^{-132}.
-   * Probability that we need more than 6 blocks: < 2^{-546}. */
-  unsigned char outbuf[5*SHAKE128_RATE];
 
-  for(i = 0; i < SEEDBYTES; ++i)
-    inbuf[i] = rho[i];
-
-  for(i = 0; i < K; ++i) {
-    for(j = 0; j < L; ++j) {
-      inbuf[SEEDBYTES] = i + (j << 4);
-      shake128(outbuf, sizeof(outbuf), inbuf, SEEDBYTES + 1);
-      poly_uniform(mat[i].vec+j, outbuf);
-    }
-  }
+  for(i = 0; i < K; ++i)
+    for(j = 0; j < L; ++j)
+      poly_uniform(&mat[i].vec[j], rho, i + 16*j);
 }
 
 /*************************************************
@@ -54,24 +42,24 @@ void challenge(poly *c,
                const polyveck *w1)
 {
   unsigned int i, b, pos;
+  uint64_t signs;
   unsigned char inbuf[CRHBYTES + K*POLW1_SIZE_PACKED];
   unsigned char outbuf[SHAKE256_RATE];
-  uint64_t state[25], signs, mask;
+  keccak_state state;
 
   for(i = 0; i < CRHBYTES; ++i)
     inbuf[i] = mu[i];
   for(i = 0; i < K; ++i)
-    polyw1_pack(inbuf + CRHBYTES + i*POLW1_SIZE_PACKED, w1->vec+i);
+    polyw1_pack(inbuf + CRHBYTES + i*POLW1_SIZE_PACKED, &w1->vec[i]);
 
-  shake256_absorb(state, inbuf, sizeof(inbuf));
-  shake256_squeezeblocks(outbuf, 1, state);
+  shake256_absorb(&state, inbuf, sizeof(inbuf));
+  shake256_squeezeblocks(outbuf, 1, &state);
 
   signs = 0;
   for(i = 0; i < 8; ++i)
     signs |= (uint64_t)outbuf[i] << 8*i;
 
   pos = 8;
-  mask = 1;
 
   for(i = 0; i < N; ++i)
     c->coeffs[i] = 0;
@@ -79,7 +67,7 @@ void challenge(poly *c,
   for(i = 196; i < 256; ++i) {
     do {
       if(pos >= SHAKE256_RATE) {
-        shake256_squeezeblocks(outbuf, 1, state);
+        shake256_squeezeblocks(outbuf, 1, &state);
         pos = 0;
       }
 
@@ -87,8 +75,9 @@ void challenge(poly *c,
     } while(b > i);
 
     c->coeffs[i] = c->coeffs[b];
-    c->coeffs[b] = (signs & mask) ? Q - 1 : 1;
-    mask <<= 1;
+    c->coeffs[b] = 1;
+    c->coeffs[b] ^= -(signs & 1U) & (1 ^ (Q-1));
+    signs >>= 1;
   }
 }
 
@@ -108,38 +97,38 @@ int crypto_sign_keypair(unsigned char *pk, unsigned char *sk) {
   unsigned int i;
   unsigned char seedbuf[3*SEEDBYTES];
   unsigned char tr[CRHBYTES];
-  unsigned char *rho, *rhoprime, *key;
+  const unsigned char *rho, *rhoprime, *key;
   uint16_t nonce = 0;
   polyvecl mat[K];
   polyvecl s1, s1hat;
   polyveck s2, t, t1, t0;
 
   /* Expand 32 bytes of randomness into rho, rhoprime and key */
-  randombytes(seedbuf, SEEDBYTES);
-  shake256(seedbuf, 3*SEEDBYTES, seedbuf, SEEDBYTES);
+  randombytes(seedbuf, 3*SEEDBYTES);
   rho = seedbuf;
-  rhoprime = rho + SEEDBYTES;
-  key = rho + 2*SEEDBYTES;
+  rhoprime = seedbuf + SEEDBYTES;
+  key = seedbuf + 2*SEEDBYTES;
 
   /* Expand matrix */
   expand_mat(mat, rho);
 
-  /* Sample short vectors s1 and s2 */
+  /* Sample short vector s1 */
   for(i = 0; i < L; ++i)
-    poly_uniform_eta(s1.vec+i, rhoprime, nonce++);
-  for(i = 0; i < K; ++i)
-    poly_uniform_eta(s2.vec+i, rhoprime, nonce++);
+    poly_uniform_eta(&s1.vec[i], rhoprime, nonce++);
 
-  /* Matrix-vector multiplication */
+  /* Matrix-vector multiplication As1 */
   s1hat = s1;
   polyvecl_ntt(&s1hat);
   for(i = 0; i < K; ++i) {
-    polyvecl_pointwise_acc_invmontgomery(t.vec+i, mat+i, &s1hat);
-    poly_reduce(t.vec+i);
-    poly_invntt_montgomery(t.vec+i);
+    polyvecl_pointwise_acc_invmontgomery(&t.vec[i], &mat[i], &s1hat);
+    poly_reduce(&t.vec[i]);
+    poly_invntt_montgomery(&t.vec[i]);
   }
 
-  /* Add noise vector s2 */
+  /* Sample short vector s2 and add to As1 */
+  for(i = 0; i < K; ++i)
+    poly_uniform_eta(&s2.vec[i], rhoprime, nonce++);
+
   polyveck_add(&t, &t, &s2);
 
   /* Extract t1 and write public key */
@@ -148,7 +137,7 @@ int crypto_sign_keypair(unsigned char *pk, unsigned char *sk) {
   pack_pk(pk, rho, &t1);
 
   /* Compute CRH(rho, t1) and write secret key */
-  shake256(tr, CRHBYTES, pk, CRYPTO_PUBLICKEYBYTES);
+  crh(tr, pk, CRYPTO_PUBLICKEYBYTES);
   pack_sk(sk, rho, key, tr, &s1, &s2, &t0);
 
   return 0;
@@ -178,7 +167,7 @@ int crypto_sign(unsigned char *sm,
 {
   unsigned long long i, j;
   unsigned int n;
-  unsigned char seedbuf[2*SEEDBYTES + CRHBYTES]; // TODO: nonce in seedbuf (2x)
+  unsigned char seedbuf[2*SEEDBYTES + CRHBYTES];
   unsigned char tr[CRHBYTES];
   unsigned char *rho, *key, *mu;
   uint16_t nonce = 0;
@@ -192,6 +181,12 @@ int crypto_sign(unsigned char *sm,
   mu = seedbuf + 2*SEEDBYTES;
   unpack_sk(rho, key, tr, &s1, &s2, &t0, sk);
 
+#ifdef RANDOMIZED_SIGNING
+  randombytes(key, SEEDBYTES);
+#else
+  hash(key, seedbuf + SEEDBYTES, SEEDBYTES + CRHBYTES);
+#endif
+
   /* Copy tr and message into the sm buffer,
    * backwards since m and sm can be equal in SUPERCOP API */
   for(i = 1; i <= mlen; ++i)
@@ -200,7 +195,7 @@ int crypto_sign(unsigned char *sm,
     sm[CRYPTO_BYTES - CRHBYTES + i] = tr[i];
 
   /* Compute CRH(tr, msg) */
-  shake256(mu, CRHBYTES, sm + CRYPTO_BYTES - CRHBYTES, CRHBYTES + mlen);
+  crh(mu, sm + CRYPTO_BYTES - CRHBYTES, CRHBYTES + mlen);
 
   /* Expand matrix and transform vectors */
   expand_mat(mat, rho);
@@ -211,15 +206,15 @@ int crypto_sign(unsigned char *sm,
   rej:
   /* Sample intermediate vector y */
   for(i = 0; i < L; ++i)
-    poly_uniform_gamma1m1(y.vec+i, key, nonce++);
+    poly_uniform_gamma1m1(&y.vec[i], key, nonce++);
 
   /* Matrix-vector multiplication */
   yhat = y;
   polyvecl_ntt(&yhat);
   for(i = 0; i < K; ++i) {
-    polyvecl_pointwise_acc_invmontgomery(w.vec+i, mat+i, &yhat);
-    poly_reduce(w.vec+i);
-    poly_invntt_montgomery(w.vec+i);
+    polyvecl_pointwise_acc_invmontgomery(&w.vec[i], &mat[i], &yhat);
+    poly_reduce(&w.vec[i]);
+    poly_invntt_montgomery(&w.vec[i]);
   }
 
   /* Decompose w and call the random oracle */
@@ -231,8 +226,8 @@ int crypto_sign(unsigned char *sm,
   chat = c;
   poly_ntt(&chat);
   for(i = 0; i < L; ++i) {
-    poly_pointwise_invmontgomery(z.vec+i, &chat, s1.vec+i);
-    poly_invntt_montgomery(z.vec+i);
+    poly_pointwise_invmontgomery(&z.vec[i], &chat, &s1.vec[i]);
+    poly_invntt_montgomery(&z.vec[i]);
   }
   polyvecl_add(&z, &z, &y);
   polyvecl_freeze(&z);
@@ -241,8 +236,8 @@ int crypto_sign(unsigned char *sm,
 
   /* Compute w - cs2, reject if w1 can not be computed from it */
   for(i = 0; i < K; ++i) {
-    poly_pointwise_invmontgomery(wcs2.vec+i, &chat, s2.vec+i);
-    poly_invntt_montgomery(wcs2.vec+i);
+    poly_pointwise_invmontgomery(&wcs2.vec[i], &chat, &s2.vec[i]);
+    poly_invntt_montgomery(&wcs2.vec[i]);
   }
   polyveck_sub(&wcs2, &w, &wcs2);
   polyveck_freeze(&wcs2);
@@ -258,8 +253,8 @@ int crypto_sign(unsigned char *sm,
 
   /* Compute hints for w1 */
   for(i = 0; i < K; ++i) {
-    poly_pointwise_invmontgomery(ct0.vec+i, &chat, t0.vec+i);
-    poly_invntt_montgomery(ct0.vec+i);
+    poly_pointwise_invmontgomery(&ct0.vec[i], &chat, &t0.vec[i]);
+    poly_invntt_montgomery(&ct0.vec[i]);
   }
 
   polyveck_csubq(&ct0);
@@ -322,21 +317,21 @@ int crypto_sign_open(unsigned char *m,
     for(i = 0; i < *mlen; ++i)
       m[CRYPTO_BYTES + i] = sm[CRYPTO_BYTES + i];
 
-  shake256(m + CRYPTO_BYTES - CRHBYTES, CRHBYTES, pk, CRYPTO_PUBLICKEYBYTES);
-  shake256(mu, CRHBYTES, m + CRYPTO_BYTES - CRHBYTES, CRHBYTES + *mlen);
+  crh(m + CRYPTO_BYTES - CRHBYTES, pk, CRYPTO_PUBLICKEYBYTES);
+  crh(mu, m + CRYPTO_BYTES - CRHBYTES, CRHBYTES + *mlen);
 
   /* Matrix-vector multiplication; compute Az - c2^dt1 */
   expand_mat(mat, rho);
   polyvecl_ntt(&z);
   for(i = 0; i < K ; ++i)
-    polyvecl_pointwise_acc_invmontgomery(tmp1.vec+i, mat+i, &z);
+    polyvecl_pointwise_acc_invmontgomery(&tmp1.vec[i], &mat[i], &z);
 
   chat = c;
   poly_ntt(&chat);
   polyveck_shiftl(&t1, D);
   polyveck_ntt(&t1);
   for(i = 0; i < K; ++i)
-    poly_pointwise_invmontgomery(tmp2.vec+i, &chat, t1.vec+i);
+    poly_pointwise_invmontgomery(&tmp2.vec[i], &chat, &t1.vec[i]);
 
   polyveck_sub(&tmp1, &tmp1, &tmp2);
   polyveck_reduce(&tmp1);

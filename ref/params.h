@@ -5,48 +5,52 @@
 #define MODE 2
 #endif
 
-#define SEEDBYTES 32U
-#define CRHBYTES 48U
-#define N 256U
-#define Q 8380417U
-#define QBITS 23U
-#define ROOT_OF_UNITY 1753U
-#define D 14U
-#define GAMMA1 ((Q - 1U)/16U)
-#define GAMMA2 (GAMMA1/2U)
-#define ALPHA (2U*GAMMA2)
+#define SEEDBYTES 32
+#ifdef DILITHIUM_90S
+#define CRHBYTES 64
+#else
+#define CRHBYTES 48
+#endif
+#define N 256
+#define Q 8380417
+#define QBITS 23
+#define ROOT_OF_UNITY 1753
+#define D 14
+#define GAMMA1 ((Q - 1)/16)
+#define GAMMA2 (GAMMA1/2)
+#define ALPHA (2*GAMMA2)
 
 #if MODE == 0
-#define K 3U
-#define L 2U
-#define ETA 7U
-#define SETABITS 4U
-#define BETA 375U
-#define OMEGA 64U
+#define K 3
+#define L 2
+#define ETA 7
+#define SETABITS 4
+#define BETA 375
+#define OMEGA 64
 
 #elif MODE == 1
-#define K 4U
-#define L 3U
-#define ETA 6U
-#define SETABITS 4U
-#define BETA 325U
-#define OMEGA 80U
+#define K 4
+#define L 3
+#define ETA 6
+#define SETABITS 4
+#define BETA 325
+#define OMEGA 80
 
 #elif MODE == 2
-#define K 5U
-#define L 4U
-#define ETA 5U
-#define SETABITS 4U
-#define BETA 275U
-#define OMEGA 96U
+#define K 5
+#define L 4
+#define ETA 5
+#define SETABITS 4
+#define BETA 275
+#define OMEGA 96
 
 #elif MODE == 3
-#define K 6U
-#define L 5U
-#define ETA 3U
-#define SETABITS 3U
-#define BETA 175U
-#define OMEGA 120U
+#define K 6
+#define L 5
+#define ETA 3
+#define SETABITS 3
+#define BETA 175
+#define OMEGA 120
 
 #endif
 

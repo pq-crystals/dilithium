@@ -23,7 +23,7 @@ void pack_pk(unsigned char pk[CRYPTO_PUBLICKEYBYTES],
   pk += SEEDBYTES;
 
   for(i = 0; i < K; ++i)
-    polyt1_pack(pk + i*POLT1_SIZE_PACKED, t1->vec+i);
+    polyt1_pack(pk + i*POLT1_SIZE_PACKED, &t1->vec[i]);
 }
 
 /*************************************************
@@ -46,7 +46,7 @@ void unpack_pk(unsigned char rho[SEEDBYTES],
   pk += SEEDBYTES;
 
   for(i = 0; i < K; ++i)
-    polyt1_unpack(t1->vec+i, pk + i*POLT1_SIZE_PACKED);
+    polyt1_unpack(&t1->vec[i], pk + i*POLT1_SIZE_PACKED);
 }
 
 /*************************************************
@@ -85,15 +85,15 @@ void pack_sk(unsigned char sk[CRYPTO_SECRETKEYBYTES],
   sk += CRHBYTES;
 
   for(i = 0; i < L; ++i)
-    polyeta_pack(sk + i*POLETA_SIZE_PACKED, s1->vec+i);
+    polyeta_pack(sk + i*POLETA_SIZE_PACKED, &s1->vec[i]);
   sk += L*POLETA_SIZE_PACKED;
 
   for(i = 0; i < K; ++i)
-    polyeta_pack(sk + i*POLETA_SIZE_PACKED, s2->vec+i);
+    polyeta_pack(sk + i*POLETA_SIZE_PACKED, &s2->vec[i]);
   sk += K*POLETA_SIZE_PACKED;
 
   for(i = 0; i < K; ++i)
-    polyt0_pack(sk + i*POLT0_SIZE_PACKED, t0->vec+i);
+    polyt0_pack(sk + i*POLT0_SIZE_PACKED, &t0->vec[i]);
 }
 
 /*************************************************
@@ -132,15 +132,15 @@ void unpack_sk(unsigned char rho[SEEDBYTES],
   sk += CRHBYTES;
 
   for(i=0; i < L; ++i)
-    polyeta_unpack(s1->vec+i, sk + i*POLETA_SIZE_PACKED);
+    polyeta_unpack(&s1->vec[i], sk + i*POLETA_SIZE_PACKED);
   sk += L*POLETA_SIZE_PACKED;
 
   for(i=0; i < K; ++i)
-    polyeta_unpack(s2->vec+i, sk + i*POLETA_SIZE_PACKED);
+    polyeta_unpack(&s2->vec[i], sk + i*POLETA_SIZE_PACKED);
   sk += K*POLETA_SIZE_PACKED;
 
   for(i=0; i < K; ++i)
-    polyt0_unpack(t0->vec+i, sk + i*POLT0_SIZE_PACKED);
+    polyt0_unpack(&t0->vec[i], sk + i*POLT0_SIZE_PACKED);
 }
 
 /*************************************************
@@ -162,7 +162,7 @@ void pack_sig(unsigned char sig[CRYPTO_BYTES],
   uint64_t signs, mask;
 
   for(i = 0; i < L; ++i)
-    polyz_pack(sig + i*POLZ_SIZE_PACKED, z->vec+i);
+    polyz_pack(sig + i*POLZ_SIZE_PACKED, &z->vec[i]);
   sig += L*POLZ_SIZE_PACKED;
 
   /* Encode h */
@@ -214,10 +214,10 @@ int unpack_sig(polyvecl *z,
                const unsigned char sig[CRYPTO_BYTES])
 {
   unsigned int i, j, k;
-  uint64_t signs, mask;
+  uint64_t signs;
 
   for(i = 0; i < L; ++i)
-    polyz_unpack(z->vec+i, sig + i*POLZ_SIZE_PACKED);
+    polyz_unpack(&z->vec[i], sig + i*POLZ_SIZE_PACKED);
   sig += L*POLZ_SIZE_PACKED;
 
   /* Decode h */
@@ -257,12 +257,12 @@ int unpack_sig(polyvecl *z,
   if(signs >> 60)
     return 1;
 
-  mask = 1;
   for(i = 0; i < N/8; ++i) {
     for(j = 0; j < 8; ++j) {
       if((sig[i] >> j) & 0x01) {
-        c->coeffs[8*i+j] = (signs & mask) ? Q - 1 : 1;
-        mask <<= 1;
+        c->coeffs[8*i+j] = 1;
+        c->coeffs[8*i+j] ^= -(signs & 1) & (1 ^ (Q-1));
+        signs >>= 1;
       }
     }
   }
