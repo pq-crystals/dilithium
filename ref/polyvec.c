@@ -96,12 +96,12 @@ void polyvecl_pointwise_acc_invmontgomery(poly *w,
 **************************************************/
 int polyvecl_chknorm(const polyvecl *v, uint32_t bound)  {
   unsigned int i;
-  int ret = 0;
 
   for(i = 0; i < L; ++i)
-    ret |= poly_chknorm(&v->vec[i], bound);
+    if(poly_chknorm(&v->vec[i], bound))
+      return 1;
 
-  return ret;
+  return 0;
 }
 
 /**************************************************************/
@@ -251,12 +251,12 @@ void polyveck_invntt_montgomery(polyveck *v) {
 **************************************************/
 int polyveck_chknorm(const polyveck *v, uint32_t bound) {
   unsigned int i;
-  int ret = 0;
 
   for(i = 0; i < K; ++i)
-    ret |= poly_chknorm(&v->vec[i], bound);
+    if(poly_chknorm(&v->vec[i], bound))
+      return 1;
 
-  return ret;
+  return 0;
 }
 
 /*************************************************
@@ -308,19 +308,19 @@ void polyveck_decompose(polyveck *v1, polyveck *v0, const polyveck *v) {
 * Description: Compute hint vector.
 *
 * Arguments:   - polyveck *h: pointer to output vector
-*              - const polyveck *u: pointer to first input vector
-*              - const polyveck *u: pointer to second input vector
+*              - const polyveck *v0: pointer to low part of input vector
+*              - const polyveck *v1: pointer to high part of input vector
 *
 * Returns number of 1 bits.
 **************************************************/
 unsigned int polyveck_make_hint(polyveck *h,
-                                const polyveck *u,
-                                const polyveck *v)
+                                const polyveck *v0,
+                                const polyveck *v1)
 {
   unsigned int i, s = 0;
 
   for(i = 0; i < K; ++i)
-    s += poly_make_hint(&h->vec[i], &u->vec[i], &v->vec[i]);
+    s += poly_make_hint(&h->vec[i], &v0->vec[i], &v1->vec[i]);
 
   return s;
 }

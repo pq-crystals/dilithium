@@ -229,22 +229,21 @@ void poly_decompose(poly *a1, poly *a0, const poly *a) {
 * Name:        poly_make_hint
 *
 * Description: Compute hint polynomial. The coefficients of which indicate
-*              whether the high bits of the corresponding coefficients
-*              of the first input polynomial and of the sum of the input
-*              polynomials differ.
+*              whether the low bits of the corresponding coefficient of
+*              the input polynomial overflow into the high bits.
 *
 * Arguments:   - poly *h: pointer to output hint polynomial
-*              - const poly *a: pointer to first input polynomial
-*              - const poly *b: pointer to second input polynomial
+*              - const poly *a0: pointer to low part of input polynomial
+*              - const poly *a1: pointer to high part of input polynomial
 *
 * Returns number of 1 bits.
 **************************************************/
-unsigned int poly_make_hint(poly *h, const poly *a, const poly *b) {
+unsigned int poly_make_hint(poly *h, const poly *a0, const poly *a1) {
   unsigned int i, s = 0;
   DBENCH_START();
 
   for(i = 0; i < N; ++i) {
-    h->coeffs[i] = make_hint(a->coeffs[i], b->coeffs[i]);
+    h->coeffs[i] = make_hint(a0->coeffs[i], a1->coeffs[i]);
     s += h->coeffs[i];
   }
 
@@ -346,7 +345,7 @@ void poly_uniform(poly *a,
   stream128_squeezeblocks(buf, nblocks, &state);
 
   ctr = rej_uniform(a->coeffs, N, buf, buflen);
-  
+
   while(ctr < N) {
     off = buflen % 3;
     for(i = 0; i < off; ++i)
@@ -414,7 +413,7 @@ static unsigned int rej_eta(uint32_t *a,
 * Arguments:   - poly *a: pointer to output polynomial
 *              - const unsigned char seed[]: byte array with seed of length
 *                                            SEEDBYTES
-*              - unsigned char nonce: nonce byte
+*              - uint16_t nonce: 2-byte nonce
 **************************************************/
 void poly_uniform_eta(poly *a,
                       const unsigned char seed[SEEDBYTES],
@@ -429,9 +428,9 @@ void poly_uniform_eta(poly *a,
 
   stream256_init(&state, seed, nonce);
   stream256_squeezeblocks(buf, nblocks, &state);
-  
+
   ctr = rej_eta(a->coeffs, N, buf, buflen);
-  
+
   while(ctr < N) {
     stream256_squeezeblocks(buf, 1, &state);
     ctr += rej_eta(a->coeffs + ctr, N - ctr, buf, STREAM256_BLOCKBYTES);
@@ -514,7 +513,7 @@ void poly_uniform_gamma1m1(poly *a,
   stream256_squeezeblocks(buf, nblocks, &state);
 
   ctr = rej_gamma1m1(a->coeffs, N, buf, buflen);
-  
+
   while(ctr < N) {
     off = buflen % 5;
     for(i = 0; i < off; ++i)
@@ -537,8 +536,8 @@ void poly_uniform_gamma1m1(poly *a,
 *              - const poly *a: pointer to input polynomial
 **************************************************/
 void polyeta_pack(unsigned char *r, const poly *a) {
-#if 2*ETA > 15
-#error "polyeta_pack() assumes ETA <= 7"
+#if 2*ETA >= 16
+#error "polyeta_pack() assumes 2*ETA < 16"
 #endif
   unsigned int i;
   unsigned char t[8];

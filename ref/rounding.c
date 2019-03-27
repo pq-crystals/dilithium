@@ -17,10 +17,10 @@ uint32_t power2round(uint32_t a, uint32_t *a0)  {
   int32_t t;
 
   /* Centralized remainder mod 2^D */
-  t = a & ((1 << D) - 1);
-  t -= (1 << (D-1)) + 1;
-  t += (t >> 31) & (1 << D);
-  t -= (1 << (D-1)) - 1;
+  t = a & ((1U << D) - 1);
+  t -= (1U << (D-1)) + 1;
+  t += (t >> 31) & (1U << D);
+  t -= (1U << (D-1)) - 1;
   *a0 = Q + t;
   a = (a - t) >> D;
   return a;
@@ -69,19 +69,20 @@ uint32_t decompose(uint32_t a, uint32_t *a0) {
 /*************************************************
 * Name:        make_hint
 *
-* Description: Compute hint bit indicating whether or not high bits of two
-*              finite field elements differ. Assumes input elements to be
+* Description: Compute hint bit indicating whether the low bits of the
+*              input element overflow into the high bits. Inputs assumed to be
 *              standard representatives.
 *
-* Arguments:   - uint32_t a: first input element
-*              - uint32_t b: second input element
+* Arguments:   - uint32_t a0: low bits of input element
+*              - uint32_t a1: high bits of input element
 *
 * Returns 1 if high bits of a and b differ and 0 otherwise.
 **************************************************/
-unsigned int make_hint(const uint32_t a, const uint32_t b) {
-  uint32_t t;
+unsigned int make_hint(const uint32_t a0, const uint32_t a1) {
+  if(a0 <= GAMMA2 || a0 > Q - GAMMA2 || (a0 == Q - GAMMA2 && a1 == 0))
+    return 0;
 
-  return decompose(a, &t) != decompose(b, &t);
+  return 1;
 }
 
 /*************************************************

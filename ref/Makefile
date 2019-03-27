@@ -26,7 +26,7 @@ test/test_dilithium: test/test_dilithium.c randombytes.c test/cpucycles.c \
 	$(CC) $(CFLAGS) $< randombytes.c test/cpucycles.c test/speed.c \
 	  $(KECCAK_SOURCES) -o $@
 
-test/test_dilithium90s: test/test_dilithium.c randombytes.c test/cpucycles.c \
+test/test_dilithium-90s: test/test_dilithium.c randombytes.c test/cpucycles.c \
   test/speed.c $(NINETIES_SOURCES) randombytes.h test/cpucycles.h test/speed.h \
   $(NINETIES_HEADERS)
 	$(CC) $(CFLAGS) -DDILITHIUM_90S $< randombytes.c test/cpucycles.c \
@@ -45,5 +45,5 @@ clean:
 	rm -f PQCgenKAT_sign
 	rm -f test/test_vectors
 	rm -f test/test_dilithium
-	rm -f test/test_dilithium90s
+	rm -f test/test_dilithium-90s
 	rm -f test/test_mul
