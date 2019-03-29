@@ -3,7 +3,6 @@
 
 #include <stdint.h>
 #include "params.h"
-#include "fips202.h"
 
 typedef struct {
   uint32_t coeffs[N];
@@ -15,7 +14,7 @@ void poly_freeze(poly *a);
 
 void poly_add(poly *c, const poly *a, const poly *b);
 void poly_sub(poly *c, const poly *a, const poly *b);
-void poly_shiftl(poly *a, unsigned int k);
+void poly_shiftl(poly *a);
 
 void poly_ntt(poly *a);
 void poly_invntt_montgomery(poly *a);
@@ -29,36 +28,36 @@ void poly_use_hint(poly *a, const poly *b, const poly *h);
 int  poly_chknorm(const poly *a, uint32_t B);
 void poly_uniform(poly *a,
                   const unsigned char seed[SEEDBYTES],
-                  unsigned char nonce);
+                  uint16_t nonce);
 void poly_uniform_4x(poly *a0,
                      poly *a1,
                      poly *a2,
                      poly *a3,
                      const unsigned char seed[SEEDBYTES],
-                     unsigned char nonce0,
-                     unsigned char nonce1,
-                     unsigned char nonce2,
-                     unsigned char nonce3);
+                     uint16_t nonce0,
+                     uint16_t nonce1,
+                     uint16_t nonce2,
+                     uint16_t nonce3);
 void poly_uniform_eta(poly *a,
                       const unsigned char seed[SEEDBYTES],
-                      unsigned char nonce);
+                      uint16_t nonce);
 void poly_uniform_eta_4x(poly *a0,
                          poly *a1,
                          poly *a2,
                          poly *a3,
                          const unsigned char seed[SEEDBYTES],
-                         unsigned char nonce0,
-                         unsigned char nonce1,
-                         unsigned char nonce2,
-                         unsigned char nonce3);
+                         uint16_t nonce0,
+                         uint16_t nonce1,
+                         uint16_t nonce2,
+                         uint16_t nonce3);
 void poly_uniform_gamma1m1(poly *a,
-                           const unsigned char seed[SEEDBYTES + CRHBYTES],
+                           const unsigned char seed[SEEDBYTES],
                            uint16_t nonce);
 void poly_uniform_gamma1m1_4x(poly *a0,
                               poly *a1,
                               poly *a2,
                               poly *a3,
-                              const unsigned char seed[SEEDBYTES + CRHBYTES],
+                              const unsigned char seed[SEEDBYTES],
                               uint16_t nonce0,
                               uint16_t nonce1,
                               uint16_t nonce2,

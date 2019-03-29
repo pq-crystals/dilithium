@@ -7,8 +7,20 @@
 extern const uint32_t zetas[N];
 extern const uint32_t zetas_inv[N];
 
-void ntt(uint32_t *phat, const uint32_t *p, const uint32_t *zetas) asm("ntt");
-void invntt(uint32_t *p, const uint32_t *phat, const uint32_t *zetas_inv) asm("invntt");
-void pointwise_mul(uint32_t *c, const uint32_t *a, const uint32_t *b) asm("pointwise_mul");
+void ntt_levels0t2_avx(uint64_t tmp[N],
+                       const uint32_t a[N],
+                       const uint32_t zetas[7]);
+void ntt_levels3t8_avx(uint32_t a[N],
+                       const uint64_t tmp[N],
+                       const uint32_t zetas[31]);
+
+void invntt_levels0t4_avx(uint64_t tmp[N],
+                          const uint32_t a[N],
+                          const uint32_t zetas_inv[31]);
+void invntt_levels5t7_avx(uint32_t a[N],
+                          const uint64_t tmp[N],
+                          const uint32_t zetas_inv[7]);
+
+void pointwise_avx(uint32_t c[N], const uint32_t a[N], const uint32_t b[N]);
 
 #endif

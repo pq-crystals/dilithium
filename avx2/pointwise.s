@@ -1,5 +1,5 @@
-.global pointwise_mul
-pointwise_mul:
+.global pointwise_avx
+pointwise_avx:
 mov		%rsp,%r11
 and		$31,%r11
 sub		%r11,%rsp

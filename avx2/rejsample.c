@@ -84,7 +84,7 @@ unsigned int rej_eta(uint32_t *r,
     tmp1 = _mm256_cmpgt_epi8(bound, tmp0);
     good = _mm256_movemask_epi8(tmp1);
 
-    d0 = _mm256_extracti128_si256(tmp0, 0);
+    d0 = _mm256_castsi256_si128(tmp0);
     rid = _mm_loadl_epi64((__m128i *)&idx[good & 0xFF]);
     d1 = _mm_shuffle_epi8(d0, rid);
     tmp1 = _mm256_cvtepu8_epi32(d1);

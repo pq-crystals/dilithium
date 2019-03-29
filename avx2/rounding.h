@@ -20,10 +20,10 @@ inline uint32_t power2round(uint32_t a, uint32_t *a0)  {
   int32_t t;
 
   /* Centralized remainder mod 2^D */
-  t = a & ((1 << D) - 1);
-  t -= (1 << (D-1)) + 1;
-  t += (t >> 31) & (1 << D);
-  t -= (1 << (D-1)) - 1;
+  t = a & ((1U << D) - 1);
+  t -= (1U << (D-1)) + 1;
+  t += (t >> 31) & (1U << D);
+  t -= (1U << (D-1)) - 1;
   *a0 = Q + t;
   a = (a - t) >> D;
   return a;

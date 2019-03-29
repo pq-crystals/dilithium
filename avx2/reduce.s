@@ -1,5 +1,5 @@
-.global reduce32
-reduce32:
+.global reduce_avx
+reduce_avx:
 mov		%rsp,%r11
 and		$31,%r11
 sub		%r11,%rsp
@@ -10,10 +10,10 @@ xor		%eax,%eax
 .p2align 5
 _looptop_rdc32:
 #load
-vmovdqa		(%rsi),%ymm1
-vmovdqa		32(%rsi),%ymm3
-vmovdqa		64(%rsi),%ymm5
-vmovdqa		96(%rsi),%ymm7
+vmovdqa		(%rdi),%ymm1
+vmovdqa		32(%rdi),%ymm3
+vmovdqa		64(%rdi),%ymm5
+vmovdqa		96(%rdi),%ymm7
 
 #reduce
 vpsrld		$23,%ymm1,%ymm2
@@ -45,15 +45,14 @@ vmovdqa		%ymm7,96(%rdi)
 
 add		$1,%eax
 add		$128,%rdi
-add		$128,%rsi
 cmp		$8,%eax
 jb _looptop_rdc32
 
 add		%r11,%rsp
 ret
 
-.global csubq
-csubq:
+.global csubq_avx
+csubq_avx:
 mov		%rsp,%r11
 and		$31,%r11
 sub		%r11,%rsp
@@ -64,10 +63,10 @@ xor		%eax,%eax
 .p2align 5
 _looptop_csubq:
 #load
-vmovdqa		(%rsi),%ymm1
-vmovdqa		32(%rsi),%ymm3
-vmovdqa		64(%rsi),%ymm5
-vmovdqa		96(%rsi),%ymm7
+vmovdqa		(%rdi),%ymm1
+vmovdqa		32(%rdi),%ymm3
+vmovdqa		64(%rdi),%ymm5
+vmovdqa		96(%rdi),%ymm7
 
 #csubq
 vpsubd		%ymm0,%ymm1,%ymm1
@@ -95,7 +94,6 @@ vmovdqa		%ymm7,96(%rdi)
 
 add		$1,%eax
 add		$128,%rdi
-add		$128,%rsi
 cmp		$8,%eax
 jb _looptop_csubq
 

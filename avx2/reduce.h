@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 
-void reduce32(uint32_t *a, const uint32_t *b) asm("reduce32");
-void csubq(uint32_t *a, const uint32_t *b) asm("csubq");
+void reduce_avx(uint32_t a[N]);
+void csubq_avx(uint32_t a[N]);
 
 #endif
