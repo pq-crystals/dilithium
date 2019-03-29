@@ -6,6 +6,7 @@
 #ifdef DILITHIUM_90S
 
 #include "aes256ctr.h"
+#include "fips202.h"
 
 #define crh(OUT, IN, INBYTES) shake256(OUT, CRHBYTES, IN, INBYTES)
 #define stream128_init(STATE, SEED, NONCE) aes256ctr_init(STATE, SEED, NONCE)
