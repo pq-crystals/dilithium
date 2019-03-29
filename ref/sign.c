@@ -206,7 +206,7 @@ int crypto_sign(unsigned char *sm,
   rej:
   /* Sample intermediate vector y */
   for(i = 0; i < L; ++i)
-    poly_uniform_gamma1m1(&y.vec[i], key, nonce++);
+    poly_uniform_gamma1m1(&y.vec[i], rhoprime, nonce++);
 
   /* Matrix-vector multiplication */
   yhat = y;

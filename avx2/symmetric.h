@@ -6,10 +6,8 @@
 #ifdef DILITHIUM_90S
 
 #include "aes256ctr.h"
-#include <openssl/sha.h>
 
-#define crh(OUT, IN, INBYTES) SHA512(IN, INBYTES, OUT)
-#define hash(OUT, IN, INBYTES) SHA256(IN, INBYTES, OZUT)
+#define crh(OUT, IN, INBYTES) shake256(OUT, CRHBYTES, IN, INBYTES)
 #define stream128_init(STATE, SEED, NONCE) aes256ctr_init(STATE, SEED, NONCE)
 #define stream128_squeezeblocks(OUT, OUTBLOCKS, STATE) aes256ctr_squeezeblocks(OUT, OUTBLOCKS, STATE)
 #define stream256_init(STATE, SEED, NONCE) aes256ctr_init(STATE, SEED, NONCE)
@@ -27,7 +25,6 @@ typedef aes256ctr_ctx stream256_state;
 #include "fips202x4.h"
 
 #define crh(OUT, IN, INBYTES) shake256(OUT, CRHBYTES, IN, INBYTES)
-#define hash(OUT, IN, INBYTES) shake256(OUT, SEEDBYTES, IN, INBYTES)
 #define stream128_init(STATE, SEED, NONCE) shake128_stream_init(STATE, SEED, NONCE)
 #define stream128_squeezeblocks(OUT, OUTBLOCKS, STATE) shake128_squeezeblocks(OUT, OUTBLOCKS, STATE)
 #define stream256_init(STATE, SEED, NONCE) shake256_stream_init(STATE, SEED, NONCE)

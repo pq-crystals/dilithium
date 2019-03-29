@@ -512,19 +512,19 @@ void poly_uniform_eta(poly *a,
 {
   unsigned int ctr;
   unsigned int nblocks = ((N/2 * (1U << SETABITS)) / (2*ETA + 1)
-                          + STREAM256_BLOCKBYTES) / STREAM256_BLOCKBYTES;
-  unsigned int buflen = nblocks*STREAM256_BLOCKBYTES;
+                          + STREAM128_BLOCKBYTES) / STREAM128_BLOCKBYTES;
+  unsigned int buflen = nblocks*STREAM128_BLOCKBYTES;
   unsigned char buf[buflen];
-  stream256_state state;
+  stream128_state state;
 
-  stream256_init(&state, seed, nonce);
-  stream256_squeezeblocks(buf, nblocks, &state);
+  stream128_init(&state, seed, nonce);
+  stream128_squeezeblocks(buf, nblocks, &state);
 
   ctr = rej_eta(a->coeffs, N, buf, buflen);
 
   while(ctr < N) {
-    stream256_squeezeblocks(buf, 1, &state);
-    ctr += rej_eta_ref(a->coeffs + ctr, N - ctr, buf, STREAM256_BLOCKBYTES);
+    stream128_squeezeblocks(buf, 1, &state);
+    ctr += rej_eta_ref(a->coeffs + ctr, N - ctr, buf, STREAM128_BLOCKBYTES);
   }
 }
 
@@ -541,7 +541,7 @@ void poly_uniform_eta_4x(poly *a0,
 {
   unsigned int i, ctr0, ctr1, ctr2, ctr3;
   unsigned char inbuf[4][SEEDBYTES + 2];
-  unsigned char outbuf[4][2*SHAKE256_RATE];
+  unsigned char outbuf[4][2*SHAKE128_RATE];
   __m256i state[25];
 
   for(i= 0; i < SEEDBYTES; ++i) {
@@ -559,9 +559,9 @@ void poly_uniform_eta_4x(poly *a0,
   inbuf[3][SEEDBYTES+0] = nonce3;
   inbuf[3][SEEDBYTES+1] = nonce3 >> 8;
 
-  shake256_absorb4x(state, inbuf[0], inbuf[1], inbuf[2], inbuf[3],
+  shake128_absorb4x(state, inbuf[0], inbuf[1], inbuf[2], inbuf[3],
                     SEEDBYTES + 2);
-  shake256_squeezeblocks4x(outbuf[0], outbuf[1], outbuf[2], outbuf[3], 2,
+  shake128_squeezeblocks4x(outbuf[0], outbuf[1], outbuf[2], outbuf[3], 2,
                            state);
 
   ctr0 = rej_eta(a0->coeffs, N, outbuf[0], 2*SHAKE128_RATE);
@@ -644,7 +644,7 @@ static unsigned int rej_gamma1m1_ref(uint32_t *a,
 *              - uint16_t nonce: 16-bit nonce
 **************************************************/
 void poly_uniform_gamma1m1(poly *a,
-                           const unsigned char seed[SEEDBYTES],
+                           const unsigned char seed[CRHBYTES],
                            uint16_t nonce)
 {
   unsigned int i, ctr, off;
@@ -674,54 +674,54 @@ void poly_uniform_gamma1m1_4x(poly *a0,
                               poly *a1,
                               poly *a2,
                               poly *a3,
-                              const unsigned char seed[SEEDBYTES],
+                              const unsigned char seed[CRHBYTES],
                               uint16_t nonce0,
                               uint16_t nonce1,
                               uint16_t nonce2,
                               uint16_t nonce3)
 {
   unsigned int i, ctr0, ctr1, ctr2, ctr3;
-  unsigned char inbuf[4][SEEDBYTES + 2];
+  unsigned char inbuf[4][CRHBYTES + 2];
   unsigned char outbuf[4][5*SHAKE256_RATE];
   __m256i state[25];
 
-  for(i = 0; i < SEEDBYTES; ++i) {
+  for(i = 0; i < CRHBYTES; ++i) {
     inbuf[0][i] = seed[i];
     inbuf[1][i] = seed[i];
     inbuf[2][i] = seed[i];
     inbuf[3][i] = seed[i];
   }
-  inbuf[0][SEEDBYTES + 0] = nonce0 & 0xFF;
-  inbuf[0][SEEDBYTES + 1] = nonce0 >> 8;
-  inbuf[1][SEEDBYTES + 0] = nonce1 & 0xFF;
-  inbuf[1][SEEDBYTES + 1] = nonce1 >> 8;
-  inbuf[2][SEEDBYTES + 0] = nonce2 & 0xFF;
-  inbuf[2][SEEDBYTES + 1] = nonce2 >> 8;
-  inbuf[3][SEEDBYTES + 0] = nonce3 & 0xFF;
-  inbuf[3][SEEDBYTES + 1] = nonce3 >> 8;
+  inbuf[0][CRHBYTES + 0] = nonce0 & 0xFF;
+  inbuf[0][CRHBYTES + 1] = nonce0 >> 8;
+  inbuf[1][CRHBYTES + 0] = nonce1 & 0xFF;
+  inbuf[1][CRHBYTES + 1] = nonce1 >> 8;
+  inbuf[2][CRHBYTES + 0] = nonce2 & 0xFF;
+  inbuf[2][CRHBYTES + 1] = nonce2 >> 8;
+  inbuf[3][CRHBYTES + 0] = nonce3 & 0xFF;
+  inbuf[3][CRHBYTES + 1] = nonce3 >> 8;
 
   shake256_absorb4x(state, inbuf[0], inbuf[1], inbuf[2], inbuf[3],
-                    SEEDBYTES + 2);
+                    CRHBYTES + 2);
   shake256_squeezeblocks4x(outbuf[0], outbuf[1], outbuf[2], outbuf[3], 5,
                            state);
 
-  ctr0 = rej_gamma1m1(a0->coeffs, N, outbuf[0], 5*SHAKE128_RATE);
-  ctr1 = rej_gamma1m1(a1->coeffs, N, outbuf[1], 5*SHAKE128_RATE);
-  ctr2 = rej_gamma1m1(a2->coeffs, N, outbuf[2], 5*SHAKE128_RATE);
-  ctr3 = rej_gamma1m1(a3->coeffs, N, outbuf[3], 5*SHAKE128_RATE);
+  ctr0 = rej_gamma1m1(a0->coeffs, N, outbuf[0], 5*SHAKE256_RATE);
+  ctr1 = rej_gamma1m1(a1->coeffs, N, outbuf[1], 5*SHAKE256_RATE);
+  ctr2 = rej_gamma1m1(a2->coeffs, N, outbuf[2], 5*SHAKE256_RATE);
+  ctr3 = rej_gamma1m1(a3->coeffs, N, outbuf[3], 5*SHAKE256_RATE);
 
   while(ctr0 < N || ctr1 < N || ctr2 < N || ctr3 < N) {
-    shake128_squeezeblocks4x(outbuf[0], outbuf[1], outbuf[2], outbuf[3], 1,
+    shake256_squeezeblocks4x(outbuf[0], outbuf[1], outbuf[2], outbuf[3], 1,
                              state);
 
     ctr0 += rej_gamma1m1_ref(a0->coeffs + ctr0, N - ctr0, outbuf[0],
-                            SHAKE128_RATE);
+                            SHAKE256_RATE);
     ctr1 += rej_gamma1m1_ref(a1->coeffs + ctr1, N - ctr1, outbuf[1],
-                            SHAKE128_RATE);
+                            SHAKE256_RATE);
     ctr2 += rej_gamma1m1_ref(a2->coeffs + ctr2, N - ctr2, outbuf[2],
-                            SHAKE128_RATE);
+                            SHAKE256_RATE);
     ctr3 += rej_gamma1m1_ref(a3->coeffs + ctr3, N - ctr3, outbuf[3],
-                            SHAKE128_RATE);
+                            SHAKE256_RATE);
   }
 }
 #endif

@@ -431,7 +431,7 @@ void poly_uniform_eta(poly *a,
   ctr = rej_eta(a->coeffs, N, buf, buflen);
 
   while(ctr < N) {
-    stream256_squeezeblocks(buf, 1, &state);
+    stream128_squeezeblocks(buf, 1, &state);
     ctr += rej_eta(a->coeffs + ctr, N - ctr, buf, STREAM128_BLOCKBYTES);
   }
 }

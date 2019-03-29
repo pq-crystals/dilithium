@@ -18,17 +18,16 @@
 * Arguments:   - polyvecl mat[K]: output matrix
 *              - const unsigned char rho[]: byte array containing seed rho
 **************************************************/
+#ifdef DILITHIUM_90S
 void expand_mat(polyvecl mat[K], const unsigned char rho[SEEDBYTES]) {
   unsigned int i, j;
 
   for(i = 0; i < K; ++i)
     for(j = 0; j < L; ++j)
-      poly_uniform(&mat[i].vec[j], rho, i + 16*j);
+      poly_uniform(&mat[i].vec[j], rho, (i << 8) + j);
 }
-
-#if L == 2 && K == 3
-
-void expand_mat_avx(polyvecl mat[3], const unsigned char rho[SEEDBYTES])
+#elif L == 2 && K == 3
+void expand_mat(polyvecl mat[3], const unsigned char rho[SEEDBYTES])
 {
   poly t0, t1;
 
@@ -36,69 +35,63 @@ void expand_mat_avx(polyvecl mat[3], const unsigned char rho[SEEDBYTES])
                   &mat[0].vec[1],
                   &mat[1].vec[0],
                   &mat[1].vec[1],
-                  rho, 0, 16, 1, 17);
+                  rho, 0, 1, 256, 257);
   poly_uniform_4x(&mat[2].vec[0],
                   &mat[2].vec[1],
                   &t0,
                   &t1,
-                  rho, 2, 18, 0, 0);
+                  rho, 512, 513, 0, 0);
 }
-
 #elif L == 3 && K == 4
-
-void expand_mat_avx(polyvecl mat[4], const unsigned char rho[SEEDBYTES])
+void expand_mat(polyvecl mat[4], const unsigned char rho[SEEDBYTES])
 {
   poly_uniform_4x(&mat[0].vec[0],
                   &mat[0].vec[1],
                   &mat[0].vec[2],
                   &mat[1].vec[0],
-                  rho, 0, 16, 32, 1);
+                  rho, 0, 1, 2, 256);
   poly_uniform_4x(&mat[1].vec[1],
                   &mat[1].vec[2],
                   &mat[2].vec[0],
                   &mat[2].vec[1],
-                  rho, 17, 33, 2, 18);
+                  rho, 257, 258, 512, 513);
   poly_uniform_4x(&mat[2].vec[2],
                   &mat[3].vec[0],
                   &mat[3].vec[1],
                   &mat[3].vec[2],
-                  rho, 34, 3, 19, 35);
+                  rho, 514, 768, 769, 770);
 }
-
 #elif L == 4 && K == 5
-
-void expand_mat_avx(polyvecl mat[5], const unsigned char rho[SEEDBYTES])
+void expand_mat(polyvecl mat[5], const unsigned char rho[SEEDBYTES])
 {
   poly_uniform_4x(&mat[0].vec[0],
                   &mat[0].vec[1],
                   &mat[0].vec[2],
                   &mat[0].vec[3],
-                  rho, 0, 16, 32, 48);
+                  rho, 0, 1, 2, 3);
   poly_uniform_4x(&mat[1].vec[0],
                   &mat[1].vec[1],
                   &mat[1].vec[2],
                   &mat[1].vec[3],
-                  rho, 1, 17, 33, 49);
+                  rho, 256, 257, 258, 259);
   poly_uniform_4x(&mat[2].vec[0],
                   &mat[2].vec[1],
                   &mat[2].vec[2],
                   &mat[2].vec[3],
-                  rho, 2, 18, 34, 50);
+                  rho, 512, 513, 514, 515);
   poly_uniform_4x(&mat[3].vec[0],
                   &mat[3].vec[1],
                   &mat[3].vec[2],
                   &mat[3].vec[3],
-                  rho, 3, 19, 35, 51);
+                  rho, 768, 769, 770, 771);
   poly_uniform_4x(&mat[4].vec[0],
                   &mat[4].vec[1],
                   &mat[4].vec[2],
                   &mat[4].vec[3],
-                  rho, 4, 20, 36, 52);
+                  rho, 1024, 1025, 1026, 1027);
 }
-
 #elif L == 5 && K == 6
-
-void expand_mat_avx(polyvecl mat[6], const unsigned char rho[SEEDBYTES])
+void expand_mat(polyvecl mat[6], const unsigned char rho[SEEDBYTES])
 {
   poly t0, t1;
 
@@ -106,44 +99,43 @@ void expand_mat_avx(polyvecl mat[6], const unsigned char rho[SEEDBYTES])
                   &mat[0].vec[1],
                   &mat[0].vec[2],
                   &mat[0].vec[3],
-                  rho, 0, 16, 32, 48);
+                  rho, 0, 1, 2, 3);
   poly_uniform_4x(&mat[0].vec[4],
                   &mat[1].vec[0],
                   &mat[1].vec[1],
                   &mat[1].vec[2],
-                  rho, 64, 1, 17, 33);
+                  rho, 4, 256, 257, 258);
   poly_uniform_4x(&mat[1].vec[3],
                   &mat[1].vec[4],
                   &mat[2].vec[0],
                   &mat[2].vec[1],
-                  rho, 49, 65, 2, 18);
+                  rho, 259, 260, 512, 513);
   poly_uniform_4x(&mat[2].vec[2],
                   &mat[2].vec[3],
                   &mat[2].vec[4],
                   &mat[3].vec[0],
-                  rho, 34, 50, 66, 3);
+                  rho, 514, 515, 516, 768);
   poly_uniform_4x(&mat[3].vec[1],
                   &mat[3].vec[2],
                   &mat[3].vec[3],
                   &mat[3].vec[4],
-                  rho, 19, 35, 51, 67);
+                  rho, 769, 770, 771, 772);
   poly_uniform_4x(&mat[4].vec[0],
                   &mat[4].vec[1],
                   &mat[4].vec[2],
                   &mat[4].vec[3],
-                  rho, 4, 20, 36, 52);
+                  rho, 1024, 1025, 1026, 1027);
   poly_uniform_4x(&mat[4].vec[4],
                   &mat[5].vec[0],
                   &mat[5].vec[1],
                   &mat[5].vec[2],
-                  rho, 68, 5, 21, 37);
+                  rho, 1028, 1280, 1281, 1282);
   poly_uniform_4x(&mat[5].vec[3],
                   &mat[5].vec[4],
                   &t0,
                   &t1,
-                  rho, 53, 69, 0, 0);
+                  rho, 1283, 1284, 0, 0);
 }
-
 #else
 #error
 #endif
@@ -232,10 +224,15 @@ int crypto_sign_keypair(unsigned char *pk, unsigned char *sk) {
   key = seedbuf + 2*SEEDBYTES;
 
   /* Expand matrix */
-  expand_mat_avx(mat, rho);
+  expand_mat(mat, rho);
 
   /* Sample short vectors s1 and s2 */
-#if L == 2 && K == 3
+#ifdef DILITHIUM_90S
+  for(i = 0; i < L; ++i)
+    poly_uniform_eta(&s1.vec[i], rhoprime, nonce++);
+  for(i = 0; i < K; ++i)
+    poly_uniform_eta(&s2.vec[i], rhoprime, nonce++);
+#elif L == 2 && K == 3
   poly_uniform_eta_4x(&s1.vec[0], &s1.vec[1], &s2.vec[0], &s2.vec[1], rhoprime,
                       nonce, nonce + 1, nonce + 2, nonce + 3);
   poly_uniform_eta(&s2.vec[2], rhoprime, nonce + 4);
@@ -313,9 +310,8 @@ int crypto_sign(unsigned char *sm,
 {
   unsigned long long i;
   unsigned int n;
-  unsigned char seedbuf[2*SEEDBYTES + CRHBYTES];
-  unsigned char tr[CRHBYTES];
-  unsigned char *rho, *key, *mu;
+  unsigned char seedbuf[2*SEEDBYTES + 3*CRHBYTES];
+  unsigned char *rho, *tr, *key, *mu, *rhoprime;
   uint16_t nonce = 0;
   poly c, chat;
   polyvecl mat[K], s1, y, yhat, z;
@@ -323,15 +319,11 @@ int crypto_sign(unsigned char *sm,
   polyveck h, cs2, ct0;
 
   rho = seedbuf;
-  key = seedbuf + SEEDBYTES;
-  mu = seedbuf + 2*SEEDBYTES;
+  tr = rho + SEEDBYTES;
+  key = tr + CRHBYTES;
+  mu = key + SEEDBYTES;
+  rhoprime = mu + CRHBYTES;
   unpack_sk(rho, key, tr, &s1, &s2, &t0, sk);
-
-#ifdef RANDOMIZED_SIGNING
-  randombytes(key, SEEDBYTES);
-#else
-  hash(key, seedbuf + SEEDBYTES, SEEDBYTES + CRHBYTES);
-#endif
 
   /* Copy tr and message into the sm buffer,
    * backwards since m and sm can be equal in SUPERCOP API */
@@ -343,30 +335,39 @@ int crypto_sign(unsigned char *sm,
   /* Compute CRH(tr, msg) */
   crh(mu, sm + CRYPTO_BYTES - CRHBYTES, CRHBYTES + mlen);
 
+#ifdef RANDOMIZED_SIGNING
+  randombytes(rhoprime, CRHBYTES);
+#else
+  crh(rhoprime, key, SEEDBYTES + CRHBYTES);
+#endif
+
   /* Expand matrix and transform vectors */
-  expand_mat_avx(mat, rho);
+  expand_mat(mat, rho);
   polyvecl_ntt(&s1);
   polyveck_ntt(&s2);
   polyveck_ntt(&t0);
 
   rej:
   /* Sample intermediate vector y */
-#if L == 2
-  poly_uniform_gamma1m1_4x(&y.vec[0], &y.vec[1], &yhat.vec[0], &yhat.vec[1], key,
-                           nonce, nonce + 1, 0, 0);
+#ifdef DILITHIUM_90S
+  for(i = 0; i < L; ++i)
+    poly_uniform_gamma1m1(&y.vec[i], rhoprime, nonce++);
+#elif L == 2
+  poly_uniform_gamma1m1_4x(&y.vec[0], &y.vec[1], &yhat.vec[0], &yhat.vec[1],
+                           rhoprime, nonce, nonce + 1, 0, 0);
   nonce += 2;
 #elif L == 3
-  poly_uniform_gamma1m1_4x(&y.vec[0], &y.vec[1], &y.vec[2], &yhat.vec[0], key,
-                           nonce, nonce + 1, nonce + 2, 0);
+  poly_uniform_gamma1m1_4x(&y.vec[0], &y.vec[1], &y.vec[2], &yhat.vec[0],
+                           rhoprime, nonce, nonce + 1, nonce + 2, 0);
   nonce += 3;
 #elif L == 4
-  poly_uniform_gamma1m1_4x(&y.vec[0], &y.vec[1], &y.vec[2], &y.vec[3], key,
-                           nonce, nonce + 1, nonce + 2, nonce + 3);
+  poly_uniform_gamma1m1_4x(&y.vec[0], &y.vec[1], &y.vec[2], &y.vec[3],
+                           rhoprime, nonce, nonce + 1, nonce + 2, nonce + 3);
   nonce += 4;
 #elif L == 5
-  poly_uniform_gamma1m1_4x(&y.vec[0], &y.vec[1], &y.vec[2], &y.vec[3], key,
-                           nonce, nonce + 1, nonce + 2, nonce + 3);
-  poly_uniform_gamma1m1(&y.vec[4], key, nonce + 4);
+  poly_uniform_gamma1m1_4x(&y.vec[0], &y.vec[1], &y.vec[2], &y.vec[3],
+                           rhoprime, nonce, nonce + 1, nonce + 2, nonce + 3);
+  poly_uniform_gamma1m1(&y.vec[4], rhoprime, nonce + 4);
   nonce += 5;
 #else
 #error
@@ -479,7 +480,7 @@ int crypto_sign_open(unsigned char *m,
   crh(mu, m + CRYPTO_BYTES - CRHBYTES, CRHBYTES + *mlen);
 
   /* Matrix-vector multiplication; compute Az - c2^dt1 */
-  expand_mat_avx(mat, rho);
+  expand_mat(mat, rho);
   polyvecl_ntt(&z);
   for(i = 0; i < K ; ++i)
     polyvecl_pointwise_acc_invmontgomery(&tmp1.vec[i], &mat[i], &z);

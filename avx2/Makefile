@@ -37,7 +37,7 @@ test/test_dilithium-90s: test/test_dilithium.c randombytes.c test/cpucycles.c \
   test/speed.c $(NINETIES_SOURCES) randombytes.h test/cpucycles.h test/speed.h \
   $(NINETIES_HEADERS)
 	$(CC) $(CFLAGS) -DDILITHIUM_90S $< randombytes.c test/cpucycles.c \
-	  test/speed.c $(NINETIES_SOURCES) -o $@ -lcrypto
+	  test/speed.c $(NINETIES_SOURCES) -o $@
 
 test/test_mul: test/test_mul.c randombytes.c test/cpucycles.c test/speed.c \
   $(KECCAK_SOURCES) randombytes.h test/cpucycles.h test/speed.h \

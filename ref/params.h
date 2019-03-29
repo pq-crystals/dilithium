@@ -6,11 +6,7 @@
 #endif
 
 #define SEEDBYTES 32
-#ifdef DILITHIUM_90S
-#define CRHBYTES 64
-#else
 #define CRHBYTES 48
-#endif
 #define N 256
 #define Q 8380417
 #define QBITS 23
