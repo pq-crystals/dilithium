@@ -16,9 +16,19 @@ all: PQCgenKAT_sign test/test_vectors test/test_dilithium
 PQCgenKAT_sign: PQCgenKAT_sign.c rng.c $(KECCAK_SOURCES) rng.h $(KECCAK_HEADERS)
 	$(CC) $(NISTFLAGS) $< rng.c $(KECCAK_SOURCES) -o $@ -lcrypto
 
+PQCgenKAT_sign-90s: PQCgenKAT_sign.c rng.c $(NINETIES_SOURCES) rng.h \
+  $(NINETIES_HEADERS)
+	$(CC) $(NISTFLAGS) -DDILITHIUM_90S $< rng.c $(NINETIES_SOURCES) \
+	  -o $@ -lcrypto
+
 test/test_vectors: test/test_vectors.c rng.c $(KECCAK_SOURCES) rng.h \
   $(KECCAK_HEADERS)
 	$(CC) $(NISTFLAGS) $< rng.c $(KECCAK_SOURCES) -o $@ -lcrypto
+
+test/test_vectors-90s: test/test_vectors.c rng.c $(NINETIES_SOURCES) rng.h \
+  $(NINETIES_HEADERS)
+	$(CC) $(NISTFLAGS) -DDILITHIUM_90S $< rng.c $(NINETIES_SOURCES) \
+	  -o $@ -lcrypto
 
 test/test_dilithium: test/test_dilithium.c randombytes.c test/cpucycles.c \
   test/speed.c $(KECCAK_SOURCES) randombytes.h test/cpucycles.h test/speed.h \
@@ -43,7 +53,9 @@ test/test_mul: test/test_mul.c randombytes.c test/cpucycles.c est/speed.c \
 clean:
 	rm -f *~ test/*~
 	rm -f PQCgenKAT_sign
+	rm -f PQCgenKAT_sign-90s
 	rm -f test/test_vectors
+	rm -f test/test_vectors-90s
 	rm -f test/test_dilithium
 	rm -f test/test_dilithium-90s
 	rm -f test/test_mul

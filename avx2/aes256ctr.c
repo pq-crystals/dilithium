@@ -89,7 +89,7 @@ void aes256ctr_init(aes256ctr_ctx *state,
   __m128i temp0, temp1, temp2, temp4;
   int idx = 0;
 
-  state->n = _mm_set_epi64x(0, (uint64_t)nonce << 48);
+  state->n = _mm_set_epi64x(0, (uint64_t)(nonce >> 8 | nonce << 8) << 48);
 
   state->rkeys[idx++] = key0;
   temp0 = key0;
