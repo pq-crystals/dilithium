@@ -52,7 +52,7 @@ int main(void) {
     polyeta_unpack(&tmp, buf);
     for(j = 0; j < N; ++j)
       if(tmp.coeffs[j] != s.vec[0].coeffs[j])
-        printf("ERROR in polyeta_(un)pack!\n");
+        fprintf(stderr, "ERROR in polyeta_(un)pack!\n");
 
     printf("s = ((");
     for(j = 0; j < L; ++j) {
@@ -74,7 +74,7 @@ int main(void) {
     polyz_unpack(&tmp, buf);
     for(j = 0; j < N; ++j)
       if(tmp.coeffs[j] != y.vec[0].coeffs[j])
-        printf("ERROR in polyz_(un)pack!\n");
+        fprintf(stderr, "ERROR in polyz_(un)pack!\n");
 
     printf("y = ((");
     for(j = 0; j < L; ++j) {
@@ -102,7 +102,7 @@ int main(void) {
       tmp.coeffs[j] = w1.vec[0].coeffs[j]*ALPHA + w0.vec[0].coeffs[j];
       if(tmp.coeffs[j] >= Q) tmp.coeffs[j] -= Q;
       if(tmp.coeffs[j] != w.vec[0].coeffs[j])
-        printf("ERROR in poly_decompose\n");
+        fprintf(stderr, "ERROR in poly_decompose\n");
     }
 
     polyw1_pack(buf, &w1.vec[0]);
@@ -111,11 +111,11 @@ int main(void) {
       tmp.coeffs[2*j+1] = buf[j] >> 4;
       if(tmp.coeffs[2*j+0] != w1.vec[0].coeffs[2*j+0]
          || tmp.coeffs[2*j+1] != w1.vec[0].coeffs[2*j+1])
-        printf("ERROR in polyw1_pack!\n");
+        fprintf(stderr, "ERROR in polyw1_pack!\n");
     }
 
     if(poly_chknorm(&w1.vec[0], 16))
-      printf("ERROR in poly_chknorm(.,16)!\n");
+      fprintf(stderr, "ERROR in poly_chknorm(.,16)!\n");
 
     printf("w1 = ((");
     for(j = 0; j < K; ++j) {
@@ -142,20 +142,20 @@ int main(void) {
     for(j = 0; j < N; ++j) {
       tmp.coeffs[j] = (t1.vec[0].coeffs[j] << D) + t0.vec[0].coeffs[j] - Q;
       if(tmp.coeffs[j] != w.vec[0].coeffs[j])
-        printf("ERROR in poly_power2round!\n");
+        fprintf(stderr, "ERROR in poly_power2round!\n");
     }
 
     polyt1_pack(buf, &t1.vec[0]);
     polyt1_unpack(&tmp, buf);
     for(j = 0; j < N; ++j) {
       if(tmp.coeffs[j] != t1.vec[0].coeffs[j])
-        printf("ERROR in polyt1_(un)pack!\n");
+        fprintf(stderr, "ERROR in polyt1_(un)pack!\n");
     }
     polyt0_pack(buf, &t0.vec[0]);
     polyt0_unpack(&tmp, buf);
     for(j = 0; j < N; ++j) {
       if(tmp.coeffs[j] != t0.vec[0].coeffs[j])
-        printf("ERROR in polyt0_(un)pack!\n");
+        fprintf(stderr, "ERROR in polyt0_(un)pack!\n");
     }
 
     printf("t1 = ((");
@@ -180,7 +180,7 @@ int main(void) {
 
     polyveck_freeze(&t0);
     if(poly_chknorm(&t0.vec[0], (1U << (D-1)) + 1))
-      printf("ERROR in poly_chknorm(., 1 << (D-1) + 1)!\n");
+      fprintf(stderr, "ERROR in poly_chknorm(., 1 << (D-1) + 1)!\n");
 
     challenge(&c, seed, &w);
     printf("c = (");
@@ -197,7 +197,7 @@ int main(void) {
     unpack_sig(&y, &h, &tmp, buf);
     for(j = 0; j < N; j++)
       if(c.coeffs[j] != tmp.coeffs[j])
-        printf("ERROR in (un)pack_sig!\n");
+        fprintf(stderr, "ERROR in (un)pack_sig!\n");
 
     printf("\n");
   }
