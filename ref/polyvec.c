@@ -193,17 +193,16 @@ void polyveck_sub(polyveck *w, const polyveck *u, const polyveck *v) {
 /*************************************************
 * Name:        polyveck_shiftl
 *
-* Description: Multiply vector of polynomials of Length K by 2^k without modular
-*              reduction. Assumes input coefficients to be less than 2^{32-k}.
+* Description: Multiply vector of polynomials of Length K by 2^D without modular
+*              reduction. Assumes input coefficients to be less than 2^{32-D}.
 *
 * Arguments:   - polyveck *v: pointer to input/output vector
-*              - unsigned int k: exponent
 **************************************************/
-void polyveck_shiftl(polyveck *v, unsigned int k) {
+void polyveck_shiftl(polyveck *v) {
   unsigned int i;
 
   for(i = 0; i < K; ++i)
-    poly_shiftl(&v->vec[i], k);
+    poly_shiftl(&v->vec[i]);
 }
 
 /*************************************************

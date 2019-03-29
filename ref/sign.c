@@ -322,7 +322,7 @@ int crypto_sign_open(unsigned char *m,
 
   chat = c;
   poly_ntt(&chat);
-  polyveck_shiftl(&t1, D);
+  polyveck_shiftl(&t1);
   polyveck_ntt(&t1);
   for(i = 0; i < K; ++i)
     poly_pointwise_invmontgomery(&tmp2.vec[i], &chat, &t1.vec[i]);

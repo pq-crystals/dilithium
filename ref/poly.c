@@ -110,18 +110,17 @@ void poly_sub(poly *c, const poly *a, const poly *b) {
 /*************************************************
 * Name:        poly_shiftl
 *
-* Description: Multiply polynomial by 2^k without modular reduction. Assumes
-*              input coefficients to be less than 2^{32-k}.
+* Description: Multiply polynomial by 2^D without modular reduction. Assumes
+*              input coefficients to be less than 2^{32-D}.
 *
 * Arguments:   - poly *a: pointer to input/output polynomial
-*              - unsigned int k: exponent
 **************************************************/
-void poly_shiftl(poly *a, unsigned int k) {
+void poly_shiftl(poly *a) {
   unsigned int i;
   DBENCH_START();
 
   for(i = 0; i < N; ++i)
-    a->coeffs[i] <<= k;
+    a->coeffs[i] <<= D;
 
   DBENCH_STOP(*tmul);
 }

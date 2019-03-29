@@ -33,16 +33,16 @@ static void poly_naivemul(poly *c, const poly *a, const poly *b) {
 int main(void) {
   unsigned int i, j;
   unsigned long long t1[NTESTS], t2[NTESTS], overhead;
-  unsigned char rndbuf[840];  // 840 = 5*SHAKE128_RATE
+  unsigned char seed[SEEDBYTES];
+  uint16_t nonce = 0;
   poly a, b, c1, c2;
 
   overhead = cpucycles_overhead();
+  randombytes(seed, sizeof(seed));
 
   for(i = 0; i < NTESTS; ++i) {
-    randombytes(rndbuf, sizeof(rndbuf));
-    poly_uniform(&a, rndbuf);
-    randombytes(rndbuf, sizeof(rndbuf));
-    poly_uniform(&b, rndbuf);
+    poly_uniform(&a, seed, nonce++);
+    poly_uniform(&b, seed, nonce++);
 
     t1[i] = cpucycles_start();
     poly_naivemul(&c1, &a, &b);
@@ -58,10 +58,10 @@ int main(void) {
     poly_csubq(&c2);
     for(j = 0; j < N; ++j)
       if(c2.coeffs[j] != c1.coeffs[j])
-        printf("FAILURE: c2[%u]: %u %u\n", j, c1.coeffs[j], c2.coeffs[j]);
+        printf("FAILURE: c2[%u] = %u != %u\n", j, c2.coeffs[j], c1.coeffs[j]);
   }
 
   print_results("naive: ", t1, NTESTS);
-  print_results("fft: ", t2, NTESTS);
+  print_results("ntt: ", t2, NTESTS);
   return 0;
 }

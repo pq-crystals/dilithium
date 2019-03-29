@@ -1,3 +1,4 @@
+#include <stdint.h>
 #include "params.h"
 #include "reduce.h"
 #include "ntt.h"
