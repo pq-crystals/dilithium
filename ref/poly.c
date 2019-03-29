@@ -420,19 +420,19 @@ void poly_uniform_eta(poly *a,
 {
   unsigned int ctr;
   unsigned int nblocks = ((N/2 * (1U << SETABITS)) / (2*ETA + 1)
-                          + STREAM256_BLOCKBYTES) / STREAM256_BLOCKBYTES;
-  unsigned int buflen = nblocks*STREAM256_BLOCKBYTES;
+                          + STREAM128_BLOCKBYTES) / STREAM128_BLOCKBYTES;
+  unsigned int buflen = nblocks*STREAM128_BLOCKBYTES;
   unsigned char buf[buflen];
-  stream256_state state;
+  stream128_state state;
 
-  stream256_init(&state, seed, nonce);
-  stream256_squeezeblocks(buf, nblocks, &state);
+  stream128_init(&state, seed, nonce);
+  stream128_squeezeblocks(buf, nblocks, &state);
 
   ctr = rej_eta(a->coeffs, N, buf, buflen);
 
   while(ctr < N) {
     stream256_squeezeblocks(buf, 1, &state);
-    ctr += rej_eta(a->coeffs + ctr, N - ctr, buf, STREAM256_BLOCKBYTES);
+    ctr += rej_eta(a->coeffs + ctr, N - ctr, buf, STREAM128_BLOCKBYTES);
   }
 }
 
@@ -499,7 +499,7 @@ static unsigned int rej_gamma1m1(uint32_t *a,
 *              - uint16_t nonce: 16-bit nonce
 **************************************************/
 void poly_uniform_gamma1m1(poly *a,
-                           const unsigned char seed[SEEDBYTES],
+                           const unsigned char seed[CRHBYTES],
                            uint16_t nonce)
 {
   unsigned int i, ctr, off;

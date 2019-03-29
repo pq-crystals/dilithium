@@ -33,7 +33,7 @@ void poly_uniform_eta(poly *a,
                       const unsigned char seed[SEEDBYTES],
                       uint16_t nonce);
 void poly_uniform_gamma1m1(poly *a,
-                           const unsigned char seed[SEEDBYTES],
+                           const unsigned char seed[CRHBYTES],
                            uint16_t nonce);
 
 void polyeta_pack(unsigned char *r, const poly *a);

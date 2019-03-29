@@ -23,7 +23,7 @@ void expand_mat(polyvecl mat[K], const unsigned char rho[SEEDBYTES]) {
 
   for(i = 0; i < K; ++i)
     for(j = 0; j < L; ++j)
-      poly_uniform(&mat[i].vec[j], rho, i + 16*j);
+      poly_uniform(&mat[i].vec[j], rho, (i << 8) + j);
 }
 
 /*************************************************
@@ -166,9 +166,8 @@ int crypto_sign(unsigned char *sm,
 {
   unsigned long long i;
   unsigned int n;
-  unsigned char seedbuf[2*SEEDBYTES + CRHBYTES];
-  unsigned char tr[CRHBYTES];
-  unsigned char *rho, *key, *mu;
+  unsigned char seedbuf[2*SEEDBYTES + 3*CRHBYTES];
+  unsigned char *rho, *tr, *key, *mu, *rhoprime;
   uint16_t nonce = 0;
   poly c, chat;
   polyvecl mat[K], s1, y, yhat, z;
@@ -176,15 +175,11 @@ int crypto_sign(unsigned char *sm,
   polyveck h, cs2, ct0;
 
   rho = seedbuf;
-  key = seedbuf + SEEDBYTES;
-  mu = seedbuf + 2*SEEDBYTES;
+  tr = rho + SEEDBYTES;
+  key = tr + CRHBYTES;
+  mu = key + SEEDBYTES;
+  rhoprime = mu + CRHBYTES;
   unpack_sk(rho, key, tr, &s1, &s2, &t0, sk);
-
-#ifdef RANDOMIZED_SIGNING
-  randombytes(key, SEEDBYTES);
-#else
-  hash(key, seedbuf + SEEDBYTES, SEEDBYTES + CRHBYTES);
-#endif
 
   /* Copy tr and message into the sm buffer,
    * backwards since m and sm can be equal in SUPERCOP API */
@@ -195,6 +190,12 @@ int crypto_sign(unsigned char *sm,
 
   /* Compute CRH(tr, msg) */
   crh(mu, sm + CRYPTO_BYTES - CRHBYTES, CRHBYTES + mlen);
+
+#ifdef RANDOMIZED_SIGNING
+  randombytes(rhoprime, CRHBYTES);
+#else
+  crh(rhoprime, key, SEEDBYTES + CRHBYTES);
+#endif
 
   /* Expand matrix and transform vectors */
   expand_mat(mat, rho);

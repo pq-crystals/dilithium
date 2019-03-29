@@ -505,16 +505,16 @@ void shake256_absorb(keccak_state *state,
 }
 
 void shake256_stream_init(keccak_state *state,
-                          const unsigned char seed[SEEDBYTES],
+                          const unsigned char seed[CRHBYTES],
                           uint16_t nonce)
 {
   unsigned int i;
-  unsigned char buf[SEEDBYTES + 2];
+  unsigned char buf[CRHBYTES + 2];
 
-  for(i = 0; i < SEEDBYTES; ++i)
+  for(i = 0; i < CRHBYTES; ++i)
     buf[i] = seed[i];
-  buf[SEEDBYTES] = nonce;
-  buf[SEEDBYTES+1] = nonce >> 8;
+  buf[CRHBYTES] = nonce;
+  buf[CRHBYTES+1] = nonce >> 8;
 
   keccak_absorb(state->s, SHAKE256_RATE, buf, sizeof(buf), 0x1F);
 }
