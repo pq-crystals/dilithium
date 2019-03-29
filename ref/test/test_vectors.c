@@ -180,7 +180,7 @@ int main(void) {
 
     polyveck_freeze(&t0);
     if(poly_chknorm(&t0.vec[0], (1U << (D-1)) + 1))
-      printf("ERROR in poly_chknorm(., 1 << (D-1))!\n");
+      printf("ERROR in poly_chknorm(., 1 << (D-1) + 1)!\n");
 
     challenge(&c, seed, &w);
     printf("c = (");

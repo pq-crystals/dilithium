@@ -1,6 +1,6 @@
 CC ?= /usr/bin/cc
 CFLAGS += -Wall -Wextra -march=native -mtune=native -O3 -fomit-frame-pointer
-CFLAGS += -DUSE_RDPMC
+#CFLAGS += -DUSE_RDPMC
 #CFLAGS += -DDBENCH
 NISTFLAGS += -march=native -mtune=native -O3 -fomit-frame-pointer
 SOURCES = sign.c polyvec.c poly.c packing.c ntt.c reduce.c rounding.c
