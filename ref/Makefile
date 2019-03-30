@@ -8,8 +8,8 @@ HEADERS = api.h params.h sign.h polyvec.h poly.h packing.h ntt.h reduce.h \
   rounding.h symmetric.h
 KECCAK_SOURCES = $(SOURCES) fips202.c
 KECCAK_HEADERS = $(HEADERS) fips202.h
-NINETIES_SOURCES = $(SOURCES) fips202.c aes256ctr.c sha256.c sha512.c
-NINETIES_HEADERS = $(HEADERS) fips202.h aes256ctr.h sha2.h
+NINETIES_SOURCES = $(SOURCES) fips202.c aes256ctr.c
+NINETIES_HEADERS = $(HEADERS) fips202.h aes256ctr.h
 
 all: PQCgenKAT_sign test/test_vectors test/test_dilithium
 
