@@ -267,7 +267,7 @@ int crypto_sign_keypair(unsigned char *pk, unsigned char *sk) {
   polyvecl_ntt(&s1hat);
   for(i = 0; i < K; ++i) {
     polyvecl_pointwise_acc_invmontgomery(&t.vec[i], &mat[i], &s1hat);
-    poly_reduce(&t.vec[i]);
+    //poly_reduce(&t.vec[i]);
     poly_invntt_montgomery(&t.vec[i]);
   }
 
@@ -378,7 +378,7 @@ int crypto_sign(unsigned char *sm,
   polyvecl_ntt(&yhat);
   for(i = 0; i < K; ++i) {
     polyvecl_pointwise_acc_invmontgomery(&w.vec[i], &mat[i], &yhat);
-    poly_reduce(&w.vec[i]);
+    //poly_reduce(&w.vec[i]);
     poly_invntt_montgomery(&w.vec[i]);
   }
 
