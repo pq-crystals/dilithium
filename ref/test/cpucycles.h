@@ -1,6 +1,8 @@
 #ifndef CPUCYCLES_H
 #define CPUCYCLES_H
 
+#include "../config.h"
+
 #ifdef DBENCH
 #define DBENCH_START() unsigned long long time = cpucycles_start()
 #define DBENCH_STOP(t) t += cpucycles_stop() - time - timing_overhead

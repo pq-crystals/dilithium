@@ -1,6 +1,8 @@
 CC ?= /usr/bin/cc
 CFLAGS += -Wall -Wextra -march=native -mtune=native -O3 -fomit-frame-pointer
+#CFLAGS += -DMODE=3
 NISTFLAGS += -march=native -mtune=native -O3 -fomit-frame-pointer
+#NISTFLAGS += -DMODE=3
 SOURCES = sign.c polyvec.c poly.c packing.c ntt.c reduce.c rounding.c
 HEADERS = config.h api.h params.h sign.h polyvec.h poly.h packing.h ntt.h \
   reduce.h rounding.h symmetric.h

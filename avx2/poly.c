@@ -729,10 +729,10 @@ void poly_uniform_gamma1m1_4x(poly *a0,
   shake256_squeezeblocks4x(outbuf[0], outbuf[1], outbuf[2], outbuf[3], 5,
                            state);
 
-  ctr0 = rej_gamma1m1(a0->coeffs, N, outbuf[0], 5*SHAKE256_RATE);
-  ctr1 = rej_gamma1m1(a1->coeffs, N, outbuf[1], 5*SHAKE256_RATE);
-  ctr2 = rej_gamma1m1(a2->coeffs, N, outbuf[2], 5*SHAKE256_RATE);
-  ctr3 = rej_gamma1m1(a3->coeffs, N, outbuf[3], 5*SHAKE256_RATE);
+  ctr0 = rej_gamma1m1_ref(a0->coeffs, N, outbuf[0], 5*SHAKE256_RATE);
+  ctr1 = rej_gamma1m1_ref(a1->coeffs, N, outbuf[1], 5*SHAKE256_RATE);
+  ctr2 = rej_gamma1m1_ref(a2->coeffs, N, outbuf[2], 5*SHAKE256_RATE);
+  ctr3 = rej_gamma1m1_ref(a3->coeffs, N, outbuf[3], 5*SHAKE256_RATE);
 
   while(ctr0 < N || ctr1 < N || ctr2 < N || ctr3 < N) {
     shake256_squeezeblocks4x(outbuf[0], outbuf[1], outbuf[2], outbuf[3], 1,

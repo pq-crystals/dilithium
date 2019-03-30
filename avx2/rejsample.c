@@ -274,8 +274,8 @@ unsigned int rej_uniform(uint32_t *r,
 {
   unsigned int i, ctr, pos;
   uint32_t vec[8];
-  __m256i tmp0, tmp1;
-  uint32_t good = 0;
+  __m256i d, tmp;
+  uint32_t good;
   const __m256i bound = _mm256_set1_epi32(Q);
   DBENCH_START();
 
@@ -284,24 +284,26 @@ unsigned int rej_uniform(uint32_t *r,
     for(i = 0; i < 8; i++) {
       vec[i]  = buf[pos++];
       vec[i] |= (uint32_t)buf[pos++] << 8;
-      vec[i] |= (uint32_t)(buf[pos++] & 0x7F) << 16;
+      vec[i] |= (uint32_t)buf[pos++] << 16;
+      vec[i] &= 0x7FFFFF;
     }
 
-    tmp0 = _mm256_loadu_si256((__m256i *)vec);
-    tmp1 = _mm256_cmpgt_epi32(bound, tmp0);
-    good = _mm256_movemask_ps((__m256)tmp1);
+    d = _mm256_loadu_si256((__m256i *)vec);
+    tmp = _mm256_cmpgt_epi32(bound, d);
+    good = _mm256_movemask_ps((__m256)tmp);
 
     __m128i rid = _mm_loadl_epi64((__m128i *)&idx[good]);
-    tmp1 = _mm256_cvtepu8_epi32(rid);
-    tmp0 = _mm256_permutevar8x32_epi32(tmp0, tmp1);
-    _mm256_storeu_si256((__m256i *)&r[ctr], tmp0);
+    tmp = _mm256_cvtepu8_epi32(rid);
+    d = _mm256_permutevar8x32_epi32(d, tmp);
+    _mm256_storeu_si256((__m256i *)&r[ctr], d);
     ctr += __builtin_popcount(good);
   }
 
   while(ctr < len && pos + 3 <= buflen) {
     vec[0]  = buf[pos++];
     vec[0] |= (uint32_t)buf[pos++] << 8;
-    vec[0] |= ((uint32_t)buf[pos++] & 0x7F) << 16;
+    vec[0] |= (uint32_t)buf[pos++] << 16;
+    vec[0] &= 0x7FFFFF;
 
     if(vec[0] < Q)
       r[ctr++] = vec[0];
@@ -320,7 +322,7 @@ unsigned int rej_eta(uint32_t *r,
   uint8_t vec[32];
   __m256i tmp0, tmp1;
   __m128i d0, d1, rid;
-  uint32_t good = 0;
+  uint32_t good;
   const __m256i bound = _mm256_set1_epi8(2*ETA + 1);
   const __m256i off = _mm256_set1_epi32(Q + ETA);
   DBENCH_START();
@@ -400,8 +402,8 @@ unsigned int rej_gamma1m1(uint32_t *r,
 {
   unsigned int i, ctr, pos;
   uint32_t vec[8];
-  __m256i tmp0, tmp1;
-  uint32_t good = 0;
+  __m256i d, tmp;
+  uint32_t good;
   const __m256i bound = _mm256_set1_epi32(2*GAMMA1 - 1);
   const __m256i off = _mm256_set1_epi32(Q + GAMMA1 - 1);
   DBENCH_START();
@@ -421,15 +423,15 @@ unsigned int rej_gamma1m1(uint32_t *r,
       pos += 5;
     }
 
-    tmp0 = _mm256_loadu_si256((__m256i *)vec);
-    tmp1 = _mm256_cmpgt_epi32(bound, tmp0);
-    good = _mm256_movemask_ps((__m256)tmp1);
-    tmp0 = _mm256_sub_epi32(off, tmp0);
+    d = _mm256_loadu_si256((__m256i *)vec);
+    tmp = _mm256_cmpgt_epi32(bound, d);
+    good = _mm256_movemask_ps((__m256)tmp);
+    d = _mm256_sub_epi32(off, d);
 
     __m128i rid = _mm_loadl_epi64((__m128i *)&idx[good]);
-    tmp1 = _mm256_cvtepu8_epi32(rid);
-    tmp0 = _mm256_permutevar8x32_epi32(tmp0, tmp1);
-    _mm256_storeu_si256((__m256i *)&r[ctr], tmp0);
+    tmp = _mm256_cvtepu8_epi32(rid);
+    d = _mm256_permutevar8x32_epi32(d, tmp);
+    _mm256_storeu_si256((__m256i *)&r[ctr], d);
     ctr += __builtin_popcount(good);
   }
 
@@ -444,7 +446,7 @@ unsigned int rej_gamma1m1(uint32_t *r,
     vec[1] |= (uint32_t)buf[pos + 4] << 12;
 
     pos += 5;
-    
+
     if(vec[0] <= 2*GAMMA1 - 2)
       r[ctr++] = Q + GAMMA1 - 1 - vec[0];
     if(vec[1] <= 2*GAMMA1 - 2 && ctr < len)

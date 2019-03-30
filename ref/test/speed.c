@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include "speed.h"
+#include "../config.h"
 
 static int cmp_llu(const void *a, const void *b) {
   if(*(unsigned long long *)a < *(unsigned long long *)b) return -1;
