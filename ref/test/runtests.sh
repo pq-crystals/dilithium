@@ -2,30 +2,30 @@
 
 make clean;
 
-for m in 0 1 2 3; do
+for m in 1 2 3 4; do
   export NISTFLAGS="-DMODE=$m";
   make PQCgenKAT_sign;
-  make PQCgenKAT_sign-90s;
+  make PQCgenKAT_sign-AES;
   make test/test_vectors;
-  make test/test_vectors-90s;
+  make test/test_vectors-AES;
 
   ./PQCgenKAT_sign;
   for FILE in PQCsignKAT_*.req PQCsignKAT_*.rsp; do
     mv "$FILE" "$(echo $FILE | sed s/^PQCsignKAT/PQCsignKAT-SHAKE/)";
   done
 
-  ./PQCgenKAT_sign-90s;
+  ./PQCgenKAT_sign-AES;
   for FILE in PQCsignKAT_*.req PQCsignKAT_*.rsp; do
-    mv "$FILE" "$(echo $FILE | sed s/^PQCsignKAT/PQCsignKAT-90s/)";
+    mv "$FILE" "$(echo $FILE | sed s/^PQCsignKAT/PQCsignKAT-AES/)";
   done
 
   ./test/test_vectors > testvectors$m-SHAKE;
-  ./test/test_vectors-90s > testvectors$m-90s;
+  ./test/test_vectors-AES > testvectors$m-AES;
 
   rm PQCgenKAT_sign;
-  rm PQCgenKAT_sign-90s;
+  rm PQCgenKAT_sign-AES;
   rm test/test_vectors;
-  rm test/test_vectors-90s;
+  rm test/test_vectors-AES;
 done
 
 make clean;

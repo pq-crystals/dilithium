@@ -45,7 +45,7 @@ int main(void) {
       }
     }
 
-#ifdef DILITHIUM_90S
+#ifdef USE_AES
     for(j = 0; j < L; ++j)
       poly_uniform_eta(&s.vec[j], seed, j);
 #elif L == 2
@@ -83,7 +83,7 @@ int main(void) {
       }
     }
 
-#ifdef DILITHIUM_90S
+#ifdef USE_AES
     for(j = 0; j < L; ++j)
       poly_uniform_gamma1m1(&y.vec[j], seed, j);
 #elif L == 2

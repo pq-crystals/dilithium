@@ -18,7 +18,7 @@
 * Arguments:   - polyvecl mat[K]: output matrix
 *              - const unsigned char rho[]: byte array containing seed rho
 **************************************************/
-#ifdef DILITHIUM_90S
+#ifdef USE_AES
 void expand_mat(polyvecl mat[K], const unsigned char rho[SEEDBYTES]) {
   unsigned int i, j;
 
@@ -227,7 +227,7 @@ int crypto_sign_keypair(unsigned char *pk, unsigned char *sk) {
   expand_mat(mat, rho);
 
   /* Sample short vectors s1 and s2 */
-#ifdef DILITHIUM_90S
+#ifdef USE_AES
   for(i = 0; i < L; ++i)
     poly_uniform_eta(&s1.vec[i], rhoprime, nonce++);
   for(i = 0; i < K; ++i)
@@ -349,7 +349,7 @@ int crypto_sign(unsigned char *sm,
 
   rej:
   /* Sample intermediate vector y */
-#ifdef DILITHIUM_90S
+#ifdef USE_AES
   for(i = 0; i < L; ++i)
     poly_uniform_gamma1m1(&y.vec[i], rhoprime, nonce++);
 #elif L == 2

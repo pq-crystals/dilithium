@@ -415,7 +415,7 @@ void poly_uniform(poly *a,
   }
 }
 
-#ifndef DILITHIUM_90S
+#ifndef USE_AES
 void poly_uniform_4x(poly *a0,
                      poly *a1,
                      poly *a2,
@@ -552,7 +552,7 @@ void poly_uniform_eta(poly *a,
   }
 }
 
-#ifndef DILITHIUM_90S
+#ifndef USE_AES
 void poly_uniform_eta_4x(poly *a0,
                          poly *a1,
                          poly *a2,
@@ -693,7 +693,7 @@ void poly_uniform_gamma1m1(poly *a,
   }
 }
 
-#ifndef DILITHIUM_90S
+#ifndef USE_AES
 void poly_uniform_gamma1m1_4x(poly *a0,
                               poly *a1,
                               poly *a2,

@@ -3,7 +3,7 @@
 
 #include "params.h"
 
-#ifdef DILITHIUM_90S
+#ifdef USE_AES
 
 #include "aes256ctr.h"
 #include "fips202.h"
