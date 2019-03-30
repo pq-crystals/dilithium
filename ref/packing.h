@@ -26,6 +26,6 @@ void unpack_sk(unsigned char rho[SEEDBYTES],
                polyveck *t0,
                const unsigned char sk[CRYPTO_SECRETKEYBYTES]);
 int unpack_sig(polyvecl *z, polyveck *h, poly *c,
-                const unsigned char sig[CRYPTO_BYTES]);
+               const unsigned char sig[CRYPTO_BYTES]);
 
 #endif

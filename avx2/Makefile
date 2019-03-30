@@ -3,7 +3,7 @@ CFLAGS += -Wall -Wextra -march=native -mtune=native -O3 -fomit-frame-pointer
 #CFLAGS += -DUSE_RDPMC
 #CFLAGS += -DDBENCH
 NISTFLAGS += -march=native -mtune=native -O3 -fomit-frame-pointer
-SOURCES = sign.c polyvec.c poly.c packing.c ntt.s invntt.s pointwise.s \
+SOURCES = sign.c polyvec.c poly.c packing.c ntt.s invntt.s pointwise.S \
   nttconsts.c rejsample.c reduce.s rounding.c
 HEADERS = api.h params.h sign.h polyvec.h poly.h packing.h ntt.h rejsample.h \
   reduce.h rounding.h symmetric.h

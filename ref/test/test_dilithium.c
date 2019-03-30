@@ -7,7 +7,7 @@
 #include "../sign.h"
 
 #define MLEN 59
-#define NTESTS 5000
+#define NTESTS 1000
 
 unsigned long long timing_overhead;
 #ifdef DBENCH

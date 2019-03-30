@@ -451,7 +451,6 @@ void shake128_absorb(keccak_state *state,
   keccak_absorb(state->s, SHAKE128_RATE, input, inlen, 0x1F);
 }
 
-// FIXME
 void shake128_stream_init(keccak_state *state,
                           const unsigned char seed[SEEDBYTES],
                           uint16_t nonce)

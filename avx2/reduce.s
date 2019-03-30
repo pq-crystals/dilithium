@@ -1,13 +1,9 @@
 .global reduce_avx
 reduce_avx:
-mov		%rsp,%r11
-and		$31,%r11
-sub		%r11,%rsp
-
+#consts
 vmovdqa		_8x23ones(%rip),%ymm0
-xor		%eax,%eax
 
-.p2align 5
+xor		%eax,%eax
 _looptop_rdc32:
 #load
 vmovdqa		(%rdi),%ymm1
@@ -43,24 +39,19 @@ vmovdqa		%ymm3,32(%rdi)
 vmovdqa		%ymm5,64(%rdi)
 vmovdqa		%ymm7,96(%rdi)
 
-add		$1,%eax
 add		$128,%rdi
+add		$1,%eax
 cmp		$8,%eax
 jb _looptop_rdc32
 
-add		%r11,%rsp
 ret
 
 .global csubq_avx
 csubq_avx:
-mov		%rsp,%r11
-and		$31,%r11
-sub		%r11,%rsp
-
+#consts
 vmovdqa		_8xq(%rip),%ymm0
-xor		%eax,%eax
 
-.p2align 5
+xor		%eax,%eax
 _looptop_csubq:
 #load
 vmovdqa		(%rdi),%ymm1
@@ -92,10 +83,9 @@ vmovdqa		%ymm3,32(%rdi)
 vmovdqa		%ymm5,64(%rdi)
 vmovdqa		%ymm7,96(%rdi)
 
-add		$1,%eax
 add		$128,%rdi
+add		$1,%eax
 cmp		$8,%eax
 jb _looptop_csubq
 
-add		%r11,%rsp
 ret

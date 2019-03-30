@@ -339,7 +339,20 @@ int poly_chknorm(const poly *a, uint32_t B) {
   return 0;
 }
 
-//FIXME
+/*************************************************
+* Name:        rej_uniform
+*
+* Description: Sample uniformly random coefficients in [0, Q-1] by
+*              performing rejection sampling using array of random bytes.
+*
+* Arguments:   - uint32_t *a: pointer to output array (allocated)
+*              - unsigned int len: number of coefficients to be sampled
+*              - const unsigned char *buf: array of random bytes
+*              - unsigned int buflen: length of array of random bytes
+*
+* Returns number of sampled coefficients. Can be smaller than len if not enough
+* random bytes were given.
+**************************************************/
 static unsigned int rej_uniform_ref(uint32_t *a,
                                     unsigned int len,
                                     const unsigned char *buf,
@@ -364,7 +377,18 @@ static unsigned int rej_uniform_ref(uint32_t *a,
   return ctr;
 }
 
-//FIXME
+/*************************************************
+* Name:        poly_uniform
+*
+* Description: Sample polynomial with uniformly random coefficients
+*              in [0,Q-1] by performing rejection sampling using the
+*              output stream from SHAKE256(seed|nonce).
+*
+* Arguments:   - poly *a: pointer to output polynomial
+*              - const unsigned char seed[]: byte array with seed of length
+*                                            SEEDBYTES
+*              - uint16_t nonce: 2-byte nonce
+**************************************************/
 void poly_uniform(poly *a,
                   const unsigned char seed[SEEDBYTES],
                   uint16_t nonce)
@@ -640,7 +664,7 @@ static unsigned int rej_gamma1m1_ref(uint32_t *a,
 *
 * Arguments:   - poly *a: pointer to output polynomial
 *              - const unsigned char seed[]: byte array with seed of length
-*                                            SEEDBYTES + CRHBYTES
+*                                            CRHBYTES
 *              - uint16_t nonce: 16-bit nonce
 **************************************************/
 void poly_uniform_gamma1m1(poly *a,

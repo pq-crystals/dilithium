@@ -22,5 +22,6 @@ void invntt_levels5t7_avx(uint32_t a[N],
                           const uint32_t zetas_inv[7]);
 
 void pointwise_avx(uint32_t c[N], const uint32_t a[N], const uint32_t b[N]);
+void pointwise_acc_avx(uint32_t c[N], const uint32_t *a, const uint32_t *b);
 
 #endif
