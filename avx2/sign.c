@@ -458,7 +458,7 @@ int crypto_sign_open(unsigned char *m,
   unsigned char mu[CRHBYTES];
   poly c, chat, cp;
   polyvecl mat[K], z;
-  polyveck t1, w1, h, tmp1, tmp2;
+  polyveck t1, w1, h, tmp;
 
   if(smlen < CRYPTO_BYTES)
     goto badsig;
@@ -483,22 +483,22 @@ int crypto_sign_open(unsigned char *m,
   expand_mat(mat, rho);
   polyvecl_ntt(&z);
   for(i = 0; i < K ; ++i)
-    polyvecl_pointwise_acc_invmontgomery(&tmp1.vec[i], &mat[i], &z);
+    polyvecl_pointwise_acc_invmontgomery(&w1.vec[i], &mat[i], &z);
 
   chat = c;
   poly_ntt(&chat);
   polyveck_shiftl(&t1);
   polyveck_ntt(&t1);
   for(i = 0; i < K; ++i)
-    poly_pointwise_invmontgomery(&tmp2.vec[i], &chat, &t1.vec[i]);
+    poly_pointwise_invmontgomery(&tmp.vec[i], &chat, &t1.vec[i]);
 
-  polyveck_sub(&tmp1, &tmp1, &tmp2);
-  polyveck_reduce(&tmp1);
-  polyveck_invntt_montgomery(&tmp1);
+  polyveck_sub(&w1, &w1, &tmp);
+  polyveck_reduce(&w1);
+  polyveck_invntt_montgomery(&w1);
 
   /* Reconstruct w1 */
-  polyveck_csubq(&tmp1);
-  polyveck_use_hint(&w1, &tmp1, &h);
+  polyveck_csubq(&w1);
+  polyveck_use_hint(&w1, &w1, &h);
 
   /* Call random oracle and verify challenge */
   challenge(&cp, mu, &w1);
