@@ -317,7 +317,7 @@ void poly_use_hint(poly * restrict a,
 **************************************************/
 int poly_chknorm(const poly *a, uint32_t B) {
   unsigned int i;
-  int32_t t;
+  uint32_t t;
   DBENCH_START();
 
   /* It is ok to leak which coefficient violates the bound since
@@ -326,10 +326,10 @@ int poly_chknorm(const poly *a, uint32_t B) {
   for(i = 0; i < N; ++i) {
     /* Absolute value of centralized representative */
     t = (Q-1)/2 - a->coeffs[i];
-    t ^= (t >> 31);
+    t ^= (int32_t)t >> 31;
     t = (Q-1)/2 - t;
 
-    if((uint32_t)t >= B) {
+    if(t >= B) {
       DBENCH_STOP(*tsample);
       return 1;
     }
@@ -715,13 +715,13 @@ void poly_uniform_gamma1m1_4x(poly *a0,
     inbuf[2][i] = seed[i];
     inbuf[3][i] = seed[i];
   }
-  inbuf[0][CRHBYTES + 0] = nonce0 & 0xFF;
+  inbuf[0][CRHBYTES + 0] = nonce0;
   inbuf[0][CRHBYTES + 1] = nonce0 >> 8;
-  inbuf[1][CRHBYTES + 0] = nonce1 & 0xFF;
+  inbuf[1][CRHBYTES + 0] = nonce1;
   inbuf[1][CRHBYTES + 1] = nonce1 >> 8;
-  inbuf[2][CRHBYTES + 0] = nonce2 & 0xFF;
+  inbuf[2][CRHBYTES + 0] = nonce2;
   inbuf[2][CRHBYTES + 1] = nonce2 >> 8;
-  inbuf[3][CRHBYTES + 0] = nonce3 & 0xFF;
+  inbuf[3][CRHBYTES + 0] = nonce3;
   inbuf[3][CRHBYTES + 1] = nonce3 >> 8;
 
   shake256_absorb4x(state, inbuf[0], inbuf[1], inbuf[2], inbuf[3],
@@ -949,15 +949,18 @@ void polyt0_unpack(poly * restrict r, const unsigned char * restrict a) {
 
   for(i = 0; i < N/4; ++i) {
     r->coeffs[4*i+0]  = a[7*i+0];
-    r->coeffs[4*i+0] |= (uint32_t)(a[7*i+1] & 0x3F) << 8;
+    r->coeffs[4*i+0] |= (uint32_t)a[7*i+1] << 8;
+    r->coeffs[4*i+0] &= 0x3FFF;
 
     r->coeffs[4*i+1]  = a[7*i+1] >> 6;
     r->coeffs[4*i+1] |= (uint32_t)a[7*i+2] << 2;
-    r->coeffs[4*i+1] |= (uint32_t)(a[7*i+3] & 0x0F) << 10;
+    r->coeffs[4*i+1] |= (uint32_t)a[7*i+3] << 10;
+    r->coeffs[4*i+1] &= 0x3FFF;
 
     r->coeffs[4*i+2]  = a[7*i+3] >> 4;
     r->coeffs[4*i+2] |= (uint32_t)a[7*i+4] << 4;
-    r->coeffs[4*i+2] |= (uint32_t)(a[7*i+5] & 0x03) << 12;
+    r->coeffs[4*i+2] |= (uint32_t)a[7*i+5] << 12;
+    r->coeffs[4*i+2] &= 0x3FFF;
 
     r->coeffs[4*i+3]  = a[7*i+5] >> 2;
     r->coeffs[4*i+3] |= (uint32_t)a[7*i+6] << 6;
@@ -1025,7 +1028,8 @@ void polyz_unpack(poly * restrict r, const unsigned char * restrict a) {
   for(i = 0; i < N/2; ++i) {
     r->coeffs[2*i+0]  = a[5*i+0];
     r->coeffs[2*i+0] |= (uint32_t)a[5*i+1] << 8;
-    r->coeffs[2*i+0] |= (uint32_t)(a[5*i+2] & 0x0F) << 16;
+    r->coeffs[2*i+0] |= (uint32_t)a[5*i+2] << 16;
+    r->coeffs[2*i+0] &= 0xFFFFF;
 
     r->coeffs[2*i+1]  = a[5*i+2] >> 4;
     r->coeffs[2*i+1] |= (uint32_t)a[5*i+3] << 4;

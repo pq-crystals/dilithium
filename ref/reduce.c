@@ -16,7 +16,7 @@ uint32_t montgomery_reduce(uint64_t a) {
   uint64_t t;
 
   t = a * QINV;
-  t &= (1ULL << 32) - 1;
+  t &= ((uint64_t)1 << 32) - 1;
   t *= Q;
   t = a + t;
   t >>= 32;
