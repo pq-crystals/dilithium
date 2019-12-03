@@ -14,7 +14,7 @@ extern const unsigned long long timing_overhead;
 extern unsigned long long *tred, *tadd, *tmul, *tround, *tsample, *tpack;
 #endif
 
-extern const uint32_t _8x2q[8];
+extern const uint32_t _8x2q[8] asm("_8x2q");
 
 /*************************************************
 * Name:        poly_reduce

@@ -1,7 +1,7 @@
 CC ?= /usr/bin/cc
+NISTFLAGS += -march=native -mtune=native -O3 -fomit-frame-pointer $(CFLAGS)
 CFLAGS += -Wall -Wextra -march=native -mtune=native -O3 -fomit-frame-pointer
 #CFLAGS += -DMODE=3
-NISTFLAGS += -march=native -mtune=native -O3 -fomit-frame-pointer
 #NISTFLAGS += -DMODE=3
 SOURCES = sign.c polyvec.c poly.c packing.c ntt.s invntt.s pointwise.S \
   nttconsts.c rejsample.c reduce.s rounding.c

@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 
-void reduce_avx(uint32_t a[N]);
-void csubq_avx(uint32_t a[N]);
+void reduce_avx(uint32_t a[N]) asm("reduce_avx");
+void csubq_avx(uint32_t a[N]) asm("csubq_avx");
 
 #endif
