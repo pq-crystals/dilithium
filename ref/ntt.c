@@ -14,8 +14,8 @@ static const uint32_t zetas_inv[N] = {6403635, 846154, 6979993, 4442679, 1362209
 * Name:        ntt
 *
 * Description: Forward NTT, in-place. No modular reduction is performed after
-*              additions or subtractions. Hence output coefficients can be up
-*              to 16*Q larger than the coefficients of the input polynomial.
+*              additions or subtractions. If input coefficients are below 2*Q,
+*              then output coefficients are below 18*Q.
 *              Output vector is in bitreversed order.
 *
 * Arguments:   - uint32_t p[N]: input/output coefficient array
