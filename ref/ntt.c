@@ -38,7 +38,7 @@ void ntt(uint32_t p[N]) {
 }
 
 /*************************************************
-* Name:        invntt_frominvmont
+* Name:        invntt_tomont
 *
 * Description: Inverse NTT and multiplication by Montgomery factor 2^32.
 *              In-place. No modular reductions after additions or
@@ -47,7 +47,7 @@ void ntt(uint32_t p[N]) {
 *
 * Arguments:   - uint32_t p[N]: input/output coefficient array
 **************************************************/
-void invntt_frominvmont(uint32_t p[N]) {
+void invntt_tomont(uint32_t p[N]) {
   unsigned int start, len, j, k;
   uint32_t t, zeta;
   const uint32_t f = (((uint64_t)MONT*MONT % Q) * (Q-1) % Q) * ((Q-1) >> 8) % Q;

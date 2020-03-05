@@ -1,5 +1,6 @@
 #include <stdint.h>
 #include "params.h"
+#include "rounding.h"
 
 /*************************************************
 * Name:        power2round

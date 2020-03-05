@@ -1,5 +1,5 @@
 CC ?= /usr/bin/cc
-CFLAGS += -Wall -Wextra -march=native -mtune=native -O3 -fomit-frame-pointer
+CFLAGS += -Wall -Wextra -Wpedantic -Wmissing-prototypes -Wredundant-decls -march=native -mtune=native -O3 -fomit-frame-pointer
 #CFLAGS += -DMODE=3
 NISTFLAGS += -march=native -mtune=native -O3 -fomit-frame-pointer
 #NISTFLAGS += -DMODE=3

@@ -51,8 +51,8 @@ int main(void) {
     t2[i] = cpucycles_start();
     poly_ntt(&a);
     poly_ntt(&b);
-    poly_pointwise_invmontgomery(&c2, &a, &b);
-    poly_invntt_montgomery(&c2);
+    poly_pointwise_montgomery(&c2, &a, &b);
+    poly_invntt_tomont(&c2);
     t2[i] = cpucycles_stop() - t2[i] - overhead;
 
     poly_csubq(&c2);

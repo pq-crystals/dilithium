@@ -5,6 +5,6 @@
 #include "params.h"
 
 void ntt(uint32_t p[N]);
-void invntt_frominvmont(uint32_t p[N]);
+void invntt_tomont(uint32_t p[N]);
 
 #endif

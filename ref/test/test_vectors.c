@@ -90,9 +90,9 @@ int main(void) {
 
     polyvecl_ntt(&y);
     for(j = 0; j < K; ++j) {
-      polyvecl_pointwise_acc_invmontgomery(w.vec+j, mat+j, &y);
+      polyvecl_pointwise_acc_montgomery(w.vec+j, mat+j, &y);
       poly_reduce(w.vec+j);
-      poly_invntt_montgomery(w.vec+j);
+      poly_invntt_tomont(w.vec+j);
     }
 
     polyveck_csubq(&w);

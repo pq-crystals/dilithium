@@ -1,7 +1,7 @@
 #include "cpucycles.h"
 
 unsigned long long cpucycles_overhead(void) {
-  unsigned long long t0, t1, overhead = -1;
+  unsigned long long t0, t1, overhead = (unsigned int)-1;
   unsigned int i;
 
   for(i = 0; i < 100000; ++i) {
