@@ -2,12 +2,12 @@
 #define CONFIG_H
 
 #ifndef MODE
-#define MODE 3
+#define MODE 4
 #endif
 
 //#define USE_AES
 //#define RANDOMIZED_SIGNING
-//#define USE_RDPMC
+#define USE_RDPMC
 //#define SERIALIZE_RDC
 //#define DBENCH
 

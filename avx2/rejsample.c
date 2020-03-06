@@ -1,6 +1,7 @@
 #include <stdint.h>
 #include <immintrin.h>
 #include "params.h"
+#include "rejsample.h"
 #include "test/cpucycles.h"
 
 #ifdef DBENCH

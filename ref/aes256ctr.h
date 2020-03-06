@@ -3,6 +3,8 @@
 
 #include <stdint.h>
 
+#define AES256CTR_BLOCKBYTES 64
+
 typedef struct {
   uint64_t sk_exp[120];
   uint32_t ivw[16];

@@ -1,6 +1,7 @@
 #ifndef SIGN_H
 #define SIGN_H
 
+#include <stdint.h>
 #include "params.h"
 #include "poly.h"
 #include "polyvec.h"

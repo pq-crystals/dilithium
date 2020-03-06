@@ -14,8 +14,8 @@
 #define stream256_init(STATE, SEED, NONCE) aes256ctr_init(STATE, SEED, NONCE)
 #define stream256_squeezeblocks(OUT, OUTBLOCKS, STATE) aes256ctr_squeezeblocks(OUT, OUTBLOCKS, STATE)
 
-#define STREAM128_BLOCKBYTES 64
-#define STREAM256_BLOCKBYTES 64
+#define STREAM128_BLOCKBYTES AES256CTR_BLOCKBYTES
+#define STREAM256_BLOCKBYTES AES256CTR_BLOCKBYTES
 
 typedef aes256ctr_ctx stream128_state;
 typedef aes256ctr_ctx stream256_state;

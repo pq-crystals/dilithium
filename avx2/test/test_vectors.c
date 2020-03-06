@@ -5,6 +5,9 @@
 #include "../polyvec.h"
 #include "../packing.h"
 #include "../rng.h"
+#ifdef USE_AES
+#include "../aes256ctr.h"
+#endif
 
 #define NVECTORS 1000
 
@@ -16,6 +19,9 @@ int main(void) {
   polyvecl s, y, mat[K];
   polyveck w, w1, w0, t1, t0, h;
   int32_t u;
+#ifdef USE_AES
+  aes256ctr_ctx state;
+#endif
 
   for (i = 0; i < CRHBYTES; ++i)
     seed[i] = i;
@@ -46,8 +52,9 @@ int main(void) {
     }
 
 #ifdef USE_AES
+    aes256ctr_init(&state, seed, 0);
     for(j = 0; j < L; ++j)
-      poly_uniform_eta(&s.vec[j], seed, j);
+      poly_uniform_eta_aes(&s.vec[j], &state, j);
 #elif L == 2
     poly_uniform_eta_4x(&s.vec[0], &s.vec[1], &tmp, &tmp, seed,
                         0, 1, 2, 3);
@@ -84,8 +91,9 @@ int main(void) {
     }
 
 #ifdef USE_AES
+    aes256ctr_init(&state, seed, 0);
     for(j = 0; j < L; ++j)
-      poly_uniform_gamma1m1(&y.vec[j], seed, j);
+      poly_uniform_gamma1m1_aes(&y.vec[j], &state, j);
 #elif L == 2
     poly_uniform_gamma1m1_4x(&y.vec[0], &y.vec[1], &tmp, &tmp,
                              seed, 0, 1, 2, 3);
@@ -124,9 +132,9 @@ int main(void) {
 
     polyvecl_ntt(&y);
     for(j = 0; j < K; ++j) {
-      polyvecl_pointwise_acc_invmontgomery(w.vec+j, mat+j, &y);
+      polyvecl_pointwise_acc_montgomery(w.vec+j, mat+j, &y);
       poly_reduce(w.vec+j);
-      poly_invntt_montgomery(w.vec+j);
+      poly_invntt_tomont(w.vec+j);
     }
 
     polyveck_csubq(&w);

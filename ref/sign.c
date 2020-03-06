@@ -13,7 +13,8 @@
 *
 * Description: Implementation of ExpandA. Generates matrix A with uniformly
 *              random coefficients a_{i,j} by performing rejection
-*              sampling on the output stream of SHAKE128(rho|i|j).
+*              sampling on the output stream of SHAKE128(rho|j|i)
+*              or AES256CTR(rho,j|i).
 *
 * Arguments:   - polyvecl mat[K]: output matrix
 *              - const uint8_t rho[]: byte array containing seed rho
@@ -103,7 +104,7 @@ int crypto_sign_keypair(unsigned char *pk, unsigned char *sk) {
   polyvecl s1, s1hat;
   polyveck s2, t, t1, t0;
 
-  /* Expand 32 bytes of randomness into rho, rhoprime and key */
+  /* Get randomness for rho, rhoprime and key */
   randombytes(seedbuf, 3*SEEDBYTES);
   rho = seedbuf;
   rhoprime = seedbuf + SEEDBYTES;
@@ -293,7 +294,7 @@ int crypto_sign_open(unsigned char *m,
   uint8_t mu[CRHBYTES];
   poly c, chat, cp;
   polyvecl mat[K], z;
-  polyveck t1, w1, h, tmp1, tmp2;
+  polyveck t1, w1, h, tmp;
 
   if(smlen < CRYPTO_BYTES)
     goto badsig;
@@ -319,22 +320,22 @@ int crypto_sign_open(unsigned char *m,
 
   polyvecl_ntt(&z);
   for(i = 0; i < K ; ++i)
-    polyvecl_pointwise_acc_montgomery(&tmp1.vec[i], &mat[i], &z);
+    polyvecl_pointwise_acc_montgomery(&w1.vec[i], &mat[i], &z);
 
   chat = c;
   poly_ntt(&chat);
   polyveck_shiftl(&t1);
   polyveck_ntt(&t1);
   for(i = 0; i < K; ++i)
-    poly_pointwise_montgomery(&tmp2.vec[i], &chat, &t1.vec[i]);
+    poly_pointwise_montgomery(&tmp.vec[i], &chat, &t1.vec[i]);
 
-  polyveck_sub(&tmp1, &tmp1, &tmp2);
-  polyveck_reduce(&tmp1);
-  polyveck_invntt_tomont(&tmp1);
+  polyveck_sub(&w1, &w1, &tmp);
+  polyveck_reduce(&w1);
+  polyveck_invntt_tomont(&w1);
 
   /* Reconstruct w1 */
-  polyveck_csubq(&tmp1);
-  polyveck_use_hint(&w1, &tmp1, &h);
+  polyveck_csubq(&w1);
+  polyveck_use_hint(&w1, &w1, &h);
 
   /* Call random oracle and verify challenge */
   challenge(&cp, mu, &w1);

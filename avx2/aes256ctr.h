@@ -4,6 +4,8 @@
 #include <stdint.h>
 #include <immintrin.h>
 
+#define AES256CTR_BLOCKBYTES 64
+
 typedef struct {
   __m128i rkeys[16];
   __m128i n;

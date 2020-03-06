@@ -348,7 +348,7 @@ static unsigned int rej_uniform(uint32_t *a,
 *
 * Description: Sample polynomial with uniformly random coefficients
 *              in [0,Q-1] by performing rejection sampling using the
-*              output stream from SHAKE256(seed|nonce).
+*              output stream of SHAKE256(seed|nonce) or AES256CTR(seed,nonce).
 *
 * Arguments:   - poly *a: pointer to output polynomial
 *              - const uint8_t seed[]: byte array with seed of length SEEDBYTES
@@ -432,7 +432,7 @@ static unsigned int rej_eta(uint32_t *a,
 *
 * Description: Sample polynomial with uniformly random coefficients
 *              in [-ETA,ETA] by performing rejection sampling using the
-*              output stream from SHAKE256(seed|nonce).
+*              output stream from SHAKE256(seed|nonce) or AES256CTR(seed,nonce).
 *
 * Arguments:   - poly *a: pointer to output polynomial
 *              - const uint8_t seed[]: byte array with seed of length SEEDBYTES
@@ -516,7 +516,8 @@ static unsigned int rej_gamma1m1(uint32_t *a,
 *
 * Description: Sample polynomial with uniformly random coefficients
 *              in [-(GAMMA1 - 1), GAMMA1 - 1] by performing rejection
-*              sampling on output stream of SHAKE256(seed|nonce).
+*              sampling on output stream of SHAKE256(seed|nonce)
+*              or AES256CTR(seed,nonce).
 *
 * Arguments:   - poly *a: pointer to output polynomial
 *              - const uint8_t seed[]: byte array with seed of length CRHBYTES
