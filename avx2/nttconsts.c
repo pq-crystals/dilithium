@@ -5,20 +5,20 @@
 #define MONT 4193792ULL
 #define DIV (((MONT*MONT % Q) * (Q-1) % Q) * ((Q-1) >> 8) % Q)
 
-const uint32_t _8xqinv[8] __attribute__((aligned(32)))
+const uint32_t _8xqinv[8] asm("_8xqinv") __attribute__((aligned(32)))
   = {QINV, QINV, QINV, QINV, QINV, QINV, QINV, QINV};
-const uint32_t _8xq[8] __attribute__((aligned(32)))
+const uint32_t _8xq[8] asm("_8xq") __attribute__((aligned(32)))
   = {Q, Q, Q, Q, Q, Q, Q, Q};
-const uint32_t _8x2q[8] __attribute__((aligned(32)))
+const uint32_t _8x2q[8] asm("_8x2q") __attribute__((aligned(32)))
   = {2*Q, 2*Q, 2*Q, 2*Q, 2*Q, 2*Q, 2*Q, 2*Q};
-const uint32_t _8x256q[8] __attribute__((aligned(32)))
+const uint32_t _8x256q[8] asm("_8x256q")  __attribute__((aligned(32)))
   = {256*Q, 256*Q, 256*Q, 256*Q, 256*Q, 256*Q, 256*Q, 256*Q};
-const uint32_t _mask[8] __attribute__((aligned(32)))
+const uint32_t _mask[8] asm("_mask") __attribute__((aligned(32)))
   = {0, 2, 4, 6, 0, 0, 0, 0};
-const uint32_t _8x23ones[8]  __attribute__((aligned(32)))
+const uint32_t _8x23ones[8] asm("_8x23ones") __attribute__((aligned(32)))
   = {0x7FFFFF, 0x7FFFFF, 0x7FFFFF, 0x7FFFFF, 0x7FFFFF, 0x7FFFFF, 0x7FFFFF,
      0x7FFFFF};
-const uint32_t _8xdiv[8] __attribute__((aligned(32))) = {DIV, DIV, DIV, DIV, DIV, DIV, DIV, DIV};
+const uint32_t _8xdiv[8] asm("_8xdiv") __attribute__((aligned(32))) = {DIV, DIV, DIV, DIV, DIV, DIV, DIV, DIV};
 
 #undef QINV
 #undef MONT
