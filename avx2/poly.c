@@ -1,8 +1,7 @@
 #include <stdint.h>
 #include <immintrin.h>
-#include "test/cpucycles.h"
 #include "symmetric.h"
-#ifdef USE_AES
+#ifdef DILITHIUM_USE_AES
 #include "aes256ctr.h"
 #else
 #include "fips202x4.h"
@@ -11,15 +10,14 @@
 #include "reduce.h"
 #include "rounding.h"
 #include "ntt.h"
+#include "consts.h"
 #include "poly.h"
 #include "rejsample.h"
 
 #ifdef DBENCH
-extern const unsigned long long timing_overhead;
-extern unsigned long long *tred, *tadd, *tmul, *tround, *tsample, *tpack;
+extern const uint64_t timing_overhead;
+extern uint64_t *tred, *tadd, *tmul, *tround, *tsample, *tpack;
 #endif
-
-extern const uint32_t _8x2q[8] asm("_8x2q");
 
 /*************************************************
 * Name:        poly_reduce
@@ -32,7 +30,7 @@ extern const uint32_t _8x2q[8] asm("_8x2q");
 void poly_reduce(poly *a) {
   DBENCH_START();
 
-  reduce_avx(a->coeffs);
+  reduce_avx(a->coeffs, qdata);
 
   DBENCH_STOP(*tred);
 }
@@ -48,7 +46,7 @@ void poly_reduce(poly *a) {
 void poly_csubq(poly *a) {
   DBENCH_START();
 
-  csubq_avx(a->coeffs);
+  csubq_avx(a->coeffs, qdata);
 
   DBENCH_STOP(*tred);
 }
@@ -64,8 +62,8 @@ void poly_csubq(poly *a) {
 void poly_freeze(poly *a) {
   DBENCH_START();
 
-  reduce_avx(a->coeffs);
-  csubq_avx(a->coeffs);
+  reduce_avx(a->coeffs, qdata);
+  csubq_avx(a->coeffs, qdata);
 
   DBENCH_STOP(*tred);
 }
@@ -109,7 +107,7 @@ void poly_add(poly *c, const poly *a, const poly *b)  {
 void poly_sub(poly *c, const poly *a, const poly *b) {
   unsigned int i;
   __m256i vec0, vec1;
-  const __m256i twoq = _mm256_load_si256((__m256i *)_8x2q);
+  const __m256i twoq = _mm256_load_si256((__m256i *)&qdata[_8X2Q]);
   DBENCH_START();
 
   for(i = 0; i < N; i += 8) {
@@ -154,14 +152,9 @@ void poly_shiftl(poly *a) {
 * Arguments:   - poly *a: pointer to input/output polynomial
 **************************************************/
 void poly_ntt(poly *a) {
-  unsigned int i;
-  uint64_t __attribute__((aligned(32))) tmp[N];
   DBENCH_START();
 
-  for(i = 0; i < N/32; ++i)
-    ntt_levels0t2_avx(tmp + 4*i, a->coeffs + 4*i, zetas + 1);
-  for(i = 0; i < N/32; ++i)
-    ntt_levels3t8_avx(a->coeffs + 32*i, tmp + 32*i, zetas + 8 + 31*i);
+  ntt_avx(a->coeffs, qdata);
 
   DBENCH_STOP(*tmul);
 }
@@ -176,14 +169,9 @@ void poly_ntt(poly *a) {
 * Arguments:   - poly *a: pointer to input/output polynomial
 **************************************************/
 void poly_invntt_tomont(poly *a) {
-  unsigned int i;
-  uint64_t __attribute__((aligned(32))) tmp[N];
   DBENCH_START();
 
-  for(i = 0; i < N/32; i++)
-    invntt_levels0t4_avx(tmp + 32*i, a->coeffs + 32*i, zetas_inv + 31*i);
-  for(i = 0; i < N/32; i++)
-    invntt_levels5t7_avx(a->coeffs + 4*i, tmp + 4*i, zetas_inv + 248);
+  invntt_avx(a->coeffs, qdata);
 
   DBENCH_STOP(*tmul);
 }
@@ -203,7 +191,7 @@ void poly_invntt_tomont(poly *a) {
 void poly_pointwise_montgomery(poly *c, const poly *a, const poly *b) {
   DBENCH_START();
 
-  pointwise_avx(c->coeffs, a->coeffs, b->coeffs);
+  pointwise_avx(c->coeffs, a->coeffs, b->coeffs, qdata);
 
   DBENCH_STOP(*tmul);
 }
@@ -359,10 +347,10 @@ int poly_chknorm(const poly *a, uint32_t B) {
 * Returns number of sampled coefficients. Can be smaller than len if not enough
 * random bytes were given.
 **************************************************/
-static unsigned int rej_uniform_ref(uint32_t *a,
-                                    unsigned int len,
-                                    const uint8_t *buf,
-                                    unsigned int buflen)
+static unsigned int rej_uniform(uint32_t *a,
+                                unsigned int len,
+                                const uint8_t *buf,
+                                unsigned int buflen)
 {
   unsigned int ctr, pos;
   uint32_t t;
@@ -394,25 +382,48 @@ static unsigned int rej_uniform_ref(uint32_t *a,
 *              - const uint8_t seed[]: byte array with seed of length SEEDBYTES
 *              - uint16_t nonce: 2-byte nonce
 **************************************************/
-#ifdef USE_AES
-void poly_uniform_aes(poly *a,
-                      aes256ctr_ctx *state,
-                      uint16_t nonce)
+#ifdef DILITHIUM_USE_AES
+void poly_uniform_aes(poly *a, aes256ctr_ctx *state)
 {
   unsigned int ctr;
-  uint8_t buf[768];
+  uint8_t buf[768] __attribute__((aligned(32)));
 
-  aes256ctr_select(state, nonce);
-  aes256ctr_squeezeblocks(buf, 768/AES256CTR_BLOCKBYTES, state);
-
-  ctr = rej_uniform(a->coeffs, N, buf, 768);
+  aes256ctr_squeezeblocks(buf, sizeof(buf)/AES256CTR_BLOCKBYTES, state);
+  ctr = rej_uniform_avx(a->coeffs, N, buf, sizeof(buf));
 
   while(ctr < N) {
-    stream128_squeezeblocks(buf, 1, state);
-    ctr += rej_uniform_ref(a->coeffs + ctr, N - ctr, buf, AES256CTR_BLOCKBYTES);
+    aes256ctr_squeezeblocks(buf, 1, state);
+    ctr += rej_uniform(a->coeffs + ctr, N - ctr, buf, AES256CTR_BLOCKBYTES);
   }
 }
 #else
+#define POLY_UNIFORM_NBLOCKS (((N*((QBITS+7)/8)*(1ULL << QBITS) + Q/2)/Q \
+                               + STREAM128_BLOCKBYTES)/STREAM128_BLOCKBYTES)
+void poly_uniform(poly *a,
+                  const uint8_t seed[SEEDBYTES],
+                  uint16_t nonce)
+{
+  unsigned int i, ctr, off;
+  unsigned int buflen = POLY_UNIFORM_NBLOCKS*STREAM128_BLOCKBYTES;
+  uint8_t buf[buflen + 2] __attribute__((aligned(32)));
+  stream128_state state;
+
+  stream128_init(&state, seed, nonce);
+  stream128_squeezeblocks(buf, POLY_UNIFORM_NBLOCKS, &state);
+
+  ctr = rej_uniform_avx(a->coeffs, N, buf, buflen);
+
+  while(ctr < N) {
+    off = buflen % 3;
+    for(i = 0; i < off; ++i)
+      buf[i] = buf[buflen - off + i];
+
+    buflen = STREAM128_BLOCKBYTES + off;
+    stream128_squeezeblocks(buf + off, 1, &state);
+    ctr += rej_uniform(a->coeffs + ctr, N - ctr, buf, buflen);
+  }
+}
+
 void poly_uniform_4x(poly *a0,
                      poly *a1,
                      poly *a2,
@@ -424,47 +435,39 @@ void poly_uniform_4x(poly *a0,
                      uint16_t nonce3)
 {
   unsigned int i, ctr0, ctr1, ctr2, ctr3;
-  uint8_t inbuf[4][SEEDBYTES + 2];
-  uint8_t outbuf[4][5*SHAKE128_RATE];
-  __m256i state[25];
+  uint8_t buf[4][5*SHAKE128_RATE];
+  keccakx4_state state;
 
   for(i= 0; i < SEEDBYTES; ++i) {
-    inbuf[0][i] = seed[i];
-    inbuf[1][i] = seed[i];
-    inbuf[2][i] = seed[i];
-    inbuf[3][i] = seed[i];
+    buf[0][i] = seed[i];
+    buf[1][i] = seed[i];
+    buf[2][i] = seed[i];
+    buf[3][i] = seed[i];
   }
-  inbuf[0][SEEDBYTES+0] = nonce0;
-  inbuf[0][SEEDBYTES+1] = nonce0 >> 8;
-  inbuf[1][SEEDBYTES+0] = nonce1;
-  inbuf[1][SEEDBYTES+1] = nonce1 >> 8;
-  inbuf[2][SEEDBYTES+0] = nonce2;
-  inbuf[2][SEEDBYTES+1] = nonce2 >> 8;
-  inbuf[3][SEEDBYTES+0] = nonce3;
-  inbuf[3][SEEDBYTES+1] = nonce3 >> 8;
+  buf[0][SEEDBYTES+0] = nonce0;
+  buf[0][SEEDBYTES+1] = nonce0 >> 8;
+  buf[1][SEEDBYTES+0] = nonce1;
+  buf[1][SEEDBYTES+1] = nonce1 >> 8;
+  buf[2][SEEDBYTES+0] = nonce2;
+  buf[2][SEEDBYTES+1] = nonce2 >> 8;
+  buf[3][SEEDBYTES+0] = nonce3;
+  buf[3][SEEDBYTES+1] = nonce3 >> 8;
 
-  shake128_absorb4x(state, inbuf[0], inbuf[1], inbuf[2], inbuf[3],
-                    SEEDBYTES + 2);
-  shake128_squeezeblocks4x(outbuf[0], outbuf[1], outbuf[2], outbuf[3], 5,
-                           state);
+  shake128x4_absorb(&state, buf[0], buf[1], buf[2], buf[3], SEEDBYTES + 2);
+  shake128x4_squeezeblocks(buf[0], buf[1], buf[2], buf[3], 5, &state);
 
-  ctr0 = rej_uniform(a0->coeffs, N, outbuf[0], 5*SHAKE128_RATE);
-  ctr1 = rej_uniform(a1->coeffs, N, outbuf[1], 5*SHAKE128_RATE);
-  ctr2 = rej_uniform(a2->coeffs, N, outbuf[2], 5*SHAKE128_RATE);
-  ctr3 = rej_uniform(a3->coeffs, N, outbuf[3], 5*SHAKE128_RATE);
+  ctr0 = rej_uniform_avx(a0->coeffs, N, buf[0], 5*SHAKE128_RATE);
+  ctr1 = rej_uniform_avx(a1->coeffs, N, buf[1], 5*SHAKE128_RATE);
+  ctr2 = rej_uniform_avx(a2->coeffs, N, buf[2], 5*SHAKE128_RATE);
+  ctr3 = rej_uniform_avx(a3->coeffs, N, buf[3], 5*SHAKE128_RATE);
 
   while(ctr0 < N || ctr1 < N || ctr2 < N || ctr3 < N) {
-    shake128_squeezeblocks4x(outbuf[0], outbuf[1], outbuf[2], outbuf[3], 1,
-                             state);
+    shake128x4_squeezeblocks(buf[0], buf[1], buf[2], buf[3], 1, &state);
 
-    ctr0 += rej_uniform_ref(a0->coeffs + ctr0, N - ctr0, outbuf[0],
-                            SHAKE128_RATE);
-    ctr1 += rej_uniform_ref(a1->coeffs + ctr1, N - ctr1, outbuf[1],
-                            SHAKE128_RATE);
-    ctr2 += rej_uniform_ref(a2->coeffs + ctr2, N - ctr2, outbuf[2],
-                            SHAKE128_RATE);
-    ctr3 += rej_uniform_ref(a3->coeffs + ctr3, N - ctr3, outbuf[3],
-                            SHAKE128_RATE);
+    ctr0 += rej_uniform(a0->coeffs + ctr0, N - ctr0, buf[0], SHAKE128_RATE);
+    ctr1 += rej_uniform(a1->coeffs + ctr1, N - ctr1, buf[1], SHAKE128_RATE);
+    ctr2 += rej_uniform(a2->coeffs + ctr2, N - ctr2, buf[2], SHAKE128_RATE);
+    ctr3 += rej_uniform(a3->coeffs + ctr3, N - ctr3, buf[3], SHAKE128_RATE);
   }
 }
 #endif
@@ -483,10 +486,10 @@ void poly_uniform_4x(poly *a0,
 * Returns number of sampled coefficients. Can be smaller than len if not enough
 * random bytes were given.
 **************************************************/
-static unsigned int rej_eta_ref(uint32_t *a,
-                                unsigned int len,
-                                const uint8_t *buf,
-                                unsigned int buflen)
+static unsigned int rej_eta(uint32_t *a,
+                            unsigned int len,
+                            const uint8_t *buf,
+                            unsigned int buflen)
 {
 #if ETA > 7
 #error "rej_eta() assumes ETA <= 7"
@@ -528,22 +531,18 @@ static unsigned int rej_eta_ref(uint32_t *a,
 *                                      SEEDBYTES
 *              - uint16_t nonce: 2-byte nonce
 **************************************************/
-#ifdef USE_AES
-void poly_uniform_eta_aes(poly *a,
-                          aes256ctr_ctx *state,
-                          uint16_t nonce)
+#ifdef DILITHIUM_USE_AES
+void poly_uniform_eta_aes(poly *a, aes256ctr_ctx *state)
 {
   unsigned int ctr;
-  uint8_t buf[192];
+  uint8_t buf[192] __attribute__((aligned(32)));
 
-  aes256ctr_select(state, nonce);
-  aes256ctr_squeezeblocks(buf, 192/AES256CTR_BLOCKBYTES, state);
-
-  ctr = rej_eta(a->coeffs, N, buf, 192);
+  aes256ctr_squeezeblocks(buf, sizeof(buf)/AES256CTR_BLOCKBYTES, state);
+  ctr = rej_eta_avx(a->coeffs, N, buf, sizeof(buf));
 
   while(ctr < N) {
-    stream128_squeezeblocks(buf, 1, state);
-    ctr += rej_eta_ref(a->coeffs + ctr, N - ctr, buf, STREAM128_BLOCKBYTES);
+    aes256ctr_squeezeblocks(buf, 1, state);
+    ctr += rej_eta(a->coeffs + ctr, N - ctr, buf, AES256CTR_BLOCKBYTES);
   }
 }
 #else
@@ -556,19 +555,20 @@ void poly_uniform_eta(poly *a,
 {
   unsigned int ctr;
   unsigned int buflen = POLY_UNIFORM_ETA_NBLOCKS*STREAM128_BLOCKBYTES;
-  uint8_t buf[buflen];
+  uint8_t buf[buflen] __attribute__((aligned(32)));
   stream128_state state;
 
   stream128_init(&state, seed, nonce);
   stream128_squeezeblocks(buf, POLY_UNIFORM_ETA_NBLOCKS, &state);
 
-  ctr = rej_eta(a->coeffs, N, buf, buflen);
+  ctr = rej_eta_avx(a->coeffs, N, buf, buflen);
 
   while(ctr < N) {
     stream128_squeezeblocks(buf, 1, &state);
-    ctr += rej_eta_ref(a->coeffs + ctr, N - ctr, buf, STREAM128_BLOCKBYTES);
+    ctr += rej_eta(a->coeffs + ctr, N - ctr, buf, STREAM128_BLOCKBYTES);
   }
 }
+
 void poly_uniform_eta_4x(poly *a0,
                          poly *a1,
                          poly *a2,
@@ -580,43 +580,39 @@ void poly_uniform_eta_4x(poly *a0,
                          uint16_t nonce3)
 {
   unsigned int i, ctr0, ctr1, ctr2, ctr3;
-  uint8_t inbuf[4][SEEDBYTES + 2];
-  uint8_t outbuf[4][2*SHAKE128_RATE];
-  __m256i state[25];
+  uint8_t buf[4][2*SHAKE128_RATE];
+  keccakx4_state state;
 
   for(i= 0; i < SEEDBYTES; ++i) {
-    inbuf[0][i] = seed[i];
-    inbuf[1][i] = seed[i];
-    inbuf[2][i] = seed[i];
-    inbuf[3][i] = seed[i];
+    buf[0][i] = seed[i];
+    buf[1][i] = seed[i];
+    buf[2][i] = seed[i];
+    buf[3][i] = seed[i];
   }
-  inbuf[0][SEEDBYTES+0] = nonce0;
-  inbuf[0][SEEDBYTES+1] = nonce0 >> 8;
-  inbuf[1][SEEDBYTES+0] = nonce1;
-  inbuf[1][SEEDBYTES+1] = nonce1 >> 8;
-  inbuf[2][SEEDBYTES+0] = nonce2;
-  inbuf[2][SEEDBYTES+1] = nonce2 >> 8;
-  inbuf[3][SEEDBYTES+0] = nonce3;
-  inbuf[3][SEEDBYTES+1] = nonce3 >> 8;
+  buf[0][SEEDBYTES+0] = nonce0;
+  buf[0][SEEDBYTES+1] = nonce0 >> 8;
+  buf[1][SEEDBYTES+0] = nonce1;
+  buf[1][SEEDBYTES+1] = nonce1 >> 8;
+  buf[2][SEEDBYTES+0] = nonce2;
+  buf[2][SEEDBYTES+1] = nonce2 >> 8;
+  buf[3][SEEDBYTES+0] = nonce3;
+  buf[3][SEEDBYTES+1] = nonce3 >> 8;
 
-  shake128_absorb4x(state, inbuf[0], inbuf[1], inbuf[2], inbuf[3],
-                    SEEDBYTES + 2);
-  shake128_squeezeblocks4x(outbuf[0], outbuf[1], outbuf[2], outbuf[3], 2,
-                           state);
+  shake128x4_absorb(&state, buf[0], buf[1], buf[2], buf[3], SEEDBYTES + 2);
+  shake128x4_squeezeblocks(buf[0], buf[1], buf[2], buf[3], 2, &state);
 
-  ctr0 = rej_eta(a0->coeffs, N, outbuf[0], 2*SHAKE128_RATE);
-  ctr1 = rej_eta(a1->coeffs, N, outbuf[1], 2*SHAKE128_RATE);
-  ctr2 = rej_eta(a2->coeffs, N, outbuf[2], 2*SHAKE128_RATE);
-  ctr3 = rej_eta(a3->coeffs, N, outbuf[3], 2*SHAKE128_RATE);
+  ctr0 = rej_eta_avx(a0->coeffs, N, buf[0], 2*SHAKE128_RATE);
+  ctr1 = rej_eta_avx(a1->coeffs, N, buf[1], 2*SHAKE128_RATE);
+  ctr2 = rej_eta_avx(a2->coeffs, N, buf[2], 2*SHAKE128_RATE);
+  ctr3 = rej_eta_avx(a3->coeffs, N, buf[3], 2*SHAKE128_RATE);
 
   while(ctr0 < N || ctr1 < N || ctr2 < N || ctr3 < N) {
-    shake128_squeezeblocks4x(outbuf[0], outbuf[1], outbuf[2], outbuf[3], 1,
-                             state);
+    shake128x4_squeezeblocks(buf[0], buf[1], buf[2], buf[3], 1, &state);
 
-    ctr0 += rej_eta_ref(a0->coeffs + ctr0, N - ctr0, outbuf[0], SHAKE128_RATE);
-    ctr1 += rej_eta_ref(a1->coeffs + ctr1, N - ctr1, outbuf[1], SHAKE128_RATE);
-    ctr2 += rej_eta_ref(a2->coeffs + ctr2, N - ctr2, outbuf[2], SHAKE128_RATE);
-    ctr3 += rej_eta_ref(a3->coeffs + ctr3, N - ctr3, outbuf[3], SHAKE128_RATE);
+    ctr0 += rej_eta(a0->coeffs + ctr0, N - ctr0, buf[0], SHAKE128_RATE);
+    ctr1 += rej_eta(a1->coeffs + ctr1, N - ctr1, buf[1], SHAKE128_RATE);
+    ctr2 += rej_eta(a2->coeffs + ctr2, N - ctr2, buf[2], SHAKE128_RATE);
+    ctr3 += rej_eta(a3->coeffs + ctr3, N - ctr3, buf[3], SHAKE128_RATE);
   }
 }
 #endif
@@ -636,10 +632,10 @@ void poly_uniform_eta_4x(poly *a0,
 * Returns number of sampled coefficients. Can be smaller than len if not enough
 * random bytes were given.
 **************************************************/
-static unsigned int rej_gamma1m1_ref(uint32_t *a,
-                                     unsigned int len,
-                                     const uint8_t *buf,
-                                     unsigned int buflen)
+static unsigned int rej_gamma1m1(uint32_t *a,
+                                 unsigned int len,
+                                 const uint8_t *buf,
+                                 unsigned int buflen)
 {
 #if GAMMA1 > (1 << 19)
 #error "rej_gamma1m1() assumes GAMMA1 - 1 fits in 19 bits"
@@ -684,22 +680,18 @@ static unsigned int rej_gamma1m1_ref(uint32_t *a,
 *                                            CRHBYTES
 *              - uint16_t nonce: 16-bit nonce
 **************************************************/
-#ifdef USE_AES
-void poly_uniform_gamma1m1_aes(poly *a,
-                               aes256ctr_ctx *state,
-                               uint16_t nonce)
+#ifdef DILITHIUM_USE_AES
+void poly_uniform_gamma1m1_aes(poly *a, aes256ctr_ctx *state)
 {
   unsigned int ctr;
-  uint8_t buf[640];
+  uint8_t buf[640] __attribute__((aligned(32)));
 
-  aes256ctr_select(state, nonce);
-  aes256ctr_squeezeblocks(buf, 640/AES256CTR_BLOCKBYTES, state);
-
-  ctr = rej_gamma1m1(a->coeffs, N, buf, 640);
+  aes256ctr_squeezeblocks(buf, sizeof(buf)/AES256CTR_BLOCKBYTES, state);
+  ctr = rej_gamma1m1_avx(a->coeffs, N, buf, sizeof(buf));
 
   while(ctr < N) {
-    stream256_squeezeblocks(buf, 1, state);
-    ctr += rej_gamma1m1_ref(a->coeffs + ctr, N - ctr, buf, AES256CTR_BLOCKBYTES);
+    aes256ctr_squeezeblocks(buf, 1, state);
+    ctr += rej_gamma1m1(a->coeffs + ctr, N - ctr, buf, AES256CTR_BLOCKBYTES);
   }
 }
 #else
@@ -712,13 +704,13 @@ void poly_uniform_gamma1m1(poly *a,
 {
   unsigned int i, ctr, off;
   unsigned int buflen = POLY_UNIFORM_GAMMA1M1_NBLOCKS*STREAM256_BLOCKBYTES;
-  uint8_t buf[buflen + 4];
+  uint8_t buf[buflen + 4] __attribute__((aligned(32)));
   stream256_state state;
 
   stream256_init(&state, seed, nonce);
   stream256_squeezeblocks(buf, POLY_UNIFORM_GAMMA1M1_NBLOCKS, &state);
 
-  ctr = rej_gamma1m1(a->coeffs, N, buf, buflen);
+  ctr = rej_gamma1m1_avx(a->coeffs, N, buf, buflen);
 
   while(ctr < N) {
     off = buflen % 5;
@@ -727,9 +719,10 @@ void poly_uniform_gamma1m1(poly *a,
 
     buflen = STREAM256_BLOCKBYTES + off;
     stream256_squeezeblocks(buf + off, 1, &state);
-    ctr += rej_gamma1m1_ref(a->coeffs + ctr, N - ctr, buf, buflen);
+    ctr += rej_gamma1m1(a->coeffs + ctr, N - ctr, buf, buflen);
   }
 }
+
 void poly_uniform_gamma1m1_4x(poly *a0,
                               poly *a1,
                               poly *a2,
@@ -741,47 +734,39 @@ void poly_uniform_gamma1m1_4x(poly *a0,
                               uint16_t nonce3)
 {
   unsigned int i, ctr0, ctr1, ctr2, ctr3;
-  uint8_t inbuf[4][CRHBYTES + 2];
-  uint8_t outbuf[4][5*SHAKE256_RATE];
-  __m256i state[25];
+  uint8_t buf[4][5*SHAKE256_RATE];
+  keccakx4_state state;
 
   for(i = 0; i < CRHBYTES; ++i) {
-    inbuf[0][i] = seed[i];
-    inbuf[1][i] = seed[i];
-    inbuf[2][i] = seed[i];
-    inbuf[3][i] = seed[i];
+    buf[0][i] = seed[i];
+    buf[1][i] = seed[i];
+    buf[2][i] = seed[i];
+    buf[3][i] = seed[i];
   }
-  inbuf[0][CRHBYTES + 0] = nonce0;
-  inbuf[0][CRHBYTES + 1] = nonce0 >> 8;
-  inbuf[1][CRHBYTES + 0] = nonce1;
-  inbuf[1][CRHBYTES + 1] = nonce1 >> 8;
-  inbuf[2][CRHBYTES + 0] = nonce2;
-  inbuf[2][CRHBYTES + 1] = nonce2 >> 8;
-  inbuf[3][CRHBYTES + 0] = nonce3;
-  inbuf[3][CRHBYTES + 1] = nonce3 >> 8;
+  buf[0][CRHBYTES + 0] = nonce0;
+  buf[0][CRHBYTES + 1] = nonce0 >> 8;
+  buf[1][CRHBYTES + 0] = nonce1;
+  buf[1][CRHBYTES + 1] = nonce1 >> 8;
+  buf[2][CRHBYTES + 0] = nonce2;
+  buf[2][CRHBYTES + 1] = nonce2 >> 8;
+  buf[3][CRHBYTES + 0] = nonce3;
+  buf[3][CRHBYTES + 1] = nonce3 >> 8;
 
-  shake256_absorb4x(state, inbuf[0], inbuf[1], inbuf[2], inbuf[3],
-                    CRHBYTES + 2);
-  shake256_squeezeblocks4x(outbuf[0], outbuf[1], outbuf[2], outbuf[3], 5,
-                           state);
+  shake256x4_absorb(&state, buf[0], buf[1], buf[2], buf[3], CRHBYTES + 2);
+  shake256x4_squeezeblocks(buf[0], buf[1], buf[2], buf[3], 5, &state);
 
-  ctr0 = rej_gamma1m1_ref(a0->coeffs, N, outbuf[0], 5*SHAKE256_RATE);
-  ctr1 = rej_gamma1m1_ref(a1->coeffs, N, outbuf[1], 5*SHAKE256_RATE);
-  ctr2 = rej_gamma1m1_ref(a2->coeffs, N, outbuf[2], 5*SHAKE256_RATE);
-  ctr3 = rej_gamma1m1_ref(a3->coeffs, N, outbuf[3], 5*SHAKE256_RATE);
+  ctr0 = rej_gamma1m1_avx(a0->coeffs, N, buf[0], 5*SHAKE256_RATE);
+  ctr1 = rej_gamma1m1_avx(a1->coeffs, N, buf[1], 5*SHAKE256_RATE);
+  ctr2 = rej_gamma1m1_avx(a2->coeffs, N, buf[2], 5*SHAKE256_RATE);
+  ctr3 = rej_gamma1m1_avx(a3->coeffs, N, buf[3], 5*SHAKE256_RATE);
 
   while(ctr0 < N || ctr1 < N || ctr2 < N || ctr3 < N) {
-    shake256_squeezeblocks4x(outbuf[0], outbuf[1], outbuf[2], outbuf[3], 1,
-                             state);
+    shake256x4_squeezeblocks(buf[0], buf[1], buf[2], buf[3], 1, &state);
 
-    ctr0 += rej_gamma1m1_ref(a0->coeffs + ctr0, N - ctr0, outbuf[0],
-                            SHAKE256_RATE);
-    ctr1 += rej_gamma1m1_ref(a1->coeffs + ctr1, N - ctr1, outbuf[1],
-                            SHAKE256_RATE);
-    ctr2 += rej_gamma1m1_ref(a2->coeffs + ctr2, N - ctr2, outbuf[2],
-                            SHAKE256_RATE);
-    ctr3 += rej_gamma1m1_ref(a3->coeffs + ctr3, N - ctr3, outbuf[3],
-                            SHAKE256_RATE);
+    ctr0 += rej_gamma1m1(a0->coeffs + ctr0, N - ctr0, buf[0], SHAKE256_RATE);
+    ctr1 += rej_gamma1m1(a1->coeffs + ctr1, N - ctr1, buf[1], SHAKE256_RATE);
+    ctr2 += rej_gamma1m1(a2->coeffs + ctr2, N - ctr2, buf[2], SHAKE256_RATE);
+    ctr3 += rej_gamma1m1(a3->coeffs + ctr3, N - ctr3, buf[3], SHAKE256_RATE);
   }
 }
 #endif

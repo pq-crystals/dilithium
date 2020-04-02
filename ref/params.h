@@ -14,7 +14,7 @@
 #define GAMMA2 (GAMMA1/2)
 #define ALPHA (2*GAMMA2)
 
-#if MODE == 1
+#if DILITHIUM_MODE == 1
 #define K 3
 #define L 2
 #define ETA 7
@@ -22,7 +22,13 @@
 #define BETA 375
 #define OMEGA 64
 
-#elif MODE == 2
+#ifdef DILITHIUM_USE_AES
+#define NAMESPACE(s) dilithium1_aes_ref_##s
+#else
+#define NAMESPACE(s) dilithium1_ref_##s
+#endif
+
+#elif DILITHIUM_MODE == 2
 #define K 4
 #define L 3
 #define ETA 6
@@ -30,7 +36,13 @@
 #define BETA 325
 #define OMEGA 80
 
-#elif MODE == 3
+#ifdef DILITHIUM_USE_AES
+#define NAMESPACE(s) dilithium2_aes_ref_##s
+#else
+#define NAMESPACE(s) dilithium2_ref_##s
+#endif
+
+#elif DILITHIUM_MODE == 3
 #define K 5
 #define L 4
 #define ETA 5
@@ -38,13 +50,25 @@
 #define BETA 275
 #define OMEGA 96
 
-#elif MODE == 4
+#ifdef DILITHIUM_USE_AES
+#define NAMESPACE(s) dilithium3_aes_ref_##s
+#else
+#define NAMESPACE(s) dilithium3_ref_##s
+#endif
+
+#elif DILITHIUM_MODE == 4
 #define K 6
 #define L 5
 #define ETA 3
 #define SETABITS 3
 #define BETA 175
 #define OMEGA 120
+
+#ifdef DILITHIUM_USE_AES
+#define NAMESPACE(s) dilithium4_aes_ref_##s
+#else
+#define NAMESPACE(s) dilithium4_ref_##s
+#endif
 
 #endif
 
@@ -55,7 +79,17 @@
 #define POLW1_SIZE_PACKED ((N*4)/8)
 
 #define CRYPTO_PUBLICKEYBYTES (SEEDBYTES + K*POLT1_SIZE_PACKED)
-#define CRYPTO_SECRETKEYBYTES (2*SEEDBYTES + (L + K)*POLETA_SIZE_PACKED + CRHBYTES + K*POLT0_SIZE_PACKED)
+#define CRYPTO_SECRETKEYBYTES (2*SEEDBYTES \
+                               + (L + K)*POLETA_SIZE_PACKED \
+                               + CRHBYTES + K*POLT0_SIZE_PACKED)
 #define CRYPTO_BYTES (L*POLZ_SIZE_PACKED + (OMEGA + K) + (N/8 + 8))
+
+#ifdef DBENCH
+#define DBENCH_START() uint64_t time = cpucycles()
+#define DBENCH_STOP(t) t += cpucycles() - time - timing_overhead
+#else
+#define DBENCH_START()
+#define DBENCH_STOP(t)
+#endif
 
 #endif

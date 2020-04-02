@@ -3,7 +3,7 @@
 make clean;
 
 for m in 1 2 3 4; do
-  export NISTFLAGS="-DMODE=$m";
+  export NISTFLAGS="-DDILITHIUM_MODE=$m";
   make PQCgenKAT_sign;
   make PQCgenKAT_sign-AES;
   make test/test_vectors;

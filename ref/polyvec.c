@@ -3,6 +3,25 @@
 #include "poly.h"
 #include "polyvec.h"
 
+/*************************************************
+* Name:        expand_mat
+*
+* Description: Implementation of ExpandA. Generates matrix A with uniformly
+*              random coefficients a_{i,j} by performing rejection
+*              sampling on the output stream of SHAKE128(rho|j|i)
+*              or AES256CTR(rho,j|i).
+*
+* Arguments:   - polyvecl mat[K]: output matrix
+*              - const uint8_t rho[]: byte array containing seed rho
+**************************************************/
+void expand_mat(polyvecl mat[K], const uint8_t rho[SEEDBYTES]) {
+  unsigned int i, j;
+
+  for(i = 0; i < K; ++i)
+    for(j = 0; j < L; ++j)
+      poly_uniform(&mat[i].vec[j], rho, (i << 8) + j);
+}
+
 /**************************************************************/
 /************ Vectors of polynomials of length L **************/
 /**************************************************************/

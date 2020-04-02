@@ -1,14 +1,13 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
-#ifndef MODE
-#define MODE 4
+#ifndef DILITHIUM_MODE
+#define DILITHIUM_MODE 3
 #endif
 
-//#define USE_AES
-//#define RANDOMIZED_SIGNING
+//#define DILITHIUM_USE_AES
+//#define DILITHIUM_RANDOMIZED_SIGNING
 //#define USE_RDPMC
-//#define SERIALIZE_RDC
 //#define DBENCH
 
 #endif

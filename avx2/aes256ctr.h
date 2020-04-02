@@ -1,6 +1,7 @@
 #ifndef AES256CTR_H
 #define AES256CTR_H
 
+#include <stddef.h>
 #include <stdint.h>
 #include <immintrin.h>
 
@@ -11,17 +12,20 @@ typedef struct {
   __m128i n;
 } aes256ctr_ctx;
 
+#define aes256ctr_init pqcrystals_avx2_aes256ctr_init
 void aes256ctr_init(aes256ctr_ctx *state,
-                    const unsigned char *key,
-                    uint16_t nonce);
-void aes256ctr_select(aes256ctr_ctx *state, uint16_t nonce);
-void aes256ctr_squeezeblocks(unsigned char *out,
-                             unsigned long long nblocks,
+                    const uint8_t key[32],
+                    uint64_t nonce);
+
+#define aes256ctr_squeezeblocks pqcrystals_avx2_aes256ctr_squeezeblocks
+void aes256ctr_squeezeblocks(uint8_t *out,
+                             size_t nblocks,
                              aes256ctr_ctx *state);
 
-void aes256ctr_prf(unsigned char *out,
-                   unsigned long long outlen,
-                   const unsigned char *seed,
-                   unsigned char nonce);
+#define aes256ctr_prf pqcrystals_avx2_aes256ctr_prf
+void aes256ctr_prf(uint8_t *out,
+                   size_t outlen,
+                   const uint8_t key[32],
+                   uint64_t nonce);
 
 #endif

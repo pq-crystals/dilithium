@@ -1,47 +1,34 @@
 #ifndef FIPS202_H
 #define FIPS202_H
 
+#include <stddef.h>
 #include <stdint.h>
 
 #define SHAKE128_RATE 168
 #define SHAKE256_RATE 136
+#define SHA3_256_RATE 136
+#define SHA3_512_RATE 72
 
 typedef struct {
   uint64_t s[25];
 } keccak_state;
 
-void shake128_absorb(keccak_state *state,
-                     const unsigned char *input,
-                     unsigned long long inlen);
+#define shake128_absorb pqcrystals_ref_shake128_absorb
+void shake128_absorb(keccak_state *state, const uint8_t *in, size_t inlen);
+#define shake128_squeezeblocks pqcrystals_ref_shake128_squeezeblocks
+void shake128_squeezeblocks(uint8_t *out, size_t nblocks, keccak_state *state);
 
-void shake128_stream_init(keccak_state *sate,
-                          const unsigned char *seed,
-                          uint16_t nonce);
-
-void shake128_squeezeblocks(unsigned char *output,
-                            unsigned long nblocks,
-                            keccak_state *state);
-
-void shake256_absorb(keccak_state *state,
-                     const unsigned char *input,
-                     unsigned long long inlen);
-
-void shake256_stream_init(keccak_state *state,
-                          const unsigned char *seed,
-                          uint16_t nonce);
-
-void shake256_squeezeblocks(unsigned char *output,
-                            unsigned long nblocks,
-                            keccak_state *state);
-
-void shake128(unsigned char *output,
-              unsigned long long outlen,
-              const unsigned char *input,
-              unsigned long long inlen);
-
-void shake256(unsigned char *output,
-              unsigned long long outlen,
-              const unsigned char *input,
-              unsigned long long inlen);
+#define shake256_absorb pqcrystals_ref_shake256_absorb
+void shake256_absorb(keccak_state *state, const uint8_t *in, size_t inlen);
+#define shake256_squeezeblocks pqcrystals_ref_shake256_squeezeblocks
+void shake256_squeezeblocks(uint8_t *out, size_t nblocks,  keccak_state *state);
+#define shake128 pqcrystals_ref_shake128
+void shake128(uint8_t *out, size_t outlen, const uint8_t *in, size_t inlen);
+#define shake256 pqcrystals_ref_shake256
+void shake256(uint8_t *out, size_t outlen, const uint8_t *in, size_t inlen);
+#define sha3_256 pqcrystals_ref_sha3_256
+void sha3_256(uint8_t h[32], const uint8_t *in, size_t inlen);
+#define sha3_512 pqcrystals_ref_sha3_512
+void sha3_512(uint8_t h[64], const uint8_t *in, size_t inlen);
 
 #endif

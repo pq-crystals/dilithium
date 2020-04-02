@@ -1,8 +1,5 @@
 #include <stdint.h>
 #include "fips202.h"
-#ifdef USE_AES
-#include "aes256ctr.h"
-#endif
 #include "params.h"
 #include "sign.h"
 #include "randombytes.h"
@@ -10,141 +7,8 @@
 #include "poly.h"
 #include "polyvec.h"
 #include "packing.h"
-
-/*************************************************
-* Name:        expand_mat
-*
-* Description: Implementation of ExpandA. Generates matrix A with uniformly
-*              random coefficients a_{i,j} by performing rejection
-*              sampling on the output stream of SHAKE128(rho|j|i)
-*              or AES256CTR(rho,j|i).
-*
-* Arguments:   - polyvecl mat[K]: output matrix
-*              - const uint8_t rho[]: byte array containing seed rho
-**************************************************/
-#ifdef USE_AES
-void expand_mat(polyvecl mat[K], const uint8_t rho[SEEDBYTES]) {
-  unsigned int i, j;
-  aes256ctr_ctx state;
-
-  aes256ctr_init(&state, rho, 0);
-
-  for(i = 0; i < K; ++i)
-    for(j = 0; j < L; ++j)
-      poly_uniform_aes(&mat[i].vec[j], &state, (i << 8) + j);
-}
-#elif L == 2 && K == 3
-void expand_mat(polyvecl mat[3], const uint8_t rho[SEEDBYTES])
-{
-  poly t0, t1;
-
-  poly_uniform_4x(&mat[0].vec[0],
-                  &mat[0].vec[1],
-                  &mat[1].vec[0],
-                  &mat[1].vec[1],
-                  rho, 0, 1, 256, 257);
-  poly_uniform_4x(&mat[2].vec[0],
-                  &mat[2].vec[1],
-                  &t0,
-                  &t1,
-                  rho, 512, 513, 0, 0);
-}
-#elif L == 3 && K == 4
-void expand_mat(polyvecl mat[4], const uint8_t rho[SEEDBYTES])
-{
-  poly_uniform_4x(&mat[0].vec[0],
-                  &mat[0].vec[1],
-                  &mat[0].vec[2],
-                  &mat[1].vec[0],
-                  rho, 0, 1, 2, 256);
-  poly_uniform_4x(&mat[1].vec[1],
-                  &mat[1].vec[2],
-                  &mat[2].vec[0],
-                  &mat[2].vec[1],
-                  rho, 257, 258, 512, 513);
-  poly_uniform_4x(&mat[2].vec[2],
-                  &mat[3].vec[0],
-                  &mat[3].vec[1],
-                  &mat[3].vec[2],
-                  rho, 514, 768, 769, 770);
-}
-#elif L == 4 && K == 5
-void expand_mat(polyvecl mat[5], const uint8_t rho[SEEDBYTES])
-{
-  poly_uniform_4x(&mat[0].vec[0],
-                  &mat[0].vec[1],
-                  &mat[0].vec[2],
-                  &mat[0].vec[3],
-                  rho, 0, 1, 2, 3);
-  poly_uniform_4x(&mat[1].vec[0],
-                  &mat[1].vec[1],
-                  &mat[1].vec[2],
-                  &mat[1].vec[3],
-                  rho, 256, 257, 258, 259);
-  poly_uniform_4x(&mat[2].vec[0],
-                  &mat[2].vec[1],
-                  &mat[2].vec[2],
-                  &mat[2].vec[3],
-                  rho, 512, 513, 514, 515);
-  poly_uniform_4x(&mat[3].vec[0],
-                  &mat[3].vec[1],
-                  &mat[3].vec[2],
-                  &mat[3].vec[3],
-                  rho, 768, 769, 770, 771);
-  poly_uniform_4x(&mat[4].vec[0],
-                  &mat[4].vec[1],
-                  &mat[4].vec[2],
-                  &mat[4].vec[3],
-                  rho, 1024, 1025, 1026, 1027);
-}
-#elif L == 5 && K == 6
-void expand_mat(polyvecl mat[6], const uint8_t rho[SEEDBYTES])
-{
-  poly t0, t1;
-
-  poly_uniform_4x(&mat[0].vec[0],
-                  &mat[0].vec[1],
-                  &mat[0].vec[2],
-                  &mat[0].vec[3],
-                  rho, 0, 1, 2, 3);
-  poly_uniform_4x(&mat[0].vec[4],
-                  &mat[1].vec[0],
-                  &mat[1].vec[1],
-                  &mat[1].vec[2],
-                  rho, 4, 256, 257, 258);
-  poly_uniform_4x(&mat[1].vec[3],
-                  &mat[1].vec[4],
-                  &mat[2].vec[0],
-                  &mat[2].vec[1],
-                  rho, 259, 260, 512, 513);
-  poly_uniform_4x(&mat[2].vec[2],
-                  &mat[2].vec[3],
-                  &mat[2].vec[4],
-                  &mat[3].vec[0],
-                  rho, 514, 515, 516, 768);
-  poly_uniform_4x(&mat[3].vec[1],
-                  &mat[3].vec[2],
-                  &mat[3].vec[3],
-                  &mat[3].vec[4],
-                  rho, 769, 770, 771, 772);
-  poly_uniform_4x(&mat[4].vec[0],
-                  &mat[4].vec[1],
-                  &mat[4].vec[2],
-                  &mat[4].vec[3],
-                  rho, 1024, 1025, 1026, 1027);
-  poly_uniform_4x(&mat[4].vec[4],
-                  &mat[5].vec[0],
-                  &mat[5].vec[1],
-                  &mat[5].vec[2],
-                  rho, 1028, 1280, 1281, 1282);
-  poly_uniform_4x(&mat[5].vec[3],
-                  &mat[5].vec[4],
-                  &t0,
-                  &t1,
-                  rho, 1283, 1284, 0, 0);
-}
-#else
-#error
+#ifdef DILITHIUM_USE_AES
+#include "aes256ctr.h"
 #endif
 
 /*************************************************
@@ -164,21 +28,20 @@ void challenge(poly *c,
 {
   unsigned int i, b, pos;
   uint64_t signs;
-  uint8_t inbuf[CRHBYTES + K*POLW1_SIZE_PACKED];
-  uint8_t outbuf[SHAKE256_RATE];
+  uint8_t buf[CRHBYTES + K*POLW1_SIZE_PACKED] __attribute__((aligned(32)));
   keccak_state state;
 
   for(i = 0; i < CRHBYTES; ++i)
-    inbuf[i] = mu[i];
+    buf[i] = mu[i];
   for(i = 0; i < K; ++i)
-    polyw1_pack(inbuf + CRHBYTES + i*POLW1_SIZE_PACKED, &w1->vec[i]);
+    polyw1_pack(buf + CRHBYTES + i*POLW1_SIZE_PACKED, &w1->vec[i]);
 
-  shake256_absorb(&state, inbuf, sizeof(inbuf));
-  shake256_squeezeblocks(outbuf, 1, &state);
+  shake256_absorb(&state, buf, sizeof(buf));
+  shake256_squeezeblocks(buf, 1, &state);
 
   signs = 0;
   for(i = 0; i < 8; ++i)
-    signs |= (uint64_t)outbuf[i] << 8*i;
+    signs |= (uint64_t)buf[i] << 8*i;
 
   pos = 8;
 
@@ -188,11 +51,11 @@ void challenge(poly *c,
   for(i = 196; i < 256; ++i) {
     do {
       if(pos >= SHAKE256_RATE) {
-        shake256_squeezeblocks(outbuf, 1, &state);
+        shake256_squeezeblocks(buf, 1, &state);
         pos = 0;
       }
 
-      b = outbuf[pos++];
+      b = buf[pos++];
     } while(b > i);
 
     c->coeffs[i] = c->coeffs[b];
@@ -216,10 +79,9 @@ void challenge(poly *c,
 **************************************************/
 int crypto_sign_keypair(unsigned char *pk, unsigned char *sk) {
   unsigned int i;
-  uint8_t seedbuf[3*SEEDBYTES];
-  uint8_t tr[CRHBYTES];
+  uint8_t seedbuf[3*SEEDBYTES] __attribute__((aligned(32)));
+  uint8_t tr[CRHBYTES] __attribute__((aligned(32)));
   const uint8_t *rho, *rhoprime, *key;
-  uint16_t nonce = 0;
   polyvecl mat[K];
   polyvecl s1, s1hat;
   polyveck s2, t, t1, t0;
@@ -234,41 +96,44 @@ int crypto_sign_keypair(unsigned char *pk, unsigned char *sk) {
   expand_mat(mat, rho);
 
   /* Sample short vectors s1 and s2 */
-#ifdef USE_AES
+#ifdef DILITHIUM_USE_AES
+  uint64_t __attribute__((aligned(16))) nonce = 0;
   aes256ctr_ctx state;
-  aes256ctr_init(&state, rhoprime, 0);
-  for(i = 0; i < L; ++i)
-    poly_uniform_eta_aes(&s1.vec[i], &state, nonce++);
-  for(i = 0; i < K; ++i)
-    poly_uniform_eta_aes(&s2.vec[i], &state, nonce++);
+  aes256ctr_init(&state, rhoprime, nonce++);
+  for(i = 0; i < L; ++i) {
+    poly_uniform_eta_aes(&s1.vec[i], &state);
+    state.n = _mm_loadl_epi64((__m128i *)&nonce);
+    nonce++;
+  }
+  for(i = 0; i < K; ++i) {
+    poly_uniform_eta_aes(&s2.vec[i], &state);
+    state.n = _mm_loadl_epi64((__m128i *)&nonce);
+    nonce++;
+  }
 #elif L == 2 && K == 3
   poly_uniform_eta_4x(&s1.vec[0], &s1.vec[1], &s2.vec[0], &s2.vec[1], rhoprime,
-                      nonce, nonce + 1, nonce + 2, nonce + 3);
-  poly_uniform_eta(&s2.vec[2], rhoprime, nonce + 4);
-  nonce += 5;
+                      0, 1, 2, 3);
+  poly_uniform_eta(&s2.vec[2], rhoprime, 4);
 #elif L == 3 && K == 4
   poly_uniform_eta_4x(&s1.vec[0], &s1.vec[1], &s1.vec[2], &s2.vec[0], rhoprime,
-                      nonce, nonce + 1, nonce + 2, nonce + 3);
+                      0, 1, 2, 3);
   poly_uniform_eta_4x(&s2.vec[1], &s2.vec[2], &s2.vec[3], &t.vec[0], rhoprime,
-                      nonce + 4, nonce + 5, nonce + 6, 0);
-  nonce += 7;
+                      4, 5, 6, 7);
 #elif L == 4 && K == 5
   poly_uniform_eta_4x(&s1.vec[0], &s1.vec[1], &s1.vec[2], &s1.vec[3], rhoprime,
-                      nonce, nonce + 1, nonce + 2, nonce + 3);
+                      0, 1, 2, 3);
   poly_uniform_eta_4x(&s2.vec[0], &s2.vec[1], &s2.vec[2], &s2.vec[3], rhoprime,
-                      nonce + 4, nonce + 5, nonce + 6, nonce + 7);
-  poly_uniform_eta(&s2.vec[4], rhoprime, nonce + 8);
-  nonce += 9;
+                      4, 5, 6, 7);
+  poly_uniform_eta(&s2.vec[4], rhoprime, 8);
 #elif L == 5 && K == 6
   poly_uniform_eta_4x(&s1.vec[0], &s1.vec[1], &s1.vec[2], &s1.vec[3], rhoprime,
-                      nonce, nonce + 1, nonce + 2, nonce + 3);
+                      0, 1, 2, 3);
   poly_uniform_eta_4x(&s1.vec[4], &s2.vec[0], &s2.vec[1], &s2.vec[2], rhoprime,
-                      nonce + 4, nonce + 5, nonce + 6, nonce + 7);
+                      4, 5, 6, 7);
   poly_uniform_eta_4x(&s2.vec[3], &s2.vec[4], &s2.vec[5], &t.vec[0], rhoprime,
-                      nonce + 8, nonce + 9, nonce + 10, 0);
-  nonce += 11;
+                      8, 9, 10, 11);
 #else
-#error ""
+#error
 #endif
 
   /* Matrix-vector multiplication */
@@ -319,14 +184,14 @@ int crypto_sign(unsigned char *sm,
 {
   unsigned long long i;
   unsigned int n;
-  uint8_t seedbuf[2*SEEDBYTES + 3*CRHBYTES];
+  uint8_t seedbuf[2*SEEDBYTES + 3*CRHBYTES] __attribute__((aligned(32)));
   uint8_t *rho, *tr, *key, *mu, *rhoprime;
-  uint16_t nonce = 0;
+  uint64_t __attribute__((aligned(16))) nonce = 0;
   poly c, chat;
   polyvecl mat[K], s1, y, yhat, z;
   polyveck t0, s2, w, w1, w0;
   polyveck h, cs2, ct0;
-#ifdef USE_AES
+#ifdef DILITHIUM_USE_AES
   aes256ctr_ctx state;
 #endif
 
@@ -347,7 +212,7 @@ int crypto_sign(unsigned char *sm,
   /* Compute CRH(tr, msg) */
   crh(mu, sm + CRYPTO_BYTES - CRHBYTES, CRHBYTES + mlen);
 
-#ifdef RANDOMIZED_SIGNING
+#ifdef DILITHIUM_RANDOMIZED_SIGNING
   randombytes(rhoprime, CRHBYTES);
 #else
   crh(rhoprime, key, SEEDBYTES + CRHBYTES);
@@ -359,12 +224,18 @@ int crypto_sign(unsigned char *sm,
   polyveck_ntt(&s2);
   polyveck_ntt(&t0);
 
+#ifdef DILITHIUM_USE_AES
+  aes256ctr_init(&state, rhoprime, nonce++);
+#endif
+
   rej:
   /* Sample intermediate vector y */
-#ifdef USE_AES
-  aes256ctr_init(&state, rhoprime, 0);
-  for(i = 0; i < L; ++i)
-    poly_uniform_gamma1m1_aes(&y.vec[i], &state, nonce++);
+#ifdef DILITHIUM_USE_AES
+  for(i = 0; i < L; ++i) {
+    poly_uniform_gamma1m1_aes(&y.vec[i], &state);
+    state.n = _mm_loadl_epi64((__m128i *)&nonce);
+    nonce++;
+  }
 #elif L == 2
   poly_uniform_gamma1m1_4x(&y.vec[0], &y.vec[1], &yhat.vec[0], &yhat.vec[1],
                            rhoprime, nonce, nonce + 1, 0, 0);
@@ -467,8 +338,8 @@ int crypto_sign_open(unsigned char *m,
                      const unsigned char *pk)
 {
   unsigned long long i;
-  uint8_t rho[SEEDBYTES];
-  uint8_t mu[CRHBYTES];
+  uint8_t rho[SEEDBYTES] __attribute__((aligned(32)));
+  uint8_t mu[CRHBYTES] __attribute__((aligned(32)));
   poly c, chat, cp;
   polyvecl mat[K], z;
   polyveck t1, w1, h, tmp;

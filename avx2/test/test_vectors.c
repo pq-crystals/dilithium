@@ -5,7 +5,7 @@
 #include "../polyvec.h"
 #include "../packing.h"
 #include "../rng.h"
-#ifdef USE_AES
+#ifdef DILITHIUM_USE_AES
 #include "../aes256ctr.h"
 #endif
 
@@ -13,13 +13,13 @@
 
 int main(void) {
   unsigned int i, j, k, l;
-  unsigned char seed[CRHBYTES];
-  unsigned char buf[CRYPTO_BYTES];
+  uint8_t seed[CRHBYTES];
+  uint8_t buf[CRYPTO_BYTES];
   poly c, tmp;
   polyvecl s, y, mat[K];
   polyveck w, w1, w0, t1, t0, h;
   int32_t u;
-#ifdef USE_AES
+#ifdef DILITHIUM_USE_AES
   aes256ctr_ctx state;
 #endif
 
@@ -51,10 +51,14 @@ int main(void) {
       }
     }
 
-#ifdef USE_AES
-    aes256ctr_init(&state, seed, 0);
-    for(j = 0; j < L; ++j)
-      poly_uniform_eta_aes(&s.vec[j], &state, j);
+#ifdef DILITHIUM_USE_AES
+    uint64_t __attribute__((aligned(32))) nonce = 0;
+    aes256ctr_init(&state, seed, nonce++);
+    for(j = 0; j < L; ++j) {
+      poly_uniform_eta_aes(&s.vec[j], &state);
+      state.n = _mm_loadl_epi64((__m128i *)&nonce);
+      nonce++;
+    }
 #elif L == 2
     poly_uniform_eta_4x(&s.vec[0], &s.vec[1], &tmp, &tmp, seed,
                         0, 1, 2, 3);
@@ -90,10 +94,14 @@ int main(void) {
       }
     }
 
-#ifdef USE_AES
-    aes256ctr_init(&state, seed, 0);
-    for(j = 0; j < L; ++j)
-      poly_uniform_gamma1m1_aes(&y.vec[j], &state, j);
+#ifdef DILITHIUM_USE_AES
+    nonce = 0;
+    aes256ctr_init(&state, seed, nonce++);
+    for(j = 0; j < L; ++j) {
+      poly_uniform_gamma1m1_aes(&y.vec[j], &state);
+      state.n = _mm_loadl_epi64((__m128i *)&nonce);
+      nonce++;
+    }
 #elif L == 2
     poly_uniform_gamma1m1_4x(&y.vec[0], &y.vec[1], &tmp, &tmp,
                              seed, 0, 1, 2, 3);

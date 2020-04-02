@@ -1,5 +1,4 @@
 #include <stdint.h>
-#include "test/cpucycles.h"
 #include "params.h"
 #include "symmetric.h"
 #include "ntt.h"
@@ -8,8 +7,8 @@
 #include "poly.h"
 
 #ifdef DBENCH
-extern const unsigned long long timing_overhead;
-extern unsigned long long *tred, *tadd, *tmul, *tround, *tsample, *tpack;
+extern const uint64_t timing_overhead;
+extern uint64_t *tred, *tadd, *tmul, *tround, *tsample, *tpack;
 #endif
 
 /*************************************************

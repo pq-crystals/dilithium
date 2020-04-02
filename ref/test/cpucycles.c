@@ -1,13 +1,14 @@
+#include <stdint.h>
 #include "cpucycles.h"
 
-unsigned long long cpucycles_overhead(void) {
-  unsigned long long t0, t1, overhead = (unsigned int)-1;
+uint64_t cpucycles_overhead(void) {
+  uint64_t t0, t1, overhead = -1LL;
   unsigned int i;
 
-  for(i = 0; i < 100000; ++i) {
-    t0 = cpucycles_start();
-    asm volatile("");
-    t1 = cpucycles_stop();
+  for(i=0;i<100000;i++) {
+    t0 = cpucycles();
+    __asm__ volatile("");
+    t1 = cpucycles();
     if(t1 - t0 < overhead)
       overhead = t1 - t0;
   }

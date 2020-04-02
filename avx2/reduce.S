@@ -1,7 +1,11 @@
-.global reduce_avx
-reduce_avx:
+#include "params.h"
+#include "consts.h"
+
+.text
+.global cdecl(reduce_avx)
+cdecl(reduce_avx):
 #consts
-vmovdqa		_8x23ones(%rip),%ymm0
+vmovdqa		_8X23ONES*4(%rsi),%ymm0
 
 xor		%eax,%eax
 _looptop_rdc32:
@@ -46,10 +50,10 @@ jb _looptop_rdc32
 
 ret
 
-.global csubq_avx
-csubq_avx:
+.global cdecl(csubq_avx)
+cdecl(csubq_avx):
 #consts
-vmovdqa		_8xq(%rip),%ymm0
+vmovdqa		_8XQ*4(%rsi),%ymm0
 
 xor		%eax,%eax
 _looptop_csubq:

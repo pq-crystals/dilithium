@@ -1,4 +1,6 @@
-.include "shuffle.h"
+#include "params.h"
+#include "consts.h"
+.include "shuffle.inc"
 
 .macro butterfly rl0,rl1,rl2,rl3,rh0,rh1,rh2,rh3,z0=3,z1=3,z2=3,z3=3
 #mul
@@ -40,13 +42,8 @@ vpsubd		%ymm14,%ymm\rh2,%ymm\rh2
 vpsubd		%ymm15,%ymm\rh3,%ymm\rh3
 .endm
 
-.global ntt_levels0t2_avx
+.text
 ntt_levels0t2_avx:
-#consts
-vmovdqa		_8xqinv(%rip),%ymm0
-vmovdqa		_8xq(%rip),%ymm1
-vmovdqa		_8x2q(%rip),%ymm2
-
 level0:
 #zetas
 vpbroadcastd	(%rdx),%ymm3
@@ -91,13 +88,7 @@ vmovdqa		%ymm11,1792(%rdi)
 
 ret
 
-.global ntt_levels3t8_avx
 ntt_levels3t8_avx:
-#consts
-vmovdqa		_8xqinv(%rip),%ymm0
-vmovdqa		_8xq(%rip),%ymm1
-vmovdqa		_8x2q(%rip),%ymm2
-
 #load
 vmovdqa		(%rsi),%ymm4
 vmovdqa		32(%rsi),%ymm5
@@ -176,3 +167,51 @@ vmovdqa		%ymm7,64(%rdi)
 vmovdqa		%ymm4,96(%rdi)
 
 ret
+
+.global cdecl(ntt_avx)
+cdecl(ntt_avx):
+#entry
+mov		%rsp,%r10
+mov		%rsp,%rax
+and		$31,%rax
+sub		%rax,%rsp
+sub		$2048,%rsp
+
+#consts
+vmovdqa		_8XQINV*4(%rsi),%ymm0
+vmovdqa		_8XQ*4(%rsi),%ymm1
+vmovdqa		_8X2Q*4(%rsi),%ymm2
+
+#levels0t2
+mov		%rsi,%rcx
+lea		(_ZETAS+1)*4(%rsi),%rdx
+mov		%rdi,%rsi
+mov		%rsp,%rdi
+xor		%eax,%eax
+_looptop1:
+call		ntt_levels0t2_avx
+add		$32,%rdi
+add		$16,%rsi
+add		$32,%eax
+cmp		$256,%eax
+jne		_looptop1
+
+#levels3t8
+sub		$128,%rsi
+mov		%rsi,%rdi
+mov		%rsp,%rsi
+add		$28,%rdx
+xor		%eax,%eax
+_looptop2:
+call		ntt_levels3t8_avx
+add		$128,%rdi
+add		$256,%rsi
+add		$124,%rdx
+add		$32,%eax
+cmp		$256,%eax
+jne		_looptop2
+
+#return
+mov		%r10,%rsp
+ret
+

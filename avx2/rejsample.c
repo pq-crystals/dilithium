@@ -2,14 +2,13 @@
 #include <immintrin.h>
 #include "params.h"
 #include "rejsample.h"
-#include "test/cpucycles.h"
 
 #ifdef DBENCH
-extern const unsigned long long timing_overhead;
-extern unsigned long long *tsample;
+extern const uint64_t timing_overhead;
+extern uint64_t *tsample;
 #endif
 
-static const unsigned char idx[256][8] = {
+static const uint8_t idx[256][8]  __attribute__((aligned(16))) = {
   { 0,  0,  0,  0,  0,  0,  0,  0},
   { 0,  0,  0,  0,  0,  0,  0,  0},
   { 1,  0,  0,  0,  0,  0,  0,  0},
@@ -268,13 +267,13 @@ static const unsigned char idx[256][8] = {
   { 0,  1,  2,  3,  4,  5,  6,  7}
 };
 
-unsigned int rej_uniform(uint32_t *r,
-                         unsigned int len,
-                         const unsigned char *buf,
-                         unsigned int buflen)
+unsigned int rej_uniform_avx(uint32_t *r,
+                             unsigned int len,
+                             const uint8_t *buf,
+                             unsigned int buflen)
 {
   unsigned int i, ctr, pos;
-  uint32_t vec[8];
+  uint32_t vec[8] __attribute__((aligned(32)));
   __m256i d, tmp;
   uint32_t good;
   const __m256i bound = _mm256_set1_epi32(Q);
@@ -289,7 +288,7 @@ unsigned int rej_uniform(uint32_t *r,
       vec[i] &= 0x7FFFFF;
     }
 
-    d = _mm256_loadu_si256((__m256i *)vec);
+    d = _mm256_load_si256((__m256i *)vec);
     tmp = _mm256_cmpgt_epi32(bound, d);
     good = _mm256_movemask_ps((__m256)tmp);
 
@@ -314,13 +313,13 @@ unsigned int rej_uniform(uint32_t *r,
   return ctr;
 }
 
-unsigned int rej_eta(uint32_t *r,
-                     unsigned int len,
-                     const unsigned char *buf,
-                     unsigned int buflen)
+unsigned int rej_eta_avx(uint32_t *r,
+                         unsigned int len,
+                         const uint8_t *buf,
+                         unsigned int buflen)
 {
   unsigned int i, ctr, pos;
-  uint8_t vec[32];
+  uint8_t vec[32] __attribute__((aligned(32)));
   __m256i tmp0, tmp1;
   __m128i d0, d1, rid;
   uint32_t good;
@@ -340,7 +339,7 @@ unsigned int rej_eta(uint32_t *r,
 #endif
     }
 
-    tmp0 = _mm256_loadu_si256((__m256i *)vec);
+    tmp0 = _mm256_load_si256((__m256i *)vec);
     tmp1 = _mm256_cmpgt_epi8(bound, tmp0);
     good = _mm256_movemask_epi8(tmp1);
 
@@ -396,13 +395,13 @@ unsigned int rej_eta(uint32_t *r,
   return ctr;
 }
 
-unsigned int rej_gamma1m1(uint32_t *r,
-                          unsigned int len,
-                          const unsigned char *buf,
-                          unsigned int buflen)
+unsigned int rej_gamma1m1_avx(uint32_t *r,
+                              unsigned int len,
+                              const uint8_t *buf,
+                              unsigned int buflen)
 {
   unsigned int i, ctr, pos;
-  uint32_t vec[8];
+  uint32_t vec[8] __attribute__((aligned(32)));
   __m256i d, tmp;
   uint32_t good;
   const __m256i bound = _mm256_set1_epi32(2*GAMMA1 - 1);

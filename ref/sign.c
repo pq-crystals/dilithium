@@ -9,25 +9,6 @@
 #include "packing.h"
 
 /*************************************************
-* Name:        expand_mat
-*
-* Description: Implementation of ExpandA. Generates matrix A with uniformly
-*              random coefficients a_{i,j} by performing rejection
-*              sampling on the output stream of SHAKE128(rho|j|i)
-*              or AES256CTR(rho,j|i).
-*
-* Arguments:   - polyvecl mat[K]: output matrix
-*              - const uint8_t rho[]: byte array containing seed rho
-**************************************************/
-void expand_mat(polyvecl mat[K], const uint8_t rho[SEEDBYTES]) {
-  unsigned int i, j;
-
-  for(i = 0; i < K; ++i)
-    for(j = 0; j < L; ++j)
-      poly_uniform(&mat[i].vec[j], rho, (i << 8) + j);
-}
-
-/*************************************************
 * Name:        challenge
 *
 * Description: Implementation of H. Samples polynomial with 60 nonzero
@@ -44,21 +25,20 @@ void challenge(poly *c,
 {
   unsigned int i, b, pos;
   uint64_t signs;
-  uint8_t inbuf[CRHBYTES + K*POLW1_SIZE_PACKED];
-  uint8_t outbuf[SHAKE256_RATE];
+  uint8_t buf[CRHBYTES + K*POLW1_SIZE_PACKED];
   keccak_state state;
 
   for(i = 0; i < CRHBYTES; ++i)
-    inbuf[i] = mu[i];
+    buf[i] = mu[i];
   for(i = 0; i < K; ++i)
-    polyw1_pack(inbuf + CRHBYTES + i*POLW1_SIZE_PACKED, &w1->vec[i]);
+    polyw1_pack(buf + CRHBYTES + i*POLW1_SIZE_PACKED, &w1->vec[i]);
 
-  shake256_absorb(&state, inbuf, sizeof(inbuf));
-  shake256_squeezeblocks(outbuf, 1, &state);
+  shake256_absorb(&state, buf, sizeof(buf));
+  shake256_squeezeblocks(buf, 1, &state);
 
   signs = 0;
   for(i = 0; i < 8; ++i)
-    signs |= (uint64_t)outbuf[i] << 8*i;
+    signs |= (uint64_t)buf[i] << 8*i;
 
   pos = 8;
 
@@ -68,11 +48,11 @@ void challenge(poly *c,
   for(i = 196; i < 256; ++i) {
     do {
       if(pos >= SHAKE256_RATE) {
-        shake256_squeezeblocks(outbuf, 1, &state);
+        shake256_squeezeblocks(buf, 1, &state);
         pos = 0;
       }
 
-      b = outbuf[pos++];
+      b = buf[pos++];
     } while(b > i);
 
     c->coeffs[i] = c->coeffs[b];
@@ -192,7 +172,7 @@ int crypto_sign(unsigned char *sm,
   /* Compute CRH(tr, msg) */
   crh(mu, sm + CRYPTO_BYTES - CRHBYTES, CRHBYTES + mlen);
 
-#ifdef RANDOMIZED_SIGNING
+#ifdef DILITHIUM_RANDOMIZED_SIGNING
   randombytes(rhoprime, CRHBYTES);
 #else
   crh(rhoprime, key, SEEDBYTES + CRHBYTES);

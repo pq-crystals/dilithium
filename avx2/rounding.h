@@ -1,8 +1,15 @@
 #ifndef ROUNDING_H
 #define ROUNDING_H
 
+/* TODO: Rewrite in assembly */
+
 #include <stdint.h>
 #include "params.h"
+
+#define power2round NAMESPACE(power2round)
+#define decompose NAMESPACE(decompose)
+#define make_hint NAMESPACE(make_hint)
+#define use_hint NAMESPACE(use_hint)
 
 /*************************************************
 * Name:        power2round
@@ -16,7 +23,7 @@
 *
 * Returns a1.
 **************************************************/
-inline uint32_t power2round(uint32_t a, uint32_t *a0)  {
+static inline uint32_t power2round(uint32_t a, uint32_t *a0)  {
   int32_t t;
 
   /* Centralized remainder mod 2^D */
@@ -43,7 +50,7 @@ inline uint32_t power2round(uint32_t a, uint32_t *a0)  {
 *
 * Returns a1.
 **************************************************/
-inline uint32_t decompose(uint32_t a, uint32_t *a0) {
+static inline uint32_t decompose(uint32_t a, uint32_t *a0) {
 #if ALPHA != (Q-1)/16
 #error "decompose assumes ALPHA == (Q-1)/16"
 #endif
@@ -81,7 +88,7 @@ inline uint32_t decompose(uint32_t a, uint32_t *a0) {
 *
 * Returns 1 if high bits of a and b differ and 0 otherwise.
 **************************************************/
-inline unsigned int make_hint(const uint32_t a0, const uint32_t a1) {
+static inline unsigned int make_hint(const uint32_t a0, const uint32_t a1) {
   if(a0 <= GAMMA2 || a0 > Q - GAMMA2 || (a0 == Q - GAMMA2 && a1 == 0))
     return 0;
 
@@ -98,7 +105,7 @@ inline unsigned int make_hint(const uint32_t a0, const uint32_t a1) {
 *
 * Returns corrected high bits.
 **************************************************/
-inline uint32_t use_hint(const uint32_t a, const unsigned int hint) {
+static inline uint32_t use_hint(const uint32_t a, const unsigned int hint) {
   uint32_t a0, a1;
 
   a1 = decompose(a, &a0);

@@ -1,10 +1,12 @@
 #include "params.h"
+#include "consts.h"
 
-.global pointwise_avx
-pointwise_avx:
+.text
+.global cdecl(pointwise_avx)
+cdecl(pointwise_avx):
 #consts
-vmovdqa		_8xqinv(%rip),%ymm0
-vmovdqa		_8xq(%rip),%ymm1
+vmovdqa		_8XQINV*4(%rcx),%ymm0
+vmovdqa		_8XQ*4(%rcx),%ymm1
 
 xor		%eax,%eax
 _looptop1:
@@ -66,7 +68,7 @@ add		$96,%rsi
 add		$96,%rdx
 add		$1,%eax
 cmp		$10,%eax
-jb _looptop1
+jb 		_looptop1
 
 vmovdqa		(%rsi),%ymm2
 vmovdqa		32(%rsi),%ymm4
@@ -132,11 +134,11 @@ vpaddq		%ymm8,%ymm4,%ymm4
 vpaddq		%ymm9,%ymm5,%ymm5
 .endm
 
-.global pointwise_acc_avx
-pointwise_acc_avx:
+.global cdecl(pointwise_acc_avx)
+cdecl(pointwise_acc_avx):
 #consts
-vmovdqa		_8xqinv(%rip),%ymm0
-vmovdqa		_8xq(%rip),%ymm1
+vmovdqa		_8XQINV*4(%rcx),%ymm0
+vmovdqa		_8XQ*4(%rcx),%ymm1
 
 xor		%eax,%eax
 _looptop2:

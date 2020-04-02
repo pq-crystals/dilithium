@@ -1,57 +1,66 @@
 #ifndef FIPS202X4_H
 #define FIPS202X4_H
 
+#include <stddef.h>
+#include <stdint.h>
 #include <immintrin.h>
-#include "params.h"
 
-void shake128_absorb4x(__m256i *s,
-                       const unsigned char *m0,
-                       const unsigned char *m1,
-                       const unsigned char *m2,
-                       const unsigned char *m3,
-                       unsigned long long mlen);
+typedef struct {
+  __m256i s[25];
+} keccakx4_state;
 
-void shake128_squeezeblocks4x(unsigned char *h0,
-                              unsigned char *h1,
-                              unsigned char *h2,
-                              unsigned char *h3,
-                              unsigned long nblocks,
-                              __m256i *s);
+#define shake128x4_absorb pqcrystals_avx2_shake128x4_absorb
+void shake128x4_absorb(keccakx4_state *state,
+                       const uint8_t *in0,
+                       const uint8_t *in1,
+                       const uint8_t *in2,
+                       const uint8_t *in3,
+                       size_t inlen);
 
-void shake256_absorb4x(__m256i *s,
-                       const unsigned char *m0,
-                       const unsigned char *m1,
-                       const unsigned char *m2,
-                       const unsigned char *m3,
-                       unsigned long long mlen);
+#define shake128x4_squeezeblocks pqcrystals_avx2_shake128x4_squeezeblocks
+void shake128x4_squeezeblocks(uint8_t *out0,
+                              uint8_t *out1,
+                              uint8_t *out2,
+                              uint8_t *out3,
+                              size_t nblocks,
+                              keccakx4_state *state);
 
-void shake256_squeezeblocks4x(unsigned char *h0,
-                              unsigned char *h1,
-                              unsigned char *h2,
-                              unsigned char *h3,
-                              unsigned long nblocks,
-                              __m256i *s);
+#define shake256x4_absorb pqcrystals_avx2_shake256x4_absorb
+void shake256x4_absorb(keccakx4_state *state,
+                       const uint8_t *in0,
+                       const uint8_t *in1,
+                       const uint8_t *in2,
+                       const uint8_t *in3,
+                       size_t inlen);
 
-void shake128_4x(unsigned char *h0,
-                 unsigned char *h1,
-                 unsigned char *h2,
-                 unsigned char *h3,
-                 unsigned long long hlen,
-                 const unsigned char *m0,
-                 const unsigned char *m1,
-                 const unsigned char *m2,
-                 const unsigned char *m3,
-                 unsigned long long mlen);
+#define shake256x4_squeezeblocks pqcrystals_avx2_shake256x4_squeezeblocks
+void shake256x4_squeezeblocks(uint8_t *out0,
+                              uint8_t *out1,
+                              uint8_t *out2,
+                              uint8_t *out3,
+                              size_t nblocks,
+                              keccakx4_state *state);
 
-void shake256_4x(unsigned char *h0,
-                 unsigned char *h1,
-                 unsigned char *h2,
-                 unsigned char *h3,
-                 unsigned long long hlen,
-                 const unsigned char *m0,
-                 const unsigned char *m1,
-                 const unsigned char *m2,
-                 const unsigned char *m3,
-                 unsigned long long mlen);
+void shake128x4(uint8_t *out0,
+                uint8_t *out1,
+                uint8_t *out2,
+                uint8_t *out3,
+                size_t outlen,
+                const uint8_t *in0,
+                const uint8_t *in1,
+                const uint8_t *in2,
+                const uint8_t *in3,
+                size_t inlen);
+
+void shake256x4(uint8_t *out0,
+                uint8_t *out1,
+                uint8_t *out2,
+                uint8_t *out3,
+                size_t outlen,
+                const uint8_t *in0,
+                const uint8_t *in1,
+                const uint8_t *in2,
+                const uint8_t *in3,
+                size_t inlen);
 
 #endif
