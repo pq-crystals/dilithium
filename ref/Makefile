@@ -1,7 +1,7 @@
 CC ?= /usr/bin/cc
 CFLAGS += -Wall -Wextra -Wpedantic -Wmissing-prototypes -Wredundant-decls \
    -march=native -mtune=native -O3
-NISTFLAGS += -march=native -mtune=native -O3 -fomit-frame-pointer
+NISTFLAGS += -Wno-unused-result -march=native -mtune=native -O3 -fomit-frame-pointer
 SOURCES = sign.c polyvec.c poly.c packing.c ntt.c reduce.c rounding.c
 HEADERS = config.h api.h params.h sign.h polyvec.h poly.h packing.h ntt.h \
   reduce.h rounding.h symmetric.h
@@ -14,6 +14,10 @@ all: PQCgenKAT_sign test/test_vectors test/test_dilithium test/test_speed
 
 dilithium.so: $(SOURCES) $(HEADERS) symmetric-shake.c
 	$(CC) -shared -fPIC $(CFLAGS) $(SOURCES) symmetric-shake.c -o $@
+
+dilithium-AES.so: $(SOURCES) $(HEADERS) symmetric-aes.c
+	$(CC) -shared -fPIC $(CFLAGS) -DDILITHIUM_USE_AES \
+	  $(SOURCES) symmetric-aes.c -o $@
 
 PQCgenKAT_sign: PQCgenKAT_sign.c rng.c $(KECCAK_SOURCES) rng.h $(KECCAK_HEADERS)
 	$(CC) $(NISTFLAGS) $< rng.c $(KECCAK_SOURCES) -o $@ -lcrypto
@@ -61,6 +65,7 @@ test/test_speed-AES: test/test_speed.c randombytes.c test/cpucycles.c \
 clean:
 	rm -f *~ test/*~
 	rm -f dilithium.so
+	rm -f dilithium-AES.so
 	rm -f PQCgenKAT_sign
 	rm -f PQCgenKAT_sign-AES
 	rm -f test/test_vectors

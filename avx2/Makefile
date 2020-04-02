@@ -2,7 +2,7 @@ CC = /usr/bin/cc
 CFLAGS += -Wall -Wextra -Wpedantic -Wmissing-prototypes -Wredundant-decls \
   -Wshadow -Wpointer-arith -march=native -mtune=native -O3 \
   -fomit-frame-pointer -fstrict-aliasing -flto
-NISTFLAGS += -march=native -mtune=native -O3 -fomit-frame-pointer
+NISTFLAGS += -Wno-unused-result -march=native -mtune=native -O3 -fomit-frame-pointer
 SOURCES = sign.c polyvec.c poly.c packing.c ntt.S invntt.S pointwise.S \
   consts.c rejsample.c reduce.S
 HEADERS = config.h api.h params.h sign.h polyvec.h poly.h packing.h ntt.h \
@@ -17,6 +17,9 @@ all: PQCgenKAT_sign test/test_vectors test/test_dilithium test/test_speed
 
 dilithium.so: $(SOURCES) $(HEADERS) symmetric-shake.c
 	$(CC) -shared -fPIC $(CFLAGS) $(SOURCES) symmetric-shake.c -o $@
+
+dilithium-AES.so: $(SOURCES) $(HEADERS)
+	$(CC) -shared -fPIC $(CFLAGS) -DDILITHIUM_USE_AES $(SOURCES) -o $@
 
 keccak4x/KeccakP-1600-times4-SIMD256.o: keccak4x/KeccakP-1600-times4-SIMD256.c \
   keccak4x/align.h keccak4x/brg_endian.h keccak4x/KeccakP-1600-times4-SnP.h \
