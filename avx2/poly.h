@@ -3,9 +3,7 @@
 
 #include <stdint.h>
 #include "params.h"
-#ifdef DILITHIUM_USE_AES
-#include "aes256ctr.h"
-#endif
+#include "symmetric.h"
 
 typedef struct {
   uint32_t coeffs[N];
@@ -43,18 +41,26 @@ void poly_use_hint(poly *b, const poly *a, const poly *h);
 
 #define poly_chknorm NAMESPACE(poly_chknorm)
 int  poly_chknorm(const poly *a, uint32_t B);
-#ifdef DILITHIUM_USE_AES
-#define poly_uniform_aes NAMESPACE(poly_uniform_aes)
-void poly_uniform_aes(poly *a, aes256ctr_ctx *state);
-#define poly_uniform_eta_aes NAMESPACE(poly_uniform_eta_aes)
-void poly_uniform_eta_aes(poly *a, aes256ctr_ctx *state);
-#define poly_uniform_gamma1m1_aes NAMESPACE(poly_uniform_gamma1m1_aes)
-void poly_uniform_gamma1m1_aes(poly *a, aes256ctr_ctx *state);
-#else
+#define poly_uniform_preinit NAMESPACE(poly_uniform_preinit)
+void poly_uniform_preinit(poly *a, stream128_state *state);
 #define poly_uniform NAMESPACE(poly_uniform)
 void poly_uniform(poly *a,
                   const uint8_t seed[SEEDBYTES],
                   uint16_t nonce);
+#define poly_uniform_eta_preinit NAMESPACE(poly_uniform_eta_preinit)
+void poly_uniform_eta_preinit(poly *a, stream128_state *state);
+#define poly_uniform_eta NAMESPACE(poly_uniform_eta)
+void poly_uniform_eta(poly *a,
+                      const uint8_t seed[SEEDBYTES],
+                      uint16_t nonce);
+#define poly_uniform_gamma1m1_preinit NAMESPACE(poly_uniform_gamma1m1_preinit)
+void poly_uniform_gamma1m1_preinit(poly *a, stream256_state *state);
+#define poly_uniform_gamma1m1 NAMESPACE(poly_uniform_gamma1m1)
+void poly_uniform_gamma1m1(poly *a,
+                           const uint8_t seed[CRHBYTES],
+                           uint16_t nonce);
+
+#ifndef DILITHIUM_USE_AES
 #define poly_uniform_4x NAMESPACE(poly_uniform_4x)
 void poly_uniform_4x(poly *a0,
                      poly *a1,
@@ -65,10 +71,6 @@ void poly_uniform_4x(poly *a0,
                      uint16_t nonce1,
                      uint16_t nonce2,
                      uint16_t nonce3);
-#define poly_uniform_eta NAMESPACE(poly_uniform_eta)
-void poly_uniform_eta(poly *a,
-                      const uint8_t seed[SEEDBYTES],
-                      uint16_t nonce);
 #define poly_uniform_eta_4x NAMESPACE(poly_uniform_eta_4x)
 void poly_uniform_eta_4x(poly *a0,
                          poly *a1,
@@ -79,10 +81,6 @@ void poly_uniform_eta_4x(poly *a0,
                          uint16_t nonce1,
                          uint16_t nonce2,
                          uint16_t nonce3);
-#define poly_uniform_gamma1m1 NAMESPACE(poly_uniform_gamma1m1)
-void poly_uniform_gamma1m1(poly *a,
-                           const uint8_t seed[CRHBYTES],
-                           uint16_t nonce);
 #define poly_uniform_gamma1m1_4x NAMESPACE(poly_uniform_gamma1m1_4x)
 void poly_uniform_gamma1m1_4x(poly *a0,
                               poly *a1,

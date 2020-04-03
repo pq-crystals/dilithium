@@ -101,12 +101,12 @@ int crypto_sign_keypair(unsigned char *pk, unsigned char *sk) {
   aes256ctr_ctx state;
   aes256ctr_init(&state, rhoprime, nonce++);
   for(i = 0; i < L; ++i) {
-    poly_uniform_eta_aes(&s1.vec[i], &state);
+    poly_uniform_eta_preinit(&s1.vec[i], &state);
     state.n = _mm_loadl_epi64((__m128i *)&nonce);
     nonce++;
   }
   for(i = 0; i < K; ++i) {
-    poly_uniform_eta_aes(&s2.vec[i], &state);
+    poly_uniform_eta_preinit(&s2.vec[i], &state);
     state.n = _mm_loadl_epi64((__m128i *)&nonce);
     nonce++;
   }
@@ -191,9 +191,6 @@ int crypto_sign(unsigned char *sm,
   polyvecl mat[K], s1, y, yhat, z;
   polyveck t0, s2, w, w1, w0;
   polyveck h, cs2, ct0;
-#ifdef DILITHIUM_USE_AES
-  aes256ctr_ctx state;
-#endif
 
   rho = seedbuf;
   tr = rho + SEEDBYTES;
@@ -225,6 +222,7 @@ int crypto_sign(unsigned char *sm,
   polyveck_ntt(&t0);
 
 #ifdef DILITHIUM_USE_AES
+  aes256ctr_ctx state;
   aes256ctr_init(&state, rhoprime, nonce++);
 #endif
 
@@ -232,7 +230,7 @@ int crypto_sign(unsigned char *sm,
   /* Sample intermediate vector y */
 #ifdef DILITHIUM_USE_AES
   for(i = 0; i < L; ++i) {
-    poly_uniform_gamma1m1_aes(&y.vec[i], &state);
+    poly_uniform_gamma1m1_preinit(&y.vec[i], &state);
     state.n = _mm_loadl_epi64((__m128i *)&nonce);
     nonce++;
   }

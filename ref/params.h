@@ -23,7 +23,7 @@
 #define OMEGA 64
 
 #ifdef DILITHIUM_USE_AES
-#define NAMESPACE(s) dilithium1_aes_ref_##s
+#define NAMESPACE(s) dilithium1aes_ref_##s
 #else
 #define NAMESPACE(s) dilithium1_ref_##s
 #endif
@@ -37,7 +37,7 @@
 #define OMEGA 80
 
 #ifdef DILITHIUM_USE_AES
-#define NAMESPACE(s) dilithium2_aes_ref_##s
+#define NAMESPACE(s) dilithium2aes_ref_##s
 #else
 #define NAMESPACE(s) dilithium2_ref_##s
 #endif
@@ -51,7 +51,7 @@
 #define OMEGA 96
 
 #ifdef DILITHIUM_USE_AES
-#define NAMESPACE(s) dilithium3_aes_ref_##s
+#define NAMESPACE(s) dilithium3aes_ref_##s
 #else
 #define NAMESPACE(s) dilithium3_ref_##s
 #endif
@@ -65,11 +65,13 @@
 #define OMEGA 120
 
 #ifdef DILITHIUM_USE_AES
-#define NAMESPACE(s) dilithium4_aes_ref_##s
+#define NAMESPACE(s) dilithium4aes_ref_##s
 #else
 #define NAMESPACE(s) dilithium4_ref_##s
 #endif
 
+#else
+#error "DILITHIUM_MODE must be 1, 2, 3, or 4"
 #endif
 
 #define POLT1_SIZE_PACKED ((N*(QBITS - D))/8)

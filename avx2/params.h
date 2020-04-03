@@ -23,7 +23,7 @@
 #define OMEGA 64
 
 #ifdef DILITHIUM_USE_AES
-#define NAMESPACE(s) dilithium1_aes_avx2_##s
+#define NAMESPACE(s) dilithium1aes_avx2_##s
 #else
 #define NAMESPACE(s) dilithium1_avx2_##s
 #endif
@@ -37,7 +37,7 @@
 #define OMEGA 80
 
 #ifdef DILITHIUM_USE_AES
-#define NAMESPACE(s) dilithium2_aes_avx2_##s
+#define NAMESPACE(s) dilithium2aes_avx2_##s
 #else
 #define NAMESPACE(s) dilithium2_avx2_##s
 #endif
@@ -51,7 +51,7 @@
 #define OMEGA 96
 
 #ifdef DILITHIUM_USE_AES
-#define NAMESPACE(s) dilithium3_aes_avx2_##s
+#define NAMESPACE(s) dilithium3aes_avx2_##s
 #else
 #define NAMESPACE(s) dilithium3_avx2_##s
 #endif
@@ -65,7 +65,7 @@
 #define OMEGA 120
 
 #ifdef DILITHIUM_USE_AES
-#define NAMESPACE(s) dilithium4_aes_avx2_##s
+#define NAMESPACE(s) dilithium4aes_avx2_##s
 #else
 #define NAMESPACE(s) dilithium4_avx2_##s
 #endif

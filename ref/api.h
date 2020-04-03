@@ -13,7 +13,7 @@
 #define NAMESPACE(s) dilithium1_ref_##s
 #else
 #define CRYPTO_ALGNAME "Dilithium1-AES"
-#define NAMESPACE(s) dilithium1_aes_ref_##s
+#define NAMESPACE(s) dilithium1aes_ref_##s
 #endif
 
 #elif DILITHIUM_MODE == 2
@@ -26,7 +26,7 @@
 #define NAMESPACE(s) dilithium2_ref_##s
 #else
 #define CRYPTO_ALGNAME "Dilithium2-AES"
-#define NAMESPACE(s) dilithium2_aes_ref_##s
+#define NAMESPACE(s) dilithium2aes_ref_##s
 #endif
 
 #elif DILITHIUM_MODE == 3
@@ -39,7 +39,7 @@
 #define NAMESPACE(s) dilithium3_ref_##s
 #else
 #define CRYPTO_ALGNAME "Dilithium3-AES"
-#define NAMESPACE(s) dilithium3_aes_ref_##s
+#define NAMESPACE(s) dilithium3aes_ref_##s
 #endif
 
 #elif DILITHIUM_MODE == 4
@@ -52,7 +52,7 @@
 #define NAMESPACE(s) dilithium4_ref_##s
 #else
 #define CRYPTO_ALGNAME "Dilithium4-AES"
-#define NAMESPACE(s) dilithium4_aes_ref_##s
+#define NAMESPACE(s) dilithium4aes_ref_##s
 #endif
 
 #endif

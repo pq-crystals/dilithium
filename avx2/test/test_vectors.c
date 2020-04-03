@@ -1,3 +1,4 @@
+#include <stdint.h>
 #include <stdio.h>
 #include "../params.h"
 #include "../sign.h"
@@ -19,9 +20,6 @@ int main(void) {
   polyvecl s, y, mat[K];
   polyveck w, w1, w0, t1, t0, h;
   int32_t u;
-#ifdef DILITHIUM_USE_AES
-  aes256ctr_ctx state;
-#endif
 
   for (i = 0; i < CRHBYTES; ++i)
     seed[i] = i;
@@ -52,10 +50,11 @@ int main(void) {
     }
 
 #ifdef DILITHIUM_USE_AES
+    aes256ctr_ctx state;
     uint64_t __attribute__((aligned(32))) nonce = 0;
     aes256ctr_init(&state, seed, nonce++);
     for(j = 0; j < L; ++j) {
-      poly_uniform_eta_aes(&s.vec[j], &state);
+      poly_uniform_eta_preinit(&s.vec[j], &state);
       state.n = _mm_loadl_epi64((__m128i *)&nonce);
       nonce++;
     }
@@ -82,6 +81,10 @@ int main(void) {
       if(tmp.coeffs[j] != s.vec[0].coeffs[j])
         fprintf(stderr, "ERROR in polyeta_(un)pack!\n");
 
+    polyvecl_freeze(&s);
+    if(polyvecl_chknorm(&s, ETA+1))
+      fprintf(stderr, "ERROR in polyvecl_chknorm(&s ,ETA+1)!\n");
+
     printf("s = ((");
     for(j = 0; j < L; ++j) {
       for(k = 0; k < N; ++k) {
@@ -98,7 +101,7 @@ int main(void) {
     nonce = 0;
     aes256ctr_init(&state, seed, nonce++);
     for(j = 0; j < L; ++j) {
-      poly_uniform_gamma1m1_aes(&y.vec[j], &state);
+      poly_uniform_gamma1m1_preinit(&y.vec[j], &state);
       state.n = _mm_loadl_epi64((__m128i *)&nonce);
       nonce++;
     }
@@ -125,6 +128,9 @@ int main(void) {
     for(j = 0; j < N; ++j)
       if(tmp.coeffs[j] != y.vec[0].coeffs[j])
         fprintf(stderr, "ERROR in polyz_(un)pack!\n");
+
+    if(polyvecl_chknorm(&y, GAMMA1))
+      fprintf(stderr, "ERROR in polyvecl_chknorm(&y, GAMMA1)!\n");
 
     printf("y = ((");
     for(j = 0; j < L; ++j) {
@@ -164,8 +170,12 @@ int main(void) {
         fprintf(stderr, "ERROR in polyw1_pack!\n");
     }
 
-    if(poly_chknorm(&w1.vec[0], 16))
-      fprintf(stderr, "ERROR in poly_chknorm(.,16)!\n");
+    if(polyveck_chknorm(&w1, 16))
+      fprintf(stderr, "ERROR in polyveck_chknorm(&w1, 16)!\n");
+    h = w0;
+    polyveck_csubq(&h);
+    if(polyveck_chknorm(&h, ALPHA/2+1))
+      fprintf(stderr, "ERROR in polyveck_chknorm(&w0 ,ALPHA/2+1)!\n");
 
     printf("w1 = ((");
     for(j = 0; j < K; ++j) {
@@ -208,6 +218,13 @@ int main(void) {
         fprintf(stderr, "ERROR in polyt0_(un)pack!\n");
     }
 
+    if(polyveck_chknorm(&t1, 512))
+      fprintf(stderr, "ERROR in polyveck_chknorm(&t1, 512)!\n");
+    h = t0;
+    polyveck_csubq(&h);
+    if(polyveck_chknorm(&h, (1U << (D-1)) + 1))
+      fprintf(stderr, "ERROR in polyveck_chknorm(&t0, 1 << (D-1) + 1)!\n");
+
     printf("t1 = ((");
     for(j = 0; j < K; ++j) {
       for(k = 0; k < N; ++k) {
@@ -228,11 +245,7 @@ int main(void) {
       }
     }
 
-    polyveck_freeze(&t0);
-    if(poly_chknorm(&t0.vec[0], (1U << (D-1)) + 1))
-      fprintf(stderr, "ERROR in poly_chknorm(., 1 << (D-1))!\n");
-
-    challenge(&c, seed, &w);
+    challenge(&c, seed, &w); //FIXME: w1
     printf("c = (");
     for(j = 0; j < N; ++j) {
       u = c.coeffs[j];

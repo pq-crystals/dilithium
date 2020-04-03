@@ -31,7 +31,7 @@ void expand_mat(polyvecl mat[K], const uint8_t rho[SEEDBYTES]) {
     for(j = 0; j < L; ++j) {
       nonce = (i << 8) | j;
       state.n = _mm_loadl_epi64((__m128i *)&nonce);
-      poly_uniform_aes(&mat[i].vec[j], &state);
+      poly_uniform_preinit(&mat[i].vec[j], &state);
     }
   }
 }

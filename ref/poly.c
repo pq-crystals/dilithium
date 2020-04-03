@@ -354,7 +354,7 @@ static unsigned int rej_uniform(uint32_t *a,
 *              - uint16_t nonce: 2-byte nonce
 **************************************************/
 #define POLY_UNIFORM_NBLOCKS (((N*((QBITS+7)/8)*(1ULL << QBITS) + Q/2)/Q \
-                               + STREAM128_BLOCKBYTES)/STREAM128_BLOCKBYTES)
+                               + STREAM128_BLOCKBYTES-1)/STREAM128_BLOCKBYTES)
 void poly_uniform(poly *a,
                   const uint8_t seed[SEEDBYTES],
                   uint16_t nonce)
@@ -438,7 +438,7 @@ static unsigned int rej_eta(uint32_t *a,
 *              - uint16_t nonce: 2-byte nonce
 **************************************************/
 #define POLY_UNIFORM_ETA_NBLOCKS (((N/2*(1U << SETABITS) + ETA)/(2*ETA + 1) \
-                                   + STREAM128_BLOCKBYTES) \
+                                   + STREAM128_BLOCKBYTES - 1) \
                                   /STREAM128_BLOCKBYTES)
 void poly_uniform_eta(poly *a,
                       const uint8_t seed[SEEDBYTES],
@@ -523,7 +523,7 @@ static unsigned int rej_gamma1m1(uint32_t *a,
 *              - uint16_t nonce: 16-bit nonce
 **************************************************/
 #define POLY_UNIFORM_GAMMA1M1_NBLOCKS (((N*5/2*(1U << 20)+GAMMA1)/(2*GAMMA1-1) \
-                                        + STREAM256_BLOCKBYTES) \
+                                        + STREAM256_BLOCKBYTES - 1) \
                                        /STREAM256_BLOCKBYTES)
 void poly_uniform_gamma1m1(poly *a,
                            const uint8_t seed[CRHBYTES],

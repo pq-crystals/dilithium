@@ -1,9 +1,7 @@
 #include <stdint.h>
 #include <immintrin.h>
 #include "symmetric.h"
-#ifdef DILITHIUM_USE_AES
-#include "aes256ctr.h"
-#else
+#ifndef DILITHIUM_USE_AES
 #include "fips202x4.h"
 #endif
 #include "params.h"
@@ -382,48 +380,33 @@ static unsigned int rej_uniform(uint32_t *a,
 *              - const uint8_t seed[]: byte array with seed of length SEEDBYTES
 *              - uint16_t nonce: 2-byte nonce
 **************************************************/
-#ifdef DILITHIUM_USE_AES
-void poly_uniform_aes(poly *a, aes256ctr_ctx *state)
+#define POLY_UNIFORM_NBLOCKS ((768+STREAM128_BLOCKBYTES-1)/STREAM128_BLOCKBYTES)
+void poly_uniform_preinit(poly *a, stream128_state *state)
 {
   unsigned int ctr;
-  uint8_t buf[768] __attribute__((aligned(32)));
+  uint8_t buf[POLY_UNIFORM_NBLOCKS*STREAM128_BLOCKBYTES]
+    __attribute__((aligned(32)));
 
-  aes256ctr_squeezeblocks(buf, sizeof(buf)/AES256CTR_BLOCKBYTES, state);
+  stream128_squeezeblocks(buf, POLY_UNIFORM_NBLOCKS, state);
   ctr = rej_uniform_avx(a->coeffs, N, buf, sizeof(buf));
 
   while(ctr < N) {
-    aes256ctr_squeezeblocks(buf, 1, state);
-    ctr += rej_uniform(a->coeffs + ctr, N - ctr, buf, AES256CTR_BLOCKBYTES);
+    /* length of buf is divisible by 3; hence, no bytes left */
+    stream128_squeezeblocks(buf, 1, state);
+    ctr += rej_uniform(a->coeffs + ctr, N - ctr, buf, STREAM128_BLOCKBYTES);
   }
 }
-#else
-#define POLY_UNIFORM_NBLOCKS (((N*((QBITS+7)/8)*(1ULL << QBITS) + Q/2)/Q \
-                               + STREAM128_BLOCKBYTES)/STREAM128_BLOCKBYTES)
+
 void poly_uniform(poly *a,
                   const uint8_t seed[SEEDBYTES],
                   uint16_t nonce)
 {
-  unsigned int i, ctr, off;
-  unsigned int buflen = POLY_UNIFORM_NBLOCKS*STREAM128_BLOCKBYTES;
-  uint8_t buf[buflen + 2] __attribute__((aligned(32)));
   stream128_state state;
-
   stream128_init(&state, seed, nonce);
-  stream128_squeezeblocks(buf, POLY_UNIFORM_NBLOCKS, &state);
-
-  ctr = rej_uniform_avx(a->coeffs, N, buf, buflen);
-
-  while(ctr < N) {
-    off = buflen % 3;
-    for(i = 0; i < off; ++i)
-      buf[i] = buf[buflen - off + i];
-
-    buflen = STREAM128_BLOCKBYTES + off;
-    stream128_squeezeblocks(buf + off, 1, &state);
-    ctr += rej_uniform(a->coeffs + ctr, N - ctr, buf, buflen);
-  }
+  poly_uniform_preinit(a, &state);
 }
 
+#ifndef DILITHIUM_USE_AES
 void poly_uniform_4x(poly *a0,
                      poly *a1,
                      poly *a2,
@@ -531,44 +514,35 @@ static unsigned int rej_eta(uint32_t *a,
 *                                      SEEDBYTES
 *              - uint16_t nonce: 2-byte nonce
 **************************************************/
-#ifdef DILITHIUM_USE_AES
-void poly_uniform_eta_aes(poly *a, aes256ctr_ctx *state)
+#define POLY_UNIFORM_ETA_NBLOCKS (((N/2*(1U << SETABITS) + ETA)/(2*ETA + 1) \
+                                   + STREAM128_BLOCKBYTES - 1) \
+                                  /STREAM128_BLOCKBYTES)
+
+void poly_uniform_eta_preinit(poly *a, stream128_state *state)
 {
   unsigned int ctr;
-  uint8_t buf[192] __attribute__((aligned(32)));
+  uint8_t buf[POLY_UNIFORM_ETA_NBLOCKS*STREAM128_BLOCKBYTES]
+    __attribute__((aligned(32)));
 
-  aes256ctr_squeezeblocks(buf, sizeof(buf)/AES256CTR_BLOCKBYTES, state);
+  stream128_squeezeblocks(buf, POLY_UNIFORM_ETA_NBLOCKS, state);
   ctr = rej_eta_avx(a->coeffs, N, buf, sizeof(buf));
 
   while(ctr < N) {
-    aes256ctr_squeezeblocks(buf, 1, state);
-    ctr += rej_eta(a->coeffs + ctr, N - ctr, buf, AES256CTR_BLOCKBYTES);
-  }
-}
-#else
-#define POLY_UNIFORM_ETA_NBLOCKS (((N/2*(1U << SETABITS) + ETA)/(2*ETA + 1) \
-                                   + STREAM128_BLOCKBYTES) \
-                                  /STREAM128_BLOCKBYTES)
-void poly_uniform_eta(poly *a,
-                      const uint8_t seed[SEEDBYTES],
-                      uint16_t nonce)
-{
-  unsigned int ctr;
-  unsigned int buflen = POLY_UNIFORM_ETA_NBLOCKS*STREAM128_BLOCKBYTES;
-  uint8_t buf[buflen] __attribute__((aligned(32)));
-  stream128_state state;
-
-  stream128_init(&state, seed, nonce);
-  stream128_squeezeblocks(buf, POLY_UNIFORM_ETA_NBLOCKS, &state);
-
-  ctr = rej_eta_avx(a->coeffs, N, buf, buflen);
-
-  while(ctr < N) {
-    stream128_squeezeblocks(buf, 1, &state);
+    stream128_squeezeblocks(buf, 1, state);
     ctr += rej_eta(a->coeffs + ctr, N - ctr, buf, STREAM128_BLOCKBYTES);
   }
 }
 
+void poly_uniform_eta(poly *a,
+                      const uint8_t seed[SEEDBYTES],
+                      uint16_t nonce)
+{
+  stream128_state state;
+  stream128_init(&state, seed, nonce);
+  poly_uniform_eta_preinit(a, &state);
+}
+
+#ifndef DILITHIUM_USE_AES
 void poly_uniform_eta_4x(poly *a0,
                          poly *a1,
                          poly *a2,
@@ -580,7 +554,7 @@ void poly_uniform_eta_4x(poly *a0,
                          uint16_t nonce3)
 {
   unsigned int i, ctr0, ctr1, ctr2, ctr3;
-  uint8_t buf[4][2*SHAKE128_RATE];
+  uint8_t buf[4][POLY_UNIFORM_ETA_NBLOCKS*SHAKE128_RATE];
   keccakx4_state state;
 
   for(i= 0; i < SEEDBYTES; ++i) {
@@ -599,12 +573,13 @@ void poly_uniform_eta_4x(poly *a0,
   buf[3][SEEDBYTES+1] = nonce3 >> 8;
 
   shake128x4_absorb(&state, buf[0], buf[1], buf[2], buf[3], SEEDBYTES + 2);
-  shake128x4_squeezeblocks(buf[0], buf[1], buf[2], buf[3], 2, &state);
+  shake128x4_squeezeblocks(buf[0], buf[1], buf[2], buf[3],
+                           POLY_UNIFORM_ETA_NBLOCKS, &state);
 
-  ctr0 = rej_eta_avx(a0->coeffs, N, buf[0], 2*SHAKE128_RATE);
-  ctr1 = rej_eta_avx(a1->coeffs, N, buf[1], 2*SHAKE128_RATE);
-  ctr2 = rej_eta_avx(a2->coeffs, N, buf[2], 2*SHAKE128_RATE);
-  ctr3 = rej_eta_avx(a3->coeffs, N, buf[3], 2*SHAKE128_RATE);
+  ctr0 = rej_eta_avx(a0->coeffs, N, buf[0], sizeof(buf[0]));
+  ctr1 = rej_eta_avx(a1->coeffs, N, buf[1], sizeof(buf[1]));
+  ctr2 = rej_eta_avx(a2->coeffs, N, buf[2], sizeof(buf[2]));
+  ctr3 = rej_eta_avx(a3->coeffs, N, buf[3], sizeof(buf[3]));
 
   while(ctr0 < N || ctr1 < N || ctr2 < N || ctr3 < N) {
     shake128x4_squeezeblocks(buf[0], buf[1], buf[2], buf[3], 1, &state);
@@ -680,49 +655,34 @@ static unsigned int rej_gamma1m1(uint32_t *a,
 *                                            CRHBYTES
 *              - uint16_t nonce: 16-bit nonce
 **************************************************/
-#ifdef DILITHIUM_USE_AES
-void poly_uniform_gamma1m1_aes(poly *a, aes256ctr_ctx *state)
+#define POLY_UNIFORM_GAMMA1M1_NBLOCKS ((640 + STREAM256_BLOCKBYTES - 1) \
+                                       /STREAM256_BLOCKBYTES)
+void poly_uniform_gamma1m1_preinit(poly *a, stream256_state *state)
 {
   unsigned int ctr;
-  uint8_t buf[640] __attribute__((aligned(32)));
+  uint8_t buf[POLY_UNIFORM_GAMMA1M1_NBLOCKS*STREAM256_BLOCKBYTES]
+    __attribute__((aligned(32)));
 
-  aes256ctr_squeezeblocks(buf, sizeof(buf)/AES256CTR_BLOCKBYTES, state);
+  stream256_squeezeblocks(buf, POLY_UNIFORM_GAMMA1M1_NBLOCKS, state);
   ctr = rej_gamma1m1_avx(a->coeffs, N, buf, sizeof(buf));
 
   while(ctr < N) {
-    aes256ctr_squeezeblocks(buf, 1, state);
-    ctr += rej_gamma1m1(a->coeffs + ctr, N - ctr, buf, AES256CTR_BLOCKBYTES);
+    /* length of buf is divisible by 5; hence, no bytes left */
+    stream256_squeezeblocks(buf, 1, state);
+    ctr += rej_gamma1m1(a->coeffs + ctr, N - ctr, buf, STREAM256_BLOCKBYTES);
   }
 }
-#else
-#define POLY_UNIFORM_GAMMA1M1_NBLOCKS (((N*5/2*(1U << 20)+GAMMA1)/(2*GAMMA1-1) \
-                                        + STREAM256_BLOCKBYTES) \
-                                       /STREAM256_BLOCKBYTES)
+
 void poly_uniform_gamma1m1(poly *a,
                            const uint8_t seed[CRHBYTES],
                            uint16_t nonce)
 {
-  unsigned int i, ctr, off;
-  unsigned int buflen = POLY_UNIFORM_GAMMA1M1_NBLOCKS*STREAM256_BLOCKBYTES;
-  uint8_t buf[buflen + 4] __attribute__((aligned(32)));
   stream256_state state;
-
   stream256_init(&state, seed, nonce);
-  stream256_squeezeblocks(buf, POLY_UNIFORM_GAMMA1M1_NBLOCKS, &state);
-
-  ctr = rej_gamma1m1_avx(a->coeffs, N, buf, buflen);
-
-  while(ctr < N) {
-    off = buflen % 5;
-    for(i = 0; i < off; ++i)
-      buf[i] = buf[buflen - off + i];
-
-    buflen = STREAM256_BLOCKBYTES + off;
-    stream256_squeezeblocks(buf + off, 1, &state);
-    ctr += rej_gamma1m1(a->coeffs + ctr, N - ctr, buf, buflen);
-  }
+  poly_uniform_gamma1m1_preinit(a, &state);
 }
 
+#ifndef DILITHIUM_USE_AES
 void poly_uniform_gamma1m1_4x(poly *a0,
                               poly *a1,
                               poly *a2,

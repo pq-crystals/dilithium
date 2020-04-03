@@ -1,3 +1,4 @@
+#include <stdint.h>
 #include <stdio.h>
 #include "../params.h"
 #include "../sign.h"
@@ -10,8 +11,8 @@
 
 int main(void) {
   unsigned int i, j, k, l;
-  unsigned char seed[CRHBYTES];
-  unsigned char buf[CRYPTO_BYTES];
+  uint8_t seed[CRHBYTES];
+  uint8_t buf[CRYPTO_BYTES];
   poly c, tmp;
   polyvecl s, y, mat[K];
   polyveck w, w1, w0, t1, t0, h;
