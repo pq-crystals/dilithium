@@ -268,43 +268,49 @@ unsigned int rej_uniform_avx(uint32_t *r,
                              const uint8_t *buf,
                              unsigned int buflen)
 {
-  unsigned int i, ctr, pos;
-  uint32_t vec[8] __attribute__((aligned(32)));
-  __m256i d, tmp;
+  unsigned int ctr, pos;
   uint32_t good;
+  __m256i d, tmp;
   const __m256i bound = _mm256_set1_epi32(Q);
+  const __m256i mask  = _mm256_set1_epi32(0x7FFFFF);
+  const __m256i idx8  = _mm256_set_epi8(-1,15,14,13,-1,12,11,10,
+                                        -1, 9, 8, 7,-1, 6, 5, 4,
+                                        -1,11,10, 9,-1, 8, 7, 6,
+                                        -1, 5, 4, 3,-1, 2, 1, 0);
 
   if(len < 8 || buflen < 24)
     return 0;
 
   ctr = pos = 0;
   while(ctr <= len - 8 && pos <= buflen - 24) {
-    for(i = 0; i < 8; i++) {
-      vec[i]  = buf[pos++];
-      vec[i] |= (uint32_t)buf[pos++] << 8;
-      vec[i] |= (uint32_t)buf[pos++] << 16;
-      vec[i] &= 0x7FFFFF;
-    }
+    d = _mm256_loadu_si256((__m256i *)&buf[pos]);
+    d = _mm256_permute4x64_epi64(d, 0x94);
+    d = _mm256_shuffle_epi8(d, idx8);
+    d = _mm256_and_si256(d, mask);
+    pos += 24;
 
-    d = _mm256_load_si256((__m256i *)vec);
     tmp = _mm256_cmpgt_epi32(bound, d);
     good = _mm256_movemask_ps((__m256)tmp);
     __m128i rid = _mm_loadl_epi64((__m128i *)&idx[good]);
     tmp = _mm256_cvtepu8_epi32(rid);
     d = _mm256_permutevar8x32_epi32(d, tmp);
+
     _mm256_storeu_si256((__m256i *)&r[ctr], d);
     ctr += __builtin_popcount(good);
   }
 
+#ifndef DILITHIUM_USE_AES
+  uint32_t t;
   while(ctr < len && pos <= buflen - 3) {
-    vec[0]  = buf[pos++];
-    vec[0] |= (uint32_t)buf[pos++] << 8;
-    vec[0] |= (uint32_t)buf[pos++] << 16;
-    vec[0] &= 0x7FFFFF;
+    t  = buf[pos++];
+    t |= (uint32_t)buf[pos++] << 8;
+    t |= (uint32_t)buf[pos++] << 16;
+    t &= 0x7FFFFF;
 
-    if(vec[0] < Q)
-      r[ctr++] = vec[0];
+    if(t < Q)
+      r[ctr++] = t;
   }
+#endif
 
   return ctr;
 }
@@ -314,76 +320,68 @@ unsigned int rej_eta_avx(uint32_t *r,
                          const uint8_t *buf,
                          unsigned int buflen)
 {
-  unsigned int i, ctr, pos;
-  uint8_t vec[32] __attribute__((aligned(32)));
-  __m256i tmp0, tmp1;
-  __m128i d0, d1, rid;
+  unsigned int ctr, pos;
   uint32_t good;
-  const __m256i bound = _mm256_set1_epi8(2*ETA + 1);
+  __m128i f0, f1;
+  __m256i v;
   const __m256i off = _mm256_set1_epi32(Q + ETA);
+  const __m128i bound = _mm_set1_epi8(2*ETA + 1);
+#if ETA <= 3
+  const __m128i mask = _mm_set1_epi8(7);
+#else
+  const __m128i mask = _mm_set1_epi8(15);
+#endif
+
+  if(len < 16 || buflen < 8)
+    return 0;
 
   ctr = pos = 0;
-  while(ctr + 32 <= len && pos + 16 <= buflen) {
-    for(i = 0; i < 16; i++) {
+  while(ctr <= len - 16 && pos <= buflen - 8) {
+    f0 = _mm_loadl_epi64((__m128i *)&buf[pos]);
+    f0 = _mm_cvtepu8_epi16(f0);
 #if ETA <= 3
-      vec[2*i+0] = buf[pos] & 0x07;
-      vec[2*i+1] = buf[pos++] >> 5;
+    f1 = _mm_slli_epi16(f0, 3);
 #else
-      vec[2*i+0] = buf[pos] & 0x0F;
-      vec[2*i+1] = buf[pos++] >> 4;
+    f1 = _mm_slli_epi16(f0, 4);
 #endif
-    }
+    f0 = _mm_or_si128(f0, f1);
+    f0 = _mm_and_si128(f0, mask);
+    pos += 8;
 
-    tmp0 = _mm256_load_si256((__m256i *)vec);
-    tmp1 = _mm256_cmpgt_epi8(bound, tmp0);
-    good = _mm256_movemask_epi8(tmp1);
+    f1 = _mm_cmpgt_epi8(bound, f0);
+    good = _mm_movemask_epi8(f1);
 
-    d0 = _mm256_castsi256_si128(tmp0);
-    rid = _mm_loadl_epi64((__m128i *)&idx[good & 0xFF]);
-    d1 = _mm_shuffle_epi8(d0, rid);
-    tmp1 = _mm256_cvtepu8_epi32(d1);
-    tmp1 = _mm256_sub_epi32(off, tmp1);
-    _mm256_storeu_si256((__m256i *)&r[ctr], tmp1);
+    f1 = _mm_loadl_epi64((__m128i *)&idx[good & 0xFF]);
+    f1 = _mm_shuffle_epi8(f0, f1);
+    v = _mm256_cvtepu8_epi32(f1);
+    v = _mm256_sub_epi32(off, v);
+    _mm256_storeu_si256((__m256i *)&r[ctr], v);
     ctr += __builtin_popcount(good & 0xFF);
 
-    d0 = _mm_bsrli_si128(d0, 8);
-    rid = _mm_loadl_epi64((__m128i *)&idx[(good >> 8) & 0xFF]);
-    d1 = _mm_shuffle_epi8(d0, rid);
-    tmp1 = _mm256_cvtepu8_epi32(d1);
-    tmp1 = _mm256_sub_epi32(off, tmp1);
-    _mm256_storeu_si256((__m256i *)&r[ctr], tmp1);
-    ctr += __builtin_popcount((good >> 8) & 0xFF);
-
-    d0 = _mm256_extracti128_si256(tmp0, 1);
-    rid = _mm_loadl_epi64((__m128i *)&idx[(good >> 16) & 0xFF]);
-    d1 = _mm_shuffle_epi8(d0, rid);
-    tmp1 = _mm256_cvtepu8_epi32(d1);
-    tmp1 = _mm256_sub_epi32(off, tmp1);
-    _mm256_storeu_si256((__m256i *)&r[ctr], tmp1);
-    ctr += __builtin_popcount((good >> 16) & 0xFF);
-
-    d0 = _mm_bsrli_si128(d0, 8);
-    rid = _mm_loadl_epi64((__m128i *)&idx[(good >> 24) & 0xFF]);
-    d1 = _mm_shuffle_epi8(d0, rid);
-    tmp1 = _mm256_cvtepu8_epi32(d1);
-    tmp1 = _mm256_sub_epi32(off, tmp1);
-    _mm256_storeu_si256((__m256i *)&r[ctr], tmp1);
-    ctr += __builtin_popcount((good >> 24) & 0xFF);
+    f0 = _mm_bsrli_si128(f0, 8);
+    good >>= 8;
+    f1 = _mm_loadl_epi64((__m128i *)&idx[good]);
+    f0 = _mm_shuffle_epi8(f0, f1);
+    v = _mm256_cvtepu8_epi32(f0);
+    v = _mm256_sub_epi32(off, v);
+    _mm256_storeu_si256((__m256i *)&r[ctr], v);
+    ctr += __builtin_popcount(good);
   }
 
+  uint32_t t0, t1;
   while(ctr < len && pos < buflen) {
 #if ETA <= 3
-    vec[0] = buf[pos] & 0x07;
-    vec[1] = buf[pos++] >> 5;
+    t0 = buf[pos] & 0x07;
+    t1 = buf[pos++] >> 5;
 #else
-    vec[0] = buf[pos] & 0x0F;
-    vec[1] = buf[pos++] >> 4;
+    t0 = buf[pos] & 0x0F;
+    t1 = buf[pos++] >> 4;
 #endif
 
-    if(vec[0] <= 2*ETA)
-      r[ctr++] = Q + ETA - vec[0];
-    if(vec[1] <= 2*ETA && ctr < len)
-      r[ctr++] = Q + ETA - vec[1];
+    if(t0 <= 2*ETA)
+      r[ctr++] = Q + ETA - t0;
+    if(t1 <= 2*ETA && ctr < len)
+      r[ctr++] = Q + ETA - t1;
   }
 
   return ctr;
@@ -394,57 +392,61 @@ unsigned int rej_gamma1m1_avx(uint32_t *r,
                               const uint8_t *buf,
                               unsigned int buflen)
 {
-  unsigned int i, ctr, pos;
-  uint32_t vec[8] __attribute__((aligned(32)));
-  __m256i d, tmp;
+  unsigned int ctr, pos;
   uint32_t good;
+  __m256i d, tmp;
   const __m256i bound = _mm256_set1_epi32(2*GAMMA1 - 1);
-  const __m256i off = _mm256_set1_epi32(Q + GAMMA1 - 1);
+  const __m256i off   = _mm256_set1_epi32(Q + GAMMA1 - 1);
+  const __m256i mask  = _mm256_set1_epi32(0xFFFFF);
+  const __m256i srlv  = _mm256_set1_epi64x(4ULL << 32);
+  const __m256i idx8  = _mm256_set_epi8(-1,11,10, 9,-1, 9, 8, 7,
+                                        -1, 6, 5, 4,-1, 4, 3, 2,
+                                        -1, 9, 8, 7,-1, 7, 6, 5,
+                                        -1, 4, 3, 2,-1, 2, 1, 0);
+
+  if(len < 8 || buflen < 20)
+    return 0;
 
   ctr = pos = 0;
-  while(ctr + 8 <= len && pos + 20 <= buflen) {
-    for(i = 0; i < 4; i++) {
-      vec[2*i+0]  = buf[pos + 0];
-      vec[2*i+0] |= (uint32_t)buf[pos + 1] << 8;
-      vec[2*i+0] |= (uint32_t)buf[pos + 2] << 16;
-      vec[2*i+0] &= 0xFFFFF;
+  while(ctr <= len - 8 && pos <= buflen - 20) {
+    d = _mm256_loadu_si256((__m256i *)&buf[pos]);
+    d = _mm256_permute4x64_epi64(d, 0x94);
+    d = _mm256_shuffle_epi8(d, idx8);
+    d = _mm256_srlv_epi32(d, srlv);
+    d = _mm256_and_si256(d, mask);
+    pos += 20;
 
-      vec[2*i+1]  = buf[pos + 2] >> 4;
-      vec[2*i+1] |= (uint32_t)buf[pos + 3] << 4;
-      vec[2*i+1] |= (uint32_t)buf[pos + 4] << 12;
-
-      pos += 5;
-    }
-
-    d = _mm256_loadu_si256((__m256i *)vec);
     tmp = _mm256_cmpgt_epi32(bound, d);
     good = _mm256_movemask_ps((__m256)tmp);
     d = _mm256_sub_epi32(off, d);
-
     __m128i rid = _mm_loadl_epi64((__m128i *)&idx[good]);
     tmp = _mm256_cvtepu8_epi32(rid);
     d = _mm256_permutevar8x32_epi32(d, tmp);
+
     _mm256_storeu_si256((__m256i *)&r[ctr], d);
     ctr += __builtin_popcount(good);
   }
 
-  while(ctr < len && pos + 5 <= buflen) {
-    vec[0]  = buf[pos + 0];
-    vec[0] |= (uint32_t)buf[pos + 1] << 8;
-    vec[0] |= (uint32_t)buf[pos + 2] << 16;
-    vec[0] &= 0xFFFFF;
+#ifndef DILITHIUM_USE_AES
+  uint32_t t0, t1;
+  while(ctr < len && pos <= buflen - 5) {
+    t0  = buf[pos];
+    t0 |= (uint32_t)buf[pos + 1] << 8;
+    t0 |= (uint32_t)buf[pos + 2] << 16;
+    t0 &= 0xFFFFF;
 
-    vec[1]  = buf[pos + 2] >> 4;
-    vec[1] |= (uint32_t)buf[pos + 3] << 4;
-    vec[1] |= (uint32_t)buf[pos + 4] << 12;
+    t1  = buf[pos + 2] >> 4;
+    t1 |= (uint32_t)buf[pos + 3] << 4;
+    t1 |= (uint32_t)buf[pos + 4] << 12;
 
     pos += 5;
 
-    if(vec[0] <= 2*GAMMA1 - 2)
-      r[ctr++] = Q + GAMMA1 - 1 - vec[0];
-    if(vec[1] <= 2*GAMMA1 - 2 && ctr < len)
-      r[ctr++] = Q + GAMMA1 - 1 - vec[1];
+    if(t0 <= 2*GAMMA1 - 2)
+      r[ctr++] = Q + GAMMA1 - 1 - t0;
+    if(t1 <= 2*GAMMA1 - 2 && ctr < len)
+      r[ctr++] = Q + GAMMA1 - 1 - t1;
   }
+#endif
 
   return ctr;
 }

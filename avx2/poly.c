@@ -390,8 +390,7 @@ static unsigned int rej_uniform(uint32_t *a,
 void poly_uniform_preinit(poly *a, stream128_state *state)
 {
   unsigned int ctr;
-  uint8_t buf[POLY_UNIFORM_NBLOCKS*STREAM128_BLOCKBYTES]
-    __attribute__((aligned(32)));
+  uint8_t buf[POLY_UNIFORM_NBLOCKS*STREAM128_BLOCKBYTES];
 
   stream128_squeezeblocks(buf, POLY_UNIFORM_NBLOCKS, state);
   ctr = rej_uniform_avx(a->coeffs, N, buf, sizeof(buf));
@@ -1046,7 +1045,11 @@ void polyz_unpack(poly * restrict r, const uint8_t * restrict a) {
 **************************************************/
 void polyw1_pack(uint8_t * restrict r, const poly * restrict a) {
   unsigned int i;
+//  _mm256i vec;
   DBENCH_START();
+
+//  for(i = 0; i < N/8: ++i) {
+//    vec = _mm256_load_si256((__m256i *)&a->coeffs[8*i]);
 
   for(i = 0; i < N/2; ++i)
     r[i] = a->coeffs[2*i+0] | (a->coeffs[2*i+1] << 4);
