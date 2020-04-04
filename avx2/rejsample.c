@@ -3,12 +3,8 @@
 #include "params.h"
 #include "rejsample.h"
 
-#ifdef DBENCH
-extern const uint64_t timing_overhead;
-extern uint64_t *tsample;
-#endif
-
-static const uint8_t idx[256][8]  __attribute__((aligned(16))) = {
+__attribute__((aligned(16)))
+static const uint8_t idx[256][8] = {
   { 0,  0,  0,  0,  0,  0,  0,  0},
   { 0,  0,  0,  0,  0,  0,  0,  0},
   { 1,  0,  0,  0,  0,  0,  0,  0},
@@ -277,10 +273,12 @@ unsigned int rej_uniform_avx(uint32_t *r,
   __m256i d, tmp;
   uint32_t good;
   const __m256i bound = _mm256_set1_epi32(Q);
-  DBENCH_START();
+
+  if(len < 8 || buflen < 24)
+    return 0;
 
   ctr = pos = 0;
-  while(ctr + 8 <= len && pos + 24 <= buflen) {
+  while(ctr <= len - 8 && pos <= buflen - 24) {
     for(i = 0; i < 8; i++) {
       vec[i]  = buf[pos++];
       vec[i] |= (uint32_t)buf[pos++] << 8;
@@ -291,7 +289,6 @@ unsigned int rej_uniform_avx(uint32_t *r,
     d = _mm256_load_si256((__m256i *)vec);
     tmp = _mm256_cmpgt_epi32(bound, d);
     good = _mm256_movemask_ps((__m256)tmp);
-
     __m128i rid = _mm_loadl_epi64((__m128i *)&idx[good]);
     tmp = _mm256_cvtepu8_epi32(rid);
     d = _mm256_permutevar8x32_epi32(d, tmp);
@@ -299,7 +296,7 @@ unsigned int rej_uniform_avx(uint32_t *r,
     ctr += __builtin_popcount(good);
   }
 
-  while(ctr < len && pos + 3 <= buflen) {
+  while(ctr < len && pos <= buflen - 3) {
     vec[0]  = buf[pos++];
     vec[0] |= (uint32_t)buf[pos++] << 8;
     vec[0] |= (uint32_t)buf[pos++] << 16;
@@ -309,7 +306,6 @@ unsigned int rej_uniform_avx(uint32_t *r,
       r[ctr++] = vec[0];
   }
 
-  DBENCH_STOP(*tsample);
   return ctr;
 }
 
@@ -325,7 +321,6 @@ unsigned int rej_eta_avx(uint32_t *r,
   uint32_t good;
   const __m256i bound = _mm256_set1_epi8(2*ETA + 1);
   const __m256i off = _mm256_set1_epi32(Q + ETA);
-  DBENCH_START();
 
   ctr = pos = 0;
   while(ctr + 32 <= len && pos + 16 <= buflen) {
@@ -391,7 +386,6 @@ unsigned int rej_eta_avx(uint32_t *r,
       r[ctr++] = Q + ETA - vec[1];
   }
 
-  DBENCH_STOP(*tsample);
   return ctr;
 }
 
@@ -406,7 +400,6 @@ unsigned int rej_gamma1m1_avx(uint32_t *r,
   uint32_t good;
   const __m256i bound = _mm256_set1_epi32(2*GAMMA1 - 1);
   const __m256i off = _mm256_set1_epi32(Q + GAMMA1 - 1);
-  DBENCH_START();
 
   ctr = pos = 0;
   while(ctr + 8 <= len && pos + 20 <= buflen) {
@@ -453,6 +446,5 @@ unsigned int rej_gamma1m1_avx(uint32_t *r,
       r[ctr++] = Q + GAMMA1 - 1 - vec[1];
   }
 
-  DBENCH_STOP(*tsample);
   return ctr;
 }

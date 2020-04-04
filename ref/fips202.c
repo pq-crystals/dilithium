@@ -10,11 +10,6 @@
 #include "fips202.h"
 #include "params.h"
 
-#ifdef DBENCH
-extern const uint64_t timing_overhead;
-extern uint64_t * const tshake;
-#endif
-
 #define NROUNDS 24
 #define ROL(a, offset) ((a << offset) ^ (a >> (64-offset)))
 
@@ -373,7 +368,6 @@ static void keccak_absorb(uint64_t s[25],
 {
   size_t i;
   uint8_t t[200] = {0};
-  DBENCH_START();
 
   /* Zero state */
   for(i=0;i<25;i++)
@@ -394,8 +388,6 @@ static void keccak_absorb(uint64_t s[25],
   t[r-1] |= 128;
   for(i=0;i<r/8;i++)
     s[i] ^= load64(t + 8*i);
-
-  DBENCH_STOP(*tshake);
 }
 
 /*************************************************
@@ -416,7 +408,6 @@ static void keccak_squeezeblocks(uint8_t *out,
                                  unsigned int r)
 {
   unsigned int i;
-  DBENCH_START();
   while(nblocks > 0) {
     KeccakF1600_StatePermute(s);
     for(i=0;i<r/8;i++)
@@ -424,7 +415,6 @@ static void keccak_squeezeblocks(uint8_t *out,
     out += r;
     --nblocks;
   }
-  DBENCH_STOP(*tshake);
 }
 
 /*************************************************

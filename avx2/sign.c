@@ -1,12 +1,12 @@
 #include <stdint.h>
-#include "fips202.h"
 #include "params.h"
 #include "sign.h"
+#include "packing.h"
+#include "polyvec.h"
+#include "poly.h"
 #include "randombytes.h"
 #include "symmetric.h"
-#include "poly.h"
-#include "polyvec.h"
-#include "packing.h"
+#include "fips202.h"
 #ifdef DILITHIUM_USE_AES
 #include "aes256ctr.h"
 #endif
@@ -28,13 +28,14 @@ void challenge(poly *c,
 {
   unsigned int i, b, pos;
   uint64_t signs;
-  uint8_t buf[CRHBYTES + K*POLW1_SIZE_PACKED] __attribute__((aligned(32)));
+  __attribute__((aligned(32)))
+  uint8_t buf[CRHBYTES + K*POLYW1_PACKEDBYTES];
   keccak_state state;
 
   for(i = 0; i < CRHBYTES; ++i)
     buf[i] = mu[i];
   for(i = 0; i < K; ++i)
-    polyw1_pack(buf + CRHBYTES + i*POLW1_SIZE_PACKED, &w1->vec[i]);
+    polyw1_pack(buf + CRHBYTES + i*POLYW1_PACKEDBYTES, &w1->vec[i]);
 
   shake256_absorb(&state, buf, sizeof(buf));
   shake256_squeezeblocks(buf, 1, &state);
@@ -79,8 +80,10 @@ void challenge(poly *c,
 **************************************************/
 int crypto_sign_keypair(unsigned char *pk, unsigned char *sk) {
   unsigned int i;
-  uint8_t seedbuf[3*SEEDBYTES] __attribute__((aligned(32)));
-  uint8_t tr[CRHBYTES] __attribute__((aligned(32)));
+   __attribute__((aligned(32)))
+  uint8_t seedbuf[3*SEEDBYTES];
+   __attribute__((aligned(32)))
+  uint8_t tr[CRHBYTES];
   const uint8_t *rho, *rhoprime, *key;
   polyvecl mat[K];
   polyvecl s1, s1hat;
@@ -97,7 +100,8 @@ int crypto_sign_keypair(unsigned char *pk, unsigned char *sk) {
 
   /* Sample short vectors s1 and s2 */
 #ifdef DILITHIUM_USE_AES
-  uint64_t __attribute__((aligned(16))) nonce = 0;
+   __attribute__((aligned(16)))
+  uint64_t nonce = 0;
   aes256ctr_ctx state;
   aes256ctr_init(&state, rhoprime, nonce++);
   for(i = 0; i < L; ++i) {
@@ -184,9 +188,11 @@ int crypto_sign(unsigned char *sm,
 {
   unsigned long long i;
   unsigned int n;
-  uint8_t seedbuf[2*SEEDBYTES + 3*CRHBYTES] __attribute__((aligned(32)));
+   __attribute__((aligned(32)))
+  uint8_t seedbuf[2*SEEDBYTES + 3*CRHBYTES];
   uint8_t *rho, *tr, *key, *mu, *rhoprime;
-  uint64_t __attribute__((aligned(16))) nonce = 0;
+   __attribute__((aligned(16)))
+  uint64_t nonce = 0;
   poly c, chat;
   polyvecl mat[K], s1, y, yhat, z;
   polyveck t0, s2, w, w1, w0;
@@ -336,8 +342,10 @@ int crypto_sign_open(unsigned char *m,
                      const unsigned char *pk)
 {
   unsigned long long i;
-  uint8_t rho[SEEDBYTES] __attribute__((aligned(32)));
-  uint8_t mu[CRHBYTES] __attribute__((aligned(32)));
+  __attribute__((aligned(32)))
+  uint8_t rho[SEEDBYTES];
+   __attribute__((aligned(32)))
+  uint8_t mu[CRHBYTES];
   poly c, chat, cp;
   polyvecl mat[K], z;
   polyveck t1, w1, h, tmp;

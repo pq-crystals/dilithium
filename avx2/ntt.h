@@ -1,20 +1,20 @@
 #ifndef NTT_H
 #define NTT_H
 
-#include "params.h"
 #include <stdint.h>
+#include "params.h"
 
-#define ntt_avx NAMESPACE(ntt_avx)
+#define ntt_avx DILITHIUM_NAMESPACE(ntt_avx)
 void ntt_avx(uint32_t a[N], const uint32_t *qdata);
-#define invntt_avx NAMESPACE(invntt_avx)
+#define invntt_avx DILITHIUM_NAMESPACE(invntt_avx)
 void invntt_avx(uint32_t a[N], const uint32_t *qdata);
 
-#define pointwise_avx NAMESPACE(pointwise_avx)
+#define pointwise_avx DILITHIUM_NAMESPACE(pointwise_avx)
 void pointwise_avx(uint32_t c[N],
                    const uint32_t a[N],
                    const uint32_t b[N],
                    const uint32_t *qdata);
-#define pointwise_acc_avx NAMESPACE(pointwise_acc_avx)
+#define pointwise_acc_avx DILITHIUM_NAMESPACE(pointwise_acc_avx)
 void pointwise_acc_avx(uint32_t c[N],
                        const uint32_t *a,
                        const uint32_t *b,

@@ -1,7 +1,7 @@
 #include <stdint.h>
 #include "params.h"
-#include "fips202.h"
 #include "symmetric.h"
+#include "fips202.h"
 
 void dilithium_shake128_stream_init(keccak_state *state,
                                     const uint8_t seed[SEEDBYTES],

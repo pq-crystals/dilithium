@@ -1,12 +1,12 @@
 #include <stdint.h>
-#include "fips202.h"
 #include "params.h"
 #include "sign.h"
+#include "packing.h"
+#include "polyvec.h"
+#include "poly.h"
 #include "randombytes.h"
 #include "symmetric.h"
-#include "poly.h"
-#include "polyvec.h"
-#include "packing.h"
+#include "fips202.h"
 
 /*************************************************
 * Name:        challenge
@@ -25,13 +25,13 @@ void challenge(poly *c,
 {
   unsigned int i, b, pos;
   uint64_t signs;
-  uint8_t buf[CRHBYTES + K*POLW1_SIZE_PACKED];
+  uint8_t buf[CRHBYTES + K*POLYW1_PACKEDBYTES];
   keccak_state state;
 
   for(i = 0; i < CRHBYTES; ++i)
     buf[i] = mu[i];
   for(i = 0; i < K; ++i)
-    polyw1_pack(buf + CRHBYTES + i*POLW1_SIZE_PACKED, &w1->vec[i]);
+    polyw1_pack(buf + CRHBYTES + i*POLYW1_PACKEDBYTES, &w1->vec[i]);
 
   shake256_absorb(&state, buf, sizeof(buf));
   shake256_squeezeblocks(buf, 1, &state);

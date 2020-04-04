@@ -1,20 +1,26 @@
 #include <stdint.h>
 #include <immintrin.h>
+#include "params.h"
+#include "poly.h"
+#include "ntt.h"
+#include "reduce.h"
+#include "rounding.h"
+#include "rejsample.h"
+#include "consts.h"
 #include "symmetric.h"
 #ifndef DILITHIUM_USE_AES
 #include "fips202x4.h"
 #endif
-#include "params.h"
-#include "reduce.h"
-#include "rounding.h"
-#include "ntt.h"
-#include "consts.h"
-#include "poly.h"
-#include "rejsample.h"
 
 #ifdef DBENCH
+#include "test/cpucycles.h"
 extern const uint64_t timing_overhead;
 extern uint64_t *tred, *tadd, *tmul, *tround, *tsample, *tpack;
+#define DBENCH_START() uint64_t time = cpucycles()
+#define DBENCH_STOP(t) t += cpucycles() - time - timing_overhead
+#else
+#define DBENCH_START()
+#define DBENCH_STOP(t)
 #endif
 
 /*************************************************
@@ -514,10 +520,13 @@ static unsigned int rej_eta(uint32_t *a,
 *                                      SEEDBYTES
 *              - uint16_t nonce: 2-byte nonce
 **************************************************/
-#define POLY_UNIFORM_ETA_NBLOCKS (((N/2*(1U << SETABITS) + ETA)/(2*ETA + 1) \
-                                   + STREAM128_BLOCKBYTES - 1) \
+#if ETA == 5
+#define POLY_UNIFORM_ETA_NBLOCKS ((192 + STREAM128_BLOCKBYTES - 1) \
                                   /STREAM128_BLOCKBYTES)
-
+#else
+#define POLY_UNIFORM_ETA_NBLOCKS ((160 + STREAM128_BLOCKBYTES - 1) \
+                                  /STREAM128_BLOCKBYTES)
+#endif
 void poly_uniform_eta_preinit(poly *a, stream128_state *state)
 {
   unsigned int ctr;
@@ -742,8 +751,8 @@ void poly_uniform_gamma1m1_4x(poly *a0,
 *              - const poly *a: pointer to input polynomial
 **************************************************/
 void polyeta_pack(uint8_t * restrict r, const poly * restrict a) {
-#if 2*ETA >= 16
-#error "polyeta_pack() assumes 2*ETA < 16"
+#if ETA > 7
+#error "polyeta_pack() assumes ETA <= 7"
 #endif
   unsigned int i;
   uint8_t t[8];
@@ -788,7 +797,7 @@ void polyeta_unpack(poly * restrict r, const uint8_t * restrict a) {
   unsigned int i;
   DBENCH_START();
 
-#if 2*ETA <= 7
+#if ETA <= 3
   for(i = 0; i < N/8; ++i) {
     r->coeffs[8*i+0] = a[3*i+0] & 0x07;
     r->coeffs[8*i+1] = (a[3*i+0] >> 3) & 0x07;
@@ -831,9 +840,6 @@ void polyeta_unpack(poly * restrict r, const uint8_t * restrict a) {
 *              - const poly *a: pointer to input polynomial
 **************************************************/
 void polyt1_pack(uint8_t * restrict r, const poly * restrict a) {
-#if D != 14
-#error "polyt1_pack() assumes D == 14"
-#endif
   unsigned int i;
   DBENCH_START();
 
@@ -890,6 +896,9 @@ void polyt1_unpack(poly * restrict r, const uint8_t * restrict a) {
 *              - const poly *a: pointer to input polynomial
 **************************************************/
 void polyt0_pack(uint8_t * restrict r, const poly * restrict a) {
+#if D != 14
+#error "polyt0_pack() assumes D == 14"
+#endif
   unsigned int i;
   uint32_t t[4];
   DBENCH_START();

@@ -1,14 +1,20 @@
 #include <stdint.h>
 #include "params.h"
-#include "symmetric.h"
+#include "poly.h"
 #include "ntt.h"
 #include "reduce.h"
 #include "rounding.h"
-#include "poly.h"
+#include "symmetric.h"
 
 #ifdef DBENCH
+#include "test/cpucycles.h"
 extern const uint64_t timing_overhead;
 extern uint64_t *tred, *tadd, *tmul, *tround, *tsample, *tpack;
+#define DBENCH_START() uint64_t time = cpucycles()
+#define DBENCH_STOP(t) t += cpucycles() - time - timing_overhead
+#else
+#define DBENCH_START()
+#define DBENCH_STOP(t)
 #endif
 
 /*************************************************
@@ -353,8 +359,7 @@ static unsigned int rej_uniform(uint32_t *a,
 *              - const uint8_t seed[]: byte array with seed of length SEEDBYTES
 *              - uint16_t nonce: 2-byte nonce
 **************************************************/
-#define POLY_UNIFORM_NBLOCKS (((N*((QBITS+7)/8)*(1ULL << QBITS) + Q/2)/Q \
-                               + STREAM128_BLOCKBYTES-1)/STREAM128_BLOCKBYTES)
+#define POLY_UNIFORM_NBLOCKS ((768+STREAM128_BLOCKBYTES-1)/STREAM128_BLOCKBYTES)
 void poly_uniform(poly *a,
                   const uint8_t seed[SEEDBYTES],
                   uint16_t nonce)
@@ -437,8 +442,7 @@ static unsigned int rej_eta(uint32_t *a,
 *              - const uint8_t seed[]: byte array with seed of length SEEDBYTES
 *              - uint16_t nonce: 2-byte nonce
 **************************************************/
-#define POLY_UNIFORM_ETA_NBLOCKS (((N/2*(1U << SETABITS) + ETA)/(2*ETA + 1) \
-                                   + STREAM128_BLOCKBYTES - 1) \
+#define POLY_UNIFORM_ETA_NBLOCKS ((192 + STREAM128_BLOCKBYTES - 1) \
                                   /STREAM128_BLOCKBYTES)
 void poly_uniform_eta(poly *a,
                       const uint8_t seed[SEEDBYTES],
@@ -522,8 +526,7 @@ static unsigned int rej_gamma1m1(uint32_t *a,
 *              - const uint8_t seed[]: byte array with seed of length CRHBYTES
 *              - uint16_t nonce: 16-bit nonce
 **************************************************/
-#define POLY_UNIFORM_GAMMA1M1_NBLOCKS (((N*5/2*(1U << 20)+GAMMA1)/(2*GAMMA1-1) \
-                                        + STREAM256_BLOCKBYTES - 1) \
+#define POLY_UNIFORM_GAMMA1M1_NBLOCKS ((640 + STREAM256_BLOCKBYTES - 1) \
                                        /STREAM256_BLOCKBYTES)
 void poly_uniform_gamma1m1(poly *a,
                            const uint8_t seed[CRHBYTES],
@@ -561,8 +564,8 @@ void poly_uniform_gamma1m1(poly *a,
 *              - const poly *a: pointer to input polynomial
 **************************************************/
 void polyeta_pack(uint8_t *r, const poly *a) {
-#if 2*ETA >= 16
-#error "polyeta_pack() assumes 2*ETA < 16"
+#if ETA > 7
+#error "polyeta_pack() assumes ETA <= 7"
 #endif
   unsigned int i;
   uint8_t t[8];
@@ -607,7 +610,7 @@ void polyeta_unpack(poly *r, const uint8_t *a) {
   unsigned int i;
   DBENCH_START();
 
-#if 2*ETA <= 7
+#if ETA <= 3
   for(i = 0; i < N/8; ++i) {
     r->coeffs[8*i+0] = a[3*i+0] & 0x07;
     r->coeffs[8*i+1] = (a[3*i+0] >> 3) & 0x07;
@@ -650,9 +653,6 @@ void polyeta_unpack(poly *r, const uint8_t *a) {
 *              - const poly *a: pointer to input polynomial
 **************************************************/
 void polyt1_pack(uint8_t *r, const poly *a) {
-#if D != 14
-#error "polyt1_pack() assumes D == 14"
-#endif
   unsigned int i;
   DBENCH_START();
 
@@ -709,6 +709,9 @@ void polyt1_unpack(poly *r, const uint8_t *a) {
 *              - const poly *a: pointer to input polynomial
 **************************************************/
 void polyt0_pack(uint8_t *r, const poly *a) {
+#if D != 14
+#error "polyt0_pack() assumes D == 14"
+#endif
   unsigned int i;
   uint32_t t[4];
   DBENCH_START();
@@ -787,7 +790,7 @@ void polyt0_unpack(poly *r, const uint8_t *a) {
 **************************************************/
 void polyz_pack(uint8_t *r, const poly *a) {
 #if GAMMA1 > (1 << 19)
-#error "polyz_pack() assumes GAMMA1 <= 2^{19}"
+#error "polyz_pack() assumes GAMMA1 - 1 fits in 19 bits"
 #endif
   unsigned int i;
   uint32_t t[2];

@@ -1,7 +1,7 @@
 #include <stdint.h>
 #include "params.h"
-#include "poly.h"
 #include "polyvec.h"
+#include "poly.h"
 #include "ntt.h"
 #include "consts.h"
 #ifdef DILITHIUM_USE_AES

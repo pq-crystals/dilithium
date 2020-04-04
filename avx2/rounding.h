@@ -6,10 +6,10 @@
 #include <stdint.h>
 #include "params.h"
 
-#define power2round NAMESPACE(power2round)
-#define decompose NAMESPACE(decompose)
-#define make_hint NAMESPACE(make_hint)
-#define use_hint NAMESPACE(use_hint)
+#define power2round DILITHIUM_NAMESPACE(power2round)
+#define decompose DILITHIUM_NAMESPACE(decompose)
+#define make_hint DILITHIUM_NAMESPACE(make_hint)
+#define use_hint DILITHIUM_NAMESPACE(use_hint)
 
 /*************************************************
 * Name:        power2round
