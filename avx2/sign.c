@@ -80,9 +80,9 @@ void challenge(poly *c,
 **************************************************/
 int crypto_sign_keypair(unsigned char *pk, unsigned char *sk) {
   unsigned int i;
-   __attribute__((aligned(32)))
+  __attribute__((aligned(32)))
   uint8_t seedbuf[3*SEEDBYTES];
-   __attribute__((aligned(32)))
+  __attribute__((aligned(32)))
   uint8_t tr[CRHBYTES];
   const uint8_t *rho, *rhoprime, *key;
   polyvecl mat[K];

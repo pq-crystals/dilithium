@@ -1,5 +1,6 @@
 #include <stdint.h>
 #include <stdio.h>
+#include <string.h>
 #include "../params.h"
 #include "../sign.h"
 #include "../poly.h"
@@ -172,9 +173,8 @@ int main(void) {
 
     if(polyveck_chknorm(&w1, 16))
       fprintf(stderr, "ERROR in polyveck_chknorm(&w1, 16)!\n");
-    h = w0;
-    polyveck_csubq(&h);
-    if(polyveck_chknorm(&h, ALPHA/2+1))
+    polyveck_csubq(&w0);
+    if(polyveck_chknorm(&w0, ALPHA/2+1))
       fprintf(stderr, "ERROR in polyveck_chknorm(&w0 ,ALPHA/2+1)!\n");
 
     printf("w1 = ((");
@@ -189,7 +189,8 @@ int main(void) {
     printf("w0 = ((");
     for(j = 0; j < K; ++j) {
       for(k = 0; k < N; ++k) {
-        u = w0.vec[j].coeffs[k] - Q;
+        u = w0.vec[j].coeffs[k];
+        if(u > (Q-1)/2) u -= Q;
         printf("%7d", u);
         if(k < N-1) printf(", ");
         else if(j < K-1) printf("),\n      (");
@@ -220,9 +221,8 @@ int main(void) {
 
     if(polyveck_chknorm(&t1, 512))
       fprintf(stderr, "ERROR in polyveck_chknorm(&t1, 512)!\n");
-    h = t0;
-    polyveck_csubq(&h);
-    if(polyveck_chknorm(&h, (1U << (D-1)) + 1))
+    polyveck_csubq(&t0);
+    if(polyveck_chknorm(&t0, (1U << (D-1)) + 1))
       fprintf(stderr, "ERROR in polyveck_chknorm(&t0, 1 << (D-1) + 1)!\n");
 
     printf("t1 = ((");
@@ -237,7 +237,8 @@ int main(void) {
     printf("t0 = ((");
     for(j = 0; j < K; ++j) {
       for(k = 0; k < N; ++k) {
-        u = t0.vec[j].coeffs[k] - Q;
+        u = t0.vec[j].coeffs[k];
+        if(u > (Q-1)/2) u -= Q;
         printf("%5d", u);
         if(k < N-1) printf(", ");
         else if(j < K-1) printf("),\n      (");
@@ -245,7 +246,7 @@ int main(void) {
       }
     }
 
-    challenge(&c, seed, &w); //FIXME: w1
+    challenge(&c, seed, &w1);
     printf("c = (");
     for(j = 0; j < N; ++j) {
       u = c.coeffs[j];
@@ -257,10 +258,12 @@ int main(void) {
 
     polyveck_make_hint(&h, &w0, &w1);
     pack_sig(buf, &y, &h, &c);
-    unpack_sig(&y, &h, &tmp, buf);
+    unpack_sig(&y, &w, &tmp, buf);
     for(j = 0; j < N; j++)
       if(c.coeffs[j] != tmp.coeffs[j])
         fprintf(stderr, "ERROR in (un)pack_sig!\n");
+    if(memcmp(&h,&w,sizeof(h)))
+      fprintf(stderr, "ERROR in (un)pack_sig!\n");
 
     printf("\n");
   }

@@ -1045,14 +1045,56 @@ void polyz_unpack(poly * restrict r, const uint8_t * restrict a) {
 **************************************************/
 void polyw1_pack(uint8_t * restrict r, const poly * restrict a) {
   unsigned int i;
-//  _mm256i vec;
+  __m256i f0, f1, f2, f3, f4, f5, f6, f7;
+  const __m256i mask = _mm256_set1_epi64x(0xFF00FF00FF00FF00);
+  const __m256i idx = _mm256_set_epi8(15,13,14,12,11, 9,10, 8,
+                                       7, 5, 6, 4, 3, 1, 2, 0,
+                                      15,13,14,12,11, 9,10, 8,
+                                       7, 5, 6, 4, 3, 1, 2, 0);
   DBENCH_START();
 
-//  for(i = 0; i < N/8: ++i) {
-//    vec = _mm256_load_si256((__m256i *)&a->coeffs[8*i]);
+  for(i = 0; i < N/64; ++i) {
+    f0 = _mm256_load_si256((__m256i *)&a->coeffs[64*i+ 0]);
+    f1 = _mm256_load_si256((__m256i *)&a->coeffs[64*i+ 8]);
+    f2 = _mm256_load_si256((__m256i *)&a->coeffs[64*i+16]);
+    f3 = _mm256_load_si256((__m256i *)&a->coeffs[64*i+24]);
 
-  for(i = 0; i < N/2; ++i)
-    r[i] = a->coeffs[2*i+0] | (a->coeffs[2*i+1] << 4);
+    f0 = _mm256_and_si256(f0, _mm256_set1_epi32(15));
+    f1 = _mm256_and_si256(f1, _mm256_set1_epi32(15));
+    f2 = _mm256_and_si256(f2, _mm256_set1_epi32(15));
+    f3 = _mm256_and_si256(f3, _mm256_set1_epi32(15));
+
+    f0 = _mm256_packus_epi32(f0, f1);
+    f4 = _mm256_load_si256((__m256i *)&a->coeffs[64*i+32]);
+    f5 = _mm256_load_si256((__m256i *)&a->coeffs[64*i+40]);
+
+    f1 = _mm256_packus_epi32(f2, f3);
+    f6 = _mm256_load_si256((__m256i *)&a->coeffs[64*i+48]);
+    f7 = _mm256_load_si256((__m256i *)&a->coeffs[64*i+56]);
+
+    f4 = _mm256_and_si256(f4, _mm256_set1_epi32(15));
+    f5 = _mm256_and_si256(f5, _mm256_set1_epi32(15));
+    f6 = _mm256_and_si256(f6, _mm256_set1_epi32(15));
+    f7 = _mm256_and_si256(f7, _mm256_set1_epi32(15));
+
+    f2 = _mm256_packus_epi32(f4, f5);
+    f3 = _mm256_packus_epi32(f6, f7);
+    f0 = _mm256_packus_epi16(f0, f1);
+    f1 = _mm256_packus_epi16(f2, f3);
+    f2 = _mm256_permute2x128_si256(f0, f1, 0x20);	/* ABCD */
+    f3 = _mm256_permute2x128_si256(f0, f1, 0x31);	/* EFGH */
+
+    f4 = _mm256_srli_epi16(f2, 8);			/* B0D0 */
+    f5 = _mm256_slli_epi16(f3, 8);			/* 0E0G */
+    f0 = _mm256_blendv_epi8(f2, f5, mask);		/* AECG */
+    f1 = _mm256_blendv_epi8(f4, f3, mask);		/* BFDH */
+
+    f1 = _mm256_slli_epi16(f1, 4);
+    f0 = _mm256_or_si256(f0, f1);
+
+    f0 = _mm256_shuffle_epi8(f0, idx);
+    _mm256_storeu_si256((__m256i *)&r[32*i], f0);
+  }
 
   DBENCH_STOP(*tpack);
 }
