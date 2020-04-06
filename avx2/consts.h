@@ -21,7 +21,9 @@
  * This define helps us get around this
  */
 #if defined(__WIN32__) || defined(__APPLE__)
-#define cdecl(s) DILITHIUM_NAMESPACE(_##s)
+#define decorate(s) _##s
+#define cdecl2(s) decorate(s)
+#define cdecl(s) cdecl2(DILITHIUM_NAMESPACE(##s))
 #else
 #define cdecl(s) DILITHIUM_NAMESPACE(##s)
 #endif
