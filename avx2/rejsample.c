@@ -2,8 +2,9 @@
 #include <immintrin.h>
 #include "params.h"
 #include "rejsample.h"
+#include "symmetric.h"
 
-__attribute__((aligned(16)))
+__attribute__((aligned(64)))
 static const uint8_t idx[256][8] = {
   { 0,  0,  0,  0,  0,  0,  0,  0},
   { 0,  0,  0,  0,  0,  0,  0,  0},
@@ -263,10 +264,9 @@ static const uint8_t idx[256][8] = {
   { 0,  1,  2,  3,  4,  5,  6,  7}
 };
 
-unsigned int rej_uniform_avx(uint32_t *r,
-                             unsigned int len,
-                             const uint8_t *buf,
-                             unsigned int buflen)
+#define REJ_UNIFORM_BUFLEN ((768 + STREAM128_BLOCKBYTES - 1)/STREAM128_BLOCKBYTES*STREAM128_BLOCKBYTES)
+unsigned int rej_uniform_avx(uint32_t * restrict r,
+                             const uint8_t * restrict buf)
 {
   unsigned int ctr, pos;
   uint32_t good;
@@ -278,30 +278,31 @@ unsigned int rej_uniform_avx(uint32_t *r,
                                         -1,11,10, 9,-1, 8, 7, 6,
                                         -1, 5, 4, 3,-1, 2, 1, 0);
 
-  if(len < 8 || buflen < 24)
-    return 0;
-
   ctr = pos = 0;
-  while(ctr <= len - 8 && pos <= buflen - 24) {
+  while(pos <= REJ_UNIFORM_BUFLEN - 24) {
     d = _mm256_loadu_si256((__m256i *)&buf[pos]);
     d = _mm256_permute4x64_epi64(d, 0x94);
     d = _mm256_shuffle_epi8(d, idx8);
     d = _mm256_and_si256(d, mask);
     pos += 24;
 
-    tmp = _mm256_cmpgt_epi32(bound, d);
+    //tmp = _mm256_cmpgt_epi32(bound, d);
+    tmp = _mm256_sub_epi32(d, bound);
     good = _mm256_movemask_ps((__m256)tmp);
-    __m128i rid = _mm_loadl_epi64((__m128i *)&idx[good]);
-    tmp = _mm256_cvtepu8_epi32(rid);
+    tmp = _mm256_cvtepu8_epi32(_mm_loadl_epi64((__m128i *)&idx[good]));
     d = _mm256_permutevar8x32_epi32(d, tmp);
 
     _mm256_storeu_si256((__m256i *)&r[ctr], d);
-    ctr += __builtin_popcount(good);
+    ctr += _mm_popcnt_u32(good);
+
+#ifndef DILITHIUM_USE_AES
+    if(ctr > N - 8) break;
+#endif
   }
 
 #ifndef DILITHIUM_USE_AES
   uint32_t t;
-  while(ctr < len && pos <= buflen - 3) {
+  while(ctr < N && pos <= REJ_UNIFORM_BUFLEN - 3) {
     t  = buf[pos++];
     t |= (uint32_t)buf[pos++] << 8;
     t |= (uint32_t)buf[pos++] << 16;
@@ -315,9 +316,9 @@ unsigned int rej_uniform_avx(uint32_t *r,
   return ctr;
 }
 
-unsigned int rej_eta_avx(uint32_t *r,
+unsigned int rej_eta_avx(uint32_t * restrict r,
                          unsigned int len,
-                         const uint8_t *buf,
+                         const uint8_t * restrict buf,
                          unsigned int buflen)
 {
   unsigned int ctr, pos;
@@ -348,7 +349,8 @@ unsigned int rej_eta_avx(uint32_t *r,
     f0 = _mm_and_si128(f0, mask);
     pos += 8;
 
-    f1 = _mm_cmpgt_epi8(bound, f0);
+    //f1 = _mm_cmpgt_epi8(bound, f0);
+    f1 = _mm_sub_epi8(f0, bound);
     good = _mm_movemask_epi8(f1);
 
     f1 = _mm_loadl_epi64((__m128i *)&idx[good & 0xFF]);
@@ -387,9 +389,9 @@ unsigned int rej_eta_avx(uint32_t *r,
   return ctr;
 }
 
-unsigned int rej_gamma1m1_avx(uint32_t *r,
+unsigned int rej_gamma1m1_avx(uint32_t * restrict r,
                               unsigned int len,
-                              const uint8_t *buf,
+                              const uint8_t * restrict buf,
                               unsigned int buflen)
 {
   unsigned int ctr, pos;
@@ -416,11 +418,11 @@ unsigned int rej_gamma1m1_avx(uint32_t *r,
     d = _mm256_and_si256(d, mask);
     pos += 20;
 
-    tmp = _mm256_cmpgt_epi32(bound, d);
+    //tmp = _mm256_cmpgt_epi32(bound, d);
+    tmp = _mm256_sub_epi32(d, bound);
     good = _mm256_movemask_ps((__m256)tmp);
     d = _mm256_sub_epi32(off, d);
-    __m128i rid = _mm_loadl_epi64((__m128i *)&idx[good]);
-    tmp = _mm256_cvtepu8_epi32(rid);
+    tmp = _mm256_cvtepu8_epi32(_mm_loadl_epi64((__m128i *)&idx[good]));
     d = _mm256_permutevar8x32_epi32(d, tmp);
 
     _mm256_storeu_si256((__m256i *)&r[ctr], d);

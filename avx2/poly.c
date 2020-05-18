@@ -212,15 +212,11 @@ void poly_pointwise_montgomery(poly *c, const poly *a, const poly *b) {
 *              - poly *a0: pointer to output polynomial with coefficients Q + c0
 *              - const poly *v: pointer to input polynomial
 **************************************************/
-void poly_power2round(poly * restrict a1,
-                      poly * restrict a0,
-                      const poly * restrict a)
+void poly_power2round(poly *a1, poly *a0,  const poly *a)
 {
-  unsigned int i;
   DBENCH_START();
 
-  for(i = 0; i < N; ++i)
-    a1->coeffs[i] = power2round(a->coeffs[i], &a0->coeffs[i]);
+  power2round_avx(a1->coeffs, a0->coeffs, a->coeffs);
 
   DBENCH_STOP(*tround);
 }
@@ -238,15 +234,11 @@ void poly_power2round(poly * restrict a1,
 *              - poly *a0: pointer to output polynomial with coefficients Q + c0
 *              - const poly *c: pointer to input polynomial
 **************************************************/
-void poly_decompose(poly * restrict a1,
-                    poly * restrict a0,
-                    const poly * restrict a)
+void poly_decompose(poly *a1, poly *a0, const poly *a)
 {
-  unsigned int i;
   DBENCH_START();
 
-  for(i = 0; i < N; ++i)
-    a1->coeffs[i] = decompose(a->coeffs[i], &a0->coeffs[i]);
+  decompose_avx(a1->coeffs, a0->coeffs, a->coeffs);
 
   DBENCH_STOP(*tround);
 }
@@ -264,20 +256,15 @@ void poly_decompose(poly * restrict a1,
 *
 * Returns number of 1 bits.
 **************************************************/
-unsigned int poly_make_hint(poly * restrict h,
-                            const poly * restrict a0,
-                            const poly * restrict a1)
+unsigned int poly_make_hint(poly *h, const poly *a0, const poly *a1)
 {
-  unsigned int i, s = 0;
+  unsigned int r;
   DBENCH_START();
 
-  for(i = 0; i < N; ++i) {
-    h->coeffs[i] = make_hint(a0->coeffs[i], a1->coeffs[i]);
-    s += h->coeffs[i];
-  }
+  r = make_hint_avx(h->coeffs, a0->coeffs, a1->coeffs);
 
   DBENCH_STOP(*tround);
-  return s;
+  return r;
 }
 
 /*************************************************
@@ -289,15 +276,11 @@ unsigned int poly_make_hint(poly * restrict h,
 *              - const poly *a: pointer to input polynomial
 *              - const poly *h: pointer to input hint polynomial
 **************************************************/
-void poly_use_hint(poly * restrict b,
-                   const poly * restrict a,
-                   const poly * restrict h)
+void poly_use_hint(poly *b, const poly *a, const poly *h)
 {
-  unsigned int i;
   DBENCH_START();
 
-  for(i = 0; i < N; ++i)
-    b->coeffs[i] = use_hint(a->coeffs[i], h->coeffs[i]);
+  use_hint_avx(b->coeffs, a->coeffs, h->coeffs);
 
   DBENCH_STOP(*tround);
 }
@@ -315,26 +298,27 @@ void poly_use_hint(poly * restrict b,
 **************************************************/
 int poly_chknorm(const poly *a, uint32_t B) {
   unsigned int i;
-  uint32_t t;
+  int r;
+  __m256i f, g, t;
+  const __m256i hqs = _mm256_set1_epi32((Q-1)/2);
+  const __m256i bound = _mm256_set1_epi32(B-1);
   DBENCH_START();
 
-  /* It is ok to leak which coefficient violates the bound since
-     the probability for each coefficient is independent of secret
-     data but we must not leak the sign of the centralized representative. */
-  for(i = 0; i < N; ++i) {
+  t = _mm256_setzero_si256();
+  for(i = 0; i < N/8; ++i) {
     /* Absolute value of centralized representative */
-    t = (Q-1)/2 - a->coeffs[i];
-    t ^= (int32_t)t >> 31;
-    t = (Q-1)/2 - t;
-
-    if(t >= B) {
-      DBENCH_STOP(*tsample);
-      return 1;
-    }
+    f = _mm256_load_si256((__m256i *)&a->coeffs[8*i]);
+    f = _mm256_sub_epi32(hqs, f);
+    g = _mm256_srai_epi32(f, 31);
+    f = _mm256_xor_si256(f, g);
+    f = _mm256_sub_epi32(hqs, f);
+    f = _mm256_cmpgt_epi32(f, bound);
+    t = _mm256_or_si256(t, f);
   }
 
+  r = !_mm256_testz_si256(t,t);
   DBENCH_STOP(*tsample);
-  return 0;
+  return r;
 }
 
 /*************************************************
@@ -390,10 +374,11 @@ static unsigned int rej_uniform(uint32_t *a,
 void poly_uniform_preinit(poly *a, stream128_state *state)
 {
   unsigned int ctr;
+  __attribute__((aligned(32)))
   uint8_t buf[POLY_UNIFORM_NBLOCKS*STREAM128_BLOCKBYTES];
 
   stream128_squeezeblocks(buf, POLY_UNIFORM_NBLOCKS, state);
-  ctr = rej_uniform_avx(a->coeffs, N, buf, sizeof(buf));
+  ctr = rej_uniform_avx(a->coeffs, buf);
 
   while(ctr < N) {
     /* length of buf is divisible by 3; hence, no bytes left */
@@ -416,22 +401,24 @@ void poly_uniform_4x(poly *a0,
                      poly *a1,
                      poly *a2,
                      poly *a3,
-                     const uint8_t seed[SEEDBYTES],
+                     const uint8_t seed[32],
                      uint16_t nonce0,
                      uint16_t nonce1,
                      uint16_t nonce2,
                      uint16_t nonce3)
 {
-  unsigned int i, ctr0, ctr1, ctr2, ctr3;
-  uint8_t buf[4][5*SHAKE128_RATE];
+  unsigned int ctr0, ctr1, ctr2, ctr3;
+  __attribute__((aligned(32)))
+  uint8_t buf[4][864];
   keccakx4_state state;
+  __m256i f;
 
-  for(i= 0; i < SEEDBYTES; ++i) {
-    buf[0][i] = seed[i];
-    buf[1][i] = seed[i];
-    buf[2][i] = seed[i];
-    buf[3][i] = seed[i];
-  }
+  f = _mm256_load_si256((__m256i *)seed);
+  _mm256_store_si256((__m256i *)buf[0], f);
+  _mm256_store_si256((__m256i *)buf[1], f);
+  _mm256_store_si256((__m256i *)buf[2], f);
+  _mm256_store_si256((__m256i *)buf[3], f);
+
   buf[0][SEEDBYTES+0] = nonce0;
   buf[0][SEEDBYTES+1] = nonce0 >> 8;
   buf[1][SEEDBYTES+0] = nonce1;
@@ -444,10 +431,10 @@ void poly_uniform_4x(poly *a0,
   shake128x4_absorb(&state, buf[0], buf[1], buf[2], buf[3], SEEDBYTES + 2);
   shake128x4_squeezeblocks(buf[0], buf[1], buf[2], buf[3], 5, &state);
 
-  ctr0 = rej_uniform_avx(a0->coeffs, N, buf[0], 5*SHAKE128_RATE);
-  ctr1 = rej_uniform_avx(a1->coeffs, N, buf[1], 5*SHAKE128_RATE);
-  ctr2 = rej_uniform_avx(a2->coeffs, N, buf[2], 5*SHAKE128_RATE);
-  ctr3 = rej_uniform_avx(a3->coeffs, N, buf[3], 5*SHAKE128_RATE);
+  ctr0 = rej_uniform_avx(a0->coeffs, buf[0]);
+  ctr1 = rej_uniform_avx(a1->coeffs, buf[1]);
+  ctr2 = rej_uniform_avx(a2->coeffs, buf[2]);
+  ctr3 = rej_uniform_avx(a3->coeffs, buf[3]);
 
   while(ctr0 < N || ctr1 < N || ctr2 < N || ctr3 < N) {
     shake128x4_squeezeblocks(buf[0], buf[1], buf[2], buf[3], 1, &state);
@@ -529,8 +516,8 @@ static unsigned int rej_eta(uint32_t *a,
 void poly_uniform_eta_preinit(poly *a, stream128_state *state)
 {
   unsigned int ctr;
-  uint8_t buf[POLY_UNIFORM_ETA_NBLOCKS*STREAM128_BLOCKBYTES]
-    __attribute__((aligned(32)));
+  __attribute__((aligned(32)))
+  uint8_t buf[POLY_UNIFORM_ETA_NBLOCKS*STREAM128_BLOCKBYTES];
 
   stream128_squeezeblocks(buf, POLY_UNIFORM_ETA_NBLOCKS, state);
   ctr = rej_eta_avx(a->coeffs, N, buf, sizeof(buf));
@@ -555,22 +542,24 @@ void poly_uniform_eta_4x(poly *a0,
                          poly *a1,
                          poly *a2,
                          poly *a3,
-                         const uint8_t seed[SEEDBYTES],
+                         const uint8_t seed[32],
                          uint16_t nonce0,
                          uint16_t nonce1,
                          uint16_t nonce2,
                          uint16_t nonce3)
 {
-  unsigned int i, ctr0, ctr1, ctr2, ctr3;
-  uint8_t buf[4][POLY_UNIFORM_ETA_NBLOCKS*SHAKE128_RATE];
+  unsigned int ctr0, ctr1, ctr2, ctr3;
+  __attribute__((aligned(32)))
+  uint8_t buf[4][352];
+  __m256i f;
   keccakx4_state state;
 
-  for(i= 0; i < SEEDBYTES; ++i) {
-    buf[0][i] = seed[i];
-    buf[1][i] = seed[i];
-    buf[2][i] = seed[i];
-    buf[3][i] = seed[i];
-  }
+  f = _mm256_load_si256((__m256i *)seed);
+  _mm256_store_si256((__m256i *)buf[0], f);
+  _mm256_store_si256((__m256i *)buf[1], f);
+  _mm256_store_si256((__m256i *)buf[2], f);
+  _mm256_store_si256((__m256i *)buf[3], f);
+
   buf[0][SEEDBYTES+0] = nonce0;
   buf[0][SEEDBYTES+1] = nonce0 >> 8;
   buf[1][SEEDBYTES+0] = nonce1;
@@ -584,10 +573,10 @@ void poly_uniform_eta_4x(poly *a0,
   shake128x4_squeezeblocks(buf[0], buf[1], buf[2], buf[3],
                            POLY_UNIFORM_ETA_NBLOCKS, &state);
 
-  ctr0 = rej_eta_avx(a0->coeffs, N, buf[0], sizeof(buf[0]));
-  ctr1 = rej_eta_avx(a1->coeffs, N, buf[1], sizeof(buf[1]));
-  ctr2 = rej_eta_avx(a2->coeffs, N, buf[2], sizeof(buf[2]));
-  ctr3 = rej_eta_avx(a3->coeffs, N, buf[3], sizeof(buf[3]));
+  ctr0 = rej_eta_avx(a0->coeffs, N, buf[0], POLY_UNIFORM_ETA_NBLOCKS*SHAKE128_RATE);
+  ctr1 = rej_eta_avx(a1->coeffs, N, buf[1], POLY_UNIFORM_ETA_NBLOCKS*SHAKE128_RATE);
+  ctr2 = rej_eta_avx(a2->coeffs, N, buf[2], POLY_UNIFORM_ETA_NBLOCKS*SHAKE128_RATE);
+  ctr3 = rej_eta_avx(a3->coeffs, N, buf[3], POLY_UNIFORM_ETA_NBLOCKS*SHAKE128_RATE);
 
   while(ctr0 < N || ctr1 < N || ctr2 < N || ctr3 < N) {
     shake128x4_squeezeblocks(buf[0], buf[1], buf[2], buf[3], 1, &state);
@@ -668,8 +657,8 @@ static unsigned int rej_gamma1m1(uint32_t *a,
 void poly_uniform_gamma1m1_preinit(poly *a, stream256_state *state)
 {
   unsigned int ctr;
-  uint8_t buf[POLY_UNIFORM_GAMMA1M1_NBLOCKS*STREAM256_BLOCKBYTES]
-    __attribute__((aligned(32)));
+  __attribute__((aligned(32)))
+  uint8_t buf[POLY_UNIFORM_GAMMA1M1_NBLOCKS*STREAM256_BLOCKBYTES];
 
   stream256_squeezeblocks(buf, POLY_UNIFORM_GAMMA1M1_NBLOCKS, state);
   ctr = rej_gamma1m1_avx(a->coeffs, N, buf, sizeof(buf));
@@ -695,22 +684,30 @@ void poly_uniform_gamma1m1_4x(poly *a0,
                               poly *a1,
                               poly *a2,
                               poly *a3,
-                              const uint8_t seed[CRHBYTES],
+                              const uint8_t seed[48],
                               uint16_t nonce0,
                               uint16_t nonce1,
                               uint16_t nonce2,
                               uint16_t nonce3)
 {
-  unsigned int i, ctr0, ctr1, ctr2, ctr3;
-  uint8_t buf[4][5*SHAKE256_RATE];
+  unsigned int ctr0, ctr1, ctr2, ctr3;
+  __attribute__((aligned(32)))
+  uint8_t buf[4][864];
   keccakx4_state state;
+  __m256i f;
+  __m128i g;
 
-  for(i = 0; i < CRHBYTES; ++i) {
-    buf[0][i] = seed[i];
-    buf[1][i] = seed[i];
-    buf[2][i] = seed[i];
-    buf[3][i] = seed[i];
-  }
+  f = _mm256_load_si256((__m256i *)seed);
+  _mm256_store_si256((__m256i *)buf[0],f);
+  _mm256_store_si256((__m256i *)buf[1],f);
+  _mm256_store_si256((__m256i *)buf[2],f);
+  _mm256_store_si256((__m256i *)buf[3],f);
+  g = _mm_load_si128((__m128i *)&seed[32]);
+  _mm_store_si128((__m128i *)&buf[0][32],g);
+  _mm_store_si128((__m128i *)&buf[1][32],g);
+  _mm_store_si128((__m128i *)&buf[2][32],g);
+  _mm_store_si128((__m128i *)&buf[3][32],g);
+
   buf[0][CRHBYTES + 0] = nonce0;
   buf[0][CRHBYTES + 1] = nonce0 >> 8;
   buf[1][CRHBYTES + 0] = nonce1;
@@ -1090,7 +1087,7 @@ void polyw1_pack(uint8_t * restrict r, const poly * restrict a) {
     f1 = _mm256_blendv_epi8(f4, f3, mask);		/* BFDH */
 
     f1 = _mm256_slli_epi16(f1, 4);
-    f0 = _mm256_or_si256(f0, f1);
+    f0 = _mm256_add_epi16(f0, f1);
 
     f0 = _mm256_shuffle_epi8(f0, idx);
     _mm256_storeu_si256((__m256i *)&r[32*i], f0);

@@ -4,7 +4,7 @@ CFLAGS += -Wall -Wextra -Wpedantic -Wmissing-prototypes -Wredundant-decls \
   -fomit-frame-pointer -flto
 NISTFLAGS += -Wno-unused-result -march=native -mtune=native -O3
 SOURCES = sign.c packing.c polyvec.c poly.c ntt.S invntt.S pointwise.S \
-  consts.c rejsample.c reduce.S
+  consts.c rejsample.c reduce.S rounding.c
 HEADERS = config.h params.h api.h sign.h packing.h polyvec.h poly.h ntt.h \
   consts.h shuffle.inc rejsample.h reduce.h rounding.h symmetric.h randombytes.h
 KECCAK_SOURCES = $(SOURCES) fips202.c fips202x4.c symmetric-shake.c \

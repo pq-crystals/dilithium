@@ -175,7 +175,7 @@ int main(void) {
       fprintf(stderr, "ERROR in polyveck_chknorm(&w1, 16)!\n");
     polyveck_csubq(&w0);
     if(polyveck_chknorm(&w0, ALPHA/2+1))
-      fprintf(stderr, "ERROR in polyveck_chknorm(&w0 ,ALPHA/2+1)!\n");
+      fprintf(stderr, "ERROR in polyveck_chknorm(&w0, ALPHA/2+1)!\n");
 
     printf("w1 = ((");
     for(j = 0; j < K; ++j) {

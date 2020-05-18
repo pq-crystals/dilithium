@@ -37,7 +37,9 @@ void challenge(poly *c,
   for(i = 0; i < K; ++i)
     polyw1_pack(buf + CRHBYTES + i*POLYW1_PACKEDBYTES, &w1->vec[i]);
 
+  shake256_init(&state);
   shake256_absorb(&state, buf, sizeof(buf));
+  shake256_finalize(&state);
   shake256_squeezeblocks(buf, 1, &state);
 
   signs = 0;
@@ -100,18 +102,18 @@ int crypto_sign_keypair(unsigned char *pk, unsigned char *sk) {
 
   /* Sample short vectors s1 and s2 */
 #ifdef DILITHIUM_USE_AES
-   __attribute__((aligned(16)))
+  __attribute__((aligned(16)))
   uint64_t nonce = 0;
-  aes256ctr_ctx state;
-  aes256ctr_init(&state, rhoprime, nonce++);
+  aes256ctr_ctx aesctx;
+  aes256ctr_init(&aesctx, rhoprime, nonce++);
   for(i = 0; i < L; ++i) {
-    poly_uniform_eta_preinit(&s1.vec[i], &state);
-    state.n = _mm_loadl_epi64((__m128i *)&nonce);
+    poly_uniform_eta_preinit(&s1.vec[i], &aesctx);
+    aesctx.n = _mm_loadl_epi64((__m128i *)&nonce);
     nonce++;
   }
   for(i = 0; i < K; ++i) {
-    poly_uniform_eta_preinit(&s2.vec[i], &state);
-    state.n = _mm_loadl_epi64((__m128i *)&nonce);
+    poly_uniform_eta_preinit(&s2.vec[i], &aesctx);
+    aesctx.n = _mm_loadl_epi64((__m128i *)&nonce);
     nonce++;
   }
 #elif L == 2 && K == 3
@@ -165,38 +167,36 @@ int crypto_sign_keypair(unsigned char *pk, unsigned char *sk) {
 }
 
 /*************************************************
-* Name:        crypto_sign
+* Name:        crypto_sign_signature
 *
-* Description: Compute signed message.
+* Description: Computes signature.
 *
-* Arguments:   - unsigned char *sm: pointer to output signed message (allocated
-*                                   array with CRYPTO_BYTES + mlen bytes),
-*                                   can be equal to m
-*              - unsigned long long *smlen: pointer to output length of signed
-*                                           message
-*              - const unsigned char *m: pointer to message to be signed
-*              - unsigned long long mlen: length of message
-*              - const unsigned char *sk: pointer to bit-packed secret key
+* Arguments:   - unsigned char *sig:         pointer to output signature (of length CRYPTO_BYTES)
+*              - unsigned long long *siglen: pointer to output length of signed message
+*              - unsigned char *m:           pointer to message to be signed
+*              - unsigned long long mlen:    length of message
+*              - unsigned char *sk:          pointer to bit-packed secret key
 *
 * Returns 0 (success)
 **************************************************/
-int crypto_sign(unsigned char *sm,
-                unsigned long long *smlen,
-                const unsigned char *m,
-                unsigned long long mlen,
-                const unsigned char *sk)
+int crypto_sign_signature(unsigned char *sig,
+                          unsigned long long *siglen,
+                          const unsigned char *m,
+                          unsigned long long mlen,
+                          const unsigned char *sk)
 {
   unsigned long long i;
   unsigned int n;
-   __attribute__((aligned(32)))
+  __attribute__((aligned(32)))
   uint8_t seedbuf[2*SEEDBYTES + 3*CRHBYTES];
   uint8_t *rho, *tr, *key, *mu, *rhoprime;
-   __attribute__((aligned(16)))
+  __attribute__((aligned(16)))
   uint64_t nonce = 0;
   poly c, chat;
   polyvecl mat[K], s1, y, yhat, z;
   polyveck t0, s2, w, w1, w0;
   polyveck h, cs2, ct0;
+  keccak_state state;
 
   rho = seedbuf;
   tr = rho + SEEDBYTES;
@@ -205,15 +205,12 @@ int crypto_sign(unsigned char *sm,
   rhoprime = mu + CRHBYTES;
   unpack_sk(rho, key, tr, &s1, &s2, &t0, sk);
 
-  /* Copy tr and message into the sm buffer,
-   * backwards since m and sm can be equal in SUPERCOP API */
-  for(i = 1; i <= mlen; ++i)
-    sm[CRYPTO_BYTES + mlen - i] = m[mlen - i];
-  for(i = 0; i < CRHBYTES; ++i)
-    sm[CRYPTO_BYTES - CRHBYTES + i] = tr[i];
-
   /* Compute CRH(tr, msg) */
-  crh(mu, sm + CRYPTO_BYTES - CRHBYTES, CRHBYTES + mlen);
+  shake256_init(&state);
+  shake256_absorb(&state, tr, CRHBYTES);
+  shake256_absorb(&state, m, mlen);
+  shake256_finalize(&state);
+  shake256_squeeze(mu, CRHBYTES, &state);
 
 #ifdef DILITHIUM_RANDOMIZED_SIGNING
   randombytes(rhoprime, CRHBYTES);
@@ -228,16 +225,16 @@ int crypto_sign(unsigned char *sm,
   polyveck_ntt(&t0);
 
 #ifdef DILITHIUM_USE_AES
-  aes256ctr_ctx state;
-  aes256ctr_init(&state, rhoprime, nonce++);
+  aes256ctr_ctx aesctx;
+  aes256ctr_init(&aesctx, rhoprime, nonce++);
 #endif
 
-  rej:
+rej:
   /* Sample intermediate vector y */
 #ifdef DILITHIUM_USE_AES
   for(i = 0; i < L; ++i) {
-    poly_uniform_gamma1m1_preinit(&y.vec[i], &state);
-    state.n = _mm_loadl_epi64((__m128i *)&nonce);
+    poly_uniform_gamma1m1_preinit(&y.vec[i], &aesctx);
+    aesctx.n = _mm_loadl_epi64((__m128i *)&nonce);
     nonce++;
   }
 #elif L == 2
@@ -315,59 +312,87 @@ int crypto_sign(unsigned char *sm,
     goto rej;
 
   /* Write signature */
-  pack_sig(sm, &z, &h, &c);
-
-  *smlen = mlen + CRYPTO_BYTES;
+  pack_sig(sig, &z, &h, &c);
+  *siglen = CRYPTO_BYTES;
   return 0;
 }
 
 /*************************************************
-* Name:        crypto_sign_open
+* Name:        crypto_sign
 *
-* Description: Verify signed message.
+* Description: Compute signed message.
 *
-* Arguments:   - unsigned char *m: pointer to output message (allocated
-*                                  array with smlen bytes), can be equal to sm
-*              - unsigned long long *mlen: pointer to output length of message
-*              - const unsigned char *sm: pointer to signed message
-*              - unsigned long long smlen: length of signed message
+* Arguments:   - unsigned char *sm: pointer to output signed message (allocated
+*                                   array with CRYPTO_BYTES + mlen bytes),
+*                                   can be equal to m
+*              - unsigned long long *smlen: pointer to output length of signed
+*                                           message
+*              - const unsigned char *m: pointer to message to be signed
+*              - unsigned long long mlen: length of message
+*              - const unsigned char *sk: pointer to bit-packed secret key
+*
+* Returns 0 (success)
+**************************************************/
+int crypto_sign(unsigned char *sm,
+                unsigned long long *smlen,
+                const unsigned char *m,
+                unsigned long long mlen,
+                const unsigned char *sk)
+{
+  unsigned long long i;
+
+  for(i = 0; i < mlen; ++i)
+    sm[CRYPTO_BYTES + mlen - 1 - i] = m[mlen - 1 - i];
+  crypto_sign_signature(sm, smlen, sm + CRYPTO_BYTES, mlen, sk);
+  *smlen += mlen;
+  return 0;
+}
+
+/*************************************************
+* Name:        crypto_sign_verify
+*
+* Description: Verifies signature.
+*
+* Arguments:   - unsigned char *m: pointer to input signature
+*              - unsigned long long siglen: length of signature
+*              - const unsigned char *m: pointer to message
+*              - unsigned long long mlen: length of message
 *              - const unsigned char *pk: pointer to bit-packed public key
 *
-* Returns 0 if signed message could be verified correctly and -1 otherwise
+* Returns 0 if signature could be verified correctly and -1 otherwise
 **************************************************/
-int crypto_sign_open(unsigned char *m,
-                     unsigned long long *mlen,
-                     const unsigned char *sm,
-                     unsigned long long smlen,
-                     const unsigned char *pk)
+int crypto_sign_verify(const unsigned char *sig,
+                       unsigned long long siglen,
+                       const unsigned char *m,
+                       unsigned long long mlen,
+                       const unsigned char *pk)
 {
   unsigned long long i;
   __attribute__((aligned(32)))
   uint8_t rho[SEEDBYTES];
-   __attribute__((aligned(32)))
+  __attribute__((aligned(32)))
   uint8_t mu[CRHBYTES];
   poly c, chat, cp;
   polyvecl mat[K], z;
   polyveck t1, w1, h, tmp;
+  keccak_state state;
 
-  if(smlen < CRYPTO_BYTES)
-    goto badsig;
-
-  *mlen = smlen - CRYPTO_BYTES;
+  if(siglen != CRYPTO_BYTES)
+    return -1;
 
   unpack_pk(rho, &t1, pk);
-  if(unpack_sig(&z, &h, &c, sm))
-    goto badsig;
+  if(unpack_sig(&z, &h, &c, sig))
+    return -1;
   if(polyvecl_chknorm(&z, GAMMA1 - BETA))
-    goto badsig;
+    return -1;
 
-  /* Compute CRH(CRH(rho, t1), msg) using m as "playground" buffer */
-  if(sm != m)
-    for(i = 0; i < *mlen; ++i)
-      m[CRYPTO_BYTES + i] = sm[CRYPTO_BYTES + i];
-
-  crh(m + CRYPTO_BYTES - CRHBYTES, pk, CRYPTO_PUBLICKEYBYTES);
-  crh(mu, m + CRYPTO_BYTES - CRHBYTES, CRHBYTES + *mlen);
+  /* Compute CRH(CRH(rho, t1), msg) */
+  crh(mu, pk, CRYPTO_PUBLICKEYBYTES);
+  shake256_init(&state);
+  shake256_absorb(&state, mu, CRHBYTES);
+  shake256_absorb(&state, m, mlen);
+  shake256_finalize(&state);
+  shake256_squeeze(mu, CRHBYTES, &state);
 
   /* Matrix-vector multiplication; compute Az - c2^dt1 */
   expand_mat(mat, rho);
@@ -394,16 +419,49 @@ int crypto_sign_open(unsigned char *m,
   challenge(&cp, mu, &w1);
   for(i = 0; i < N; ++i)
     if(c.coeffs[i] != cp.coeffs[i])
-      goto badsig;
-
-  /* All good, copy msg, return 0 */
-  for(i = 0; i < *mlen; ++i)
-    m[i] = sm[CRYPTO_BYTES + i];
+      return -1;
 
   return 0;
+}
 
+/*************************************************
+* Name:        crypto_sign_open
+*
+* Description: Verify signed message.
+*
+* Arguments:   - unsigned char *m: pointer to output message (allocated
+*                                  array with smlen bytes), can be equal to sm
+*              - unsigned long long *mlen: pointer to output length of message
+*              - const unsigned char *sm: pointer to signed message
+*              - unsigned long long smlen: length of signed message
+*              - const unsigned char *pk: pointer to bit-packed public key
+*
+* Returns 0 if signed message could be verified correctly and -1 otherwise
+**************************************************/
+int crypto_sign_open(unsigned char *m,
+                     unsigned long long *mlen,
+                     const unsigned char *sm,
+                     unsigned long long smlen,
+                     const unsigned char *pk)
+{
+  unsigned long long i;
+
+  if(smlen < CRYPTO_BYTES)
+    goto badsig;
+
+  *mlen = smlen - CRYPTO_BYTES;
+  if(crypto_sign_verify(sm, CRYPTO_BYTES, sm + CRYPTO_BYTES, *mlen, pk))
+    goto badsig;
+  else {
+    /* All good, copy msg, return 0 */
+    for(i = 0; i < *mlen; ++i)
+      m[i] = sm[CRYPTO_BYTES + i];
+
+    return 0;
+  }
+
+badsig:
   /* Signature verification failed */
-  badsig:
   *mlen = (unsigned long long) -1;
   for(i = 0; i < smlen; ++i)
     m[i] = 0;
