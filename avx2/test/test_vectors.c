@@ -15,6 +15,7 @@
 
 int main(void) {
   unsigned int i, j, k, l;
+  __attribute__((aligned(32)))
   uint8_t seed[CRHBYTES];
   uint8_t buf[CRYPTO_BYTES];
   poly c, tmp;
