@@ -89,7 +89,7 @@ int crypto_sign_keypair(unsigned char *pk, unsigned char *sk) {
   const uint8_t *rho, *rhoprime, *key;
   polyvecl mat[K];
   polyvecl s1, s1hat;
-  polyveck s2, t, t1, t0;
+  polyveck s2, t1, t0;
 
   /* Get randomness for rho, rhoprime and key */
   randombytes(seedbuf, 3*SEEDBYTES);
@@ -123,7 +123,7 @@ int crypto_sign_keypair(unsigned char *pk, unsigned char *sk) {
 #elif L == 3 && K == 4
   poly_uniform_eta_4x(&s1.vec[0], &s1.vec[1], &s1.vec[2], &s2.vec[0], rhoprime,
                       0, 1, 2, 3);
-  poly_uniform_eta_4x(&s2.vec[1], &s2.vec[2], &s2.vec[3], &t.vec[0], rhoprime,
+  poly_uniform_eta_4x(&s2.vec[1], &s2.vec[2], &s2.vec[3], &t1.vec[0], rhoprime,
                       4, 5, 6, 7);
 #elif L == 4 && K == 5
   poly_uniform_eta_4x(&s1.vec[0], &s1.vec[1], &s1.vec[2], &s1.vec[3], rhoprime,
@@ -136,7 +136,7 @@ int crypto_sign_keypair(unsigned char *pk, unsigned char *sk) {
                       0, 1, 2, 3);
   poly_uniform_eta_4x(&s1.vec[4], &s2.vec[0], &s2.vec[1], &s2.vec[2], rhoprime,
                       4, 5, 6, 7);
-  poly_uniform_eta_4x(&s2.vec[3], &s2.vec[4], &s2.vec[5], &t.vec[0], rhoprime,
+  poly_uniform_eta_4x(&s2.vec[3], &s2.vec[4], &s2.vec[5], &t1.vec[0], rhoprime,
                       8, 9, 10, 11);
 #else
 #error
@@ -146,17 +146,17 @@ int crypto_sign_keypair(unsigned char *pk, unsigned char *sk) {
   s1hat = s1;
   polyvecl_ntt(&s1hat);
   for(i = 0; i < K; ++i) {
-    polyvecl_pointwise_acc_montgomery(&t.vec[i], &mat[i], &s1hat);
-    //poly_reduce(&t.vec[i]);
-    poly_invntt_tomont(&t.vec[i]);
+    polyvecl_pointwise_acc_montgomery(&t1.vec[i], &mat[i], &s1hat);
+    //poly_reduce(&t1.vec[i]);
+    poly_invntt_tomont(&t1.vec[i]);
   }
 
   /* Add error vector s2 */
-  polyveck_add(&t, &t, &s2);
+  polyveck_add(&t1, &t1, &s2);
 
   /* Extract t1 and write public key */
-  polyveck_freeze(&t);
-  polyveck_power2round(&t1, &t0, &t);
+  polyveck_freeze(&t1);
+  polyveck_power2round(&t1, &t0, &t1);
   pack_pk(pk, rho, &t1);
 
   /* Compute CRH(rho, t1) and write secret key */
@@ -192,10 +192,9 @@ int crypto_sign_signature(unsigned char *sig,
   uint8_t *rho, *tr, *key, *mu, *rhoprime;
   __attribute__((aligned(16)))
   uint64_t nonce = 0;
-  poly c, chat;
-  polyvecl mat[K], s1, y, yhat, z;
-  polyveck t0, s2, w, w1, w0;
-  polyveck h, cs2, ct0;
+  poly c;
+  polyvecl mat[K], s1, z;
+  polyveck t0, s2, w1, w0, h;
   keccak_state state;
 
   rho = seedbuf;
@@ -233,79 +232,79 @@ rej:
   /* Sample intermediate vector y */
 #ifdef DILITHIUM_USE_AES
   for(i = 0; i < L; ++i) {
-    poly_uniform_gamma1m1_preinit(&y.vec[i], &aesctx);
+    poly_uniform_gamma1m1_preinit(&z.vec[i], &aesctx);
     aesctx.n = _mm_loadl_epi64((__m128i *)&nonce);
     nonce++;
   }
 #elif L == 2
-  poly_uniform_gamma1m1_4x(&y.vec[0], &y.vec[1], &yhat.vec[0], &yhat.vec[1],
+  poly_uniform_gamma1m1_4x(&z.vec[0], &z.vec[1], &h.vec[0], &h.vec[1],
                            rhoprime, nonce, nonce + 1, 0, 0);
   nonce += 2;
 #elif L == 3
-  poly_uniform_gamma1m1_4x(&y.vec[0], &y.vec[1], &y.vec[2], &yhat.vec[0],
+  poly_uniform_gamma1m1_4x(&z.vec[0], &z.vec[1], &z.vec[2], &h.vec[0],
                            rhoprime, nonce, nonce + 1, nonce + 2, 0);
   nonce += 3;
 #elif L == 4
-  poly_uniform_gamma1m1_4x(&y.vec[0], &y.vec[1], &y.vec[2], &y.vec[3],
+  poly_uniform_gamma1m1_4x(&z.vec[0], &z.vec[1], &z.vec[2], &z.vec[3],
                            rhoprime, nonce, nonce + 1, nonce + 2, nonce + 3);
   nonce += 4;
 #elif L == 5
-  poly_uniform_gamma1m1_4x(&y.vec[0], &y.vec[1], &y.vec[2], &y.vec[3],
+  poly_uniform_gamma1m1_4x(&z.vec[0], &z.vec[1], &z.vec[2], &z.vec[3],
                            rhoprime, nonce, nonce + 1, nonce + 2, nonce + 3);
-  poly_uniform_gamma1m1(&y.vec[4], rhoprime, nonce + 4);
+  poly_uniform_gamma1m1(&z.vec[4], rhoprime, nonce + 4);
   nonce += 5;
 #else
 #error
 #endif
 
   /* Matrix-vector multiplication */
-  yhat = y;
-  polyvecl_ntt(&yhat);
+  polyvecl *tmpl = (polyvecl *)&h;
+  *tmpl = z;
+  polyvecl_ntt(tmpl);
   for(i = 0; i < K; ++i) {
-    polyvecl_pointwise_acc_montgomery(&w.vec[i], &mat[i], &yhat);
-    //poly_reduce(&w.vec[i]);
-    poly_invntt_tomont(&w.vec[i]);
+    polyvecl_pointwise_acc_montgomery(&w1.vec[i], &mat[i], tmpl);
+    //poly_reduce(&w1.vec[i]);
+    poly_invntt_tomont(&w1.vec[i]);
   }
 
   /* Decompose w and call the random oracle */
-  polyveck_csubq(&w);
-  polyveck_decompose(&w1, &w0, &w);
+  polyveck_csubq(&w1);
+  polyveck_decompose(&w1, &w0, &w1);
   challenge(&c, mu, &w1);
-  chat = c;
-  poly_ntt(&chat);
-
-  /* Check that subtracting cs2 does not change high bits of w and low bits
-   * do not reveal secret information */
-  for(i = 0; i < K; ++i) {
-    poly_pointwise_montgomery(&cs2.vec[i], &chat, &s2.vec[i]);
-    poly_invntt_tomont(&cs2.vec[i]);
-  }
-  polyveck_sub(&w0, &w0, &cs2);
-  polyveck_freeze(&w0);
-  if(polyveck_chknorm(&w0, GAMMA2 - BETA))
-    goto rej;
+  h.vec[K-1] = c;
+  poly_ntt(&h.vec[K-1]);
 
   /* Compute z, reject if it reveals secret */
   for(i = 0; i < L; ++i) {
-    poly_pointwise_montgomery(&z.vec[i], &chat, &s1.vec[i]);
-    poly_invntt_tomont(&z.vec[i]);
+    poly_pointwise_montgomery(&h.vec[0], &h.vec[K-1], &s1.vec[i]);
+    poly_invntt_tomont(&h.vec[0]);
+    poly_add(&z.vec[i], &z.vec[i], &h.vec[0]);
   }
-  polyvecl_add(&z, &z, &y);
   polyvecl_freeze(&z);
   if(polyvecl_chknorm(&z, GAMMA1 - BETA))
     goto rej;
 
-  /* Compute hints for w1 */
+  /* Check that subtracting cs2 does not change high bits of w and low bits
+   * do not reveal secret information */
   for(i = 0; i < K; ++i) {
-    poly_pointwise_montgomery(&ct0.vec[i], &chat, &t0.vec[i]);
-    poly_invntt_tomont(&ct0.vec[i]);
+    poly_pointwise_montgomery(&h.vec[0], &h.vec[K-1], &s2.vec[i]);
+    poly_invntt_tomont(&h.vec[0]);
+    poly_sub(&w0.vec[i], &w0.vec[i], &h.vec[0]);
   }
-
-  polyveck_csubq(&ct0);
-  if(polyveck_chknorm(&ct0, GAMMA2))
+  polyveck_freeze(&w0);
+  if(polyveck_chknorm(&w0, GAMMA2 - BETA))
     goto rej;
 
-  polyveck_add(&w0, &w0, &ct0);
+  /* Compute hints for w1 */
+  for(i = 0; i < K; ++i) {
+    poly_pointwise_montgomery(&h.vec[i], &h.vec[K-1], &t0.vec[i]);
+    poly_invntt_tomont(&h.vec[i]);
+  }
+  polyveck_csubq(&h);
+  if(polyveck_chknorm(&h, GAMMA2))
+    goto rej;
+
+  polyveck_add(&w0, &w0, &h);
   polyveck_csubq(&w0);
   n = polyveck_make_hint(&h, &w0, &w1);
   if(n > OMEGA)
@@ -372,9 +371,9 @@ int crypto_sign_verify(const unsigned char *sig,
   uint8_t rho[SEEDBYTES];
   __attribute__((aligned(32)))
   uint8_t mu[CRHBYTES];
-  poly c, chat, cp;
+  poly c, cp;
   polyvecl mat[K], z;
-  polyveck t1, w1, h, tmp;
+  polyveck t1, h, w1;
   keccak_state state;
 
   if(siglen != CRYPTO_BYTES)
@@ -400,14 +399,14 @@ int crypto_sign_verify(const unsigned char *sig,
   for(i = 0; i < K ; ++i)
     polyvecl_pointwise_acc_montgomery(&w1.vec[i], &mat[i], &z);
 
-  chat = c;
-  poly_ntt(&chat);
+  cp = c;
+  poly_ntt(&cp);
   polyveck_shiftl(&t1);
   polyveck_ntt(&t1);
   for(i = 0; i < K; ++i)
-    poly_pointwise_montgomery(&tmp.vec[i], &chat, &t1.vec[i]);
+    poly_pointwise_montgomery(&t1.vec[i], &cp, &t1.vec[i]);
 
-  polyveck_sub(&w1, &w1, &tmp);
+  polyveck_sub(&w1, &w1, &t1);
   polyveck_reduce(&w1);
   polyveck_invntt_tomont(&w1);
 
