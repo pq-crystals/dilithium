@@ -19,7 +19,7 @@ before_script:
 
 script:
   - cd ref
-  - make test/test_dilithium3 CC=$CC CFLAGS="-fPIC -fprofile-arcs -ftest-coverage -g -O0"
+  - make test/test_dilithium3 CC=$CC CFLAGS="-fPIC -fprofile-arcs -ftest-coverage -march=native -O0 -g"
   - ./test/test_dilithium3
 
 after_success:

@@ -13,14 +13,11 @@ uint64_t t[NTESTS];
 int main(void)
 {
   unsigned int i;
-  unsigned long long mlen, smlen;
+  unsigned long long smlen;
   unsigned char pk[CRYPTO_PUBLICKEYBYTES];
   unsigned char sk[CRYPTO_SECRETKEYBYTES];
-  unsigned char sm[CRYPTO_BYTES + CRHBYTES] = {0};
-  unsigned char *m = sm;
-  unsigned char *m2 = sk;
-  uint8_t *seed = sm;
-  polyveck vk;
+  unsigned char sm[CRYPTO_BYTES + CRHBYTES];
+  uint8_t seed[CRHBYTES];
   polyvecl mat[K];
   poly *a = &mat[0].vec[0];
   poly *b = &mat[0].vec[1];
@@ -70,7 +67,7 @@ int main(void)
 
   for(i = 0; i < NTESTS; ++i) {
     t[i] = cpucycles();
-    challenge(c, seed, &vk);
+    challenge(c, seed, (polyveck *)mat);
   }
   print_results("challenge:", t, NTESTS);
 
@@ -82,13 +79,13 @@ int main(void)
 
   for(i = 0; i < NTESTS; ++i) {
     t[i] = cpucycles();
-    crypto_sign(m, &smlen, m, CRHBYTES, sk);
+    crypto_sign(sm, &smlen, sm, CRHBYTES, sk);
   }
   print_results("Sign:", t, NTESTS);
 
   for(i = 0; i < NTESTS; ++i) {
     t[i] = cpucycles();
-    crypto_sign_open(m2, &mlen, m, smlen, pk);
+    crypto_sign_verify(sm, CRYPTO_BYTES, sm + CRYPTO_BYTES, CRHBYTES, pk);
   }
   print_results("Verify:", t, NTESTS);
 
