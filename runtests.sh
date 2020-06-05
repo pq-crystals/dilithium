@@ -6,5 +6,10 @@ for dir in ref avx2; do
     ./$dir/test/test_vectors$alg > tvecs$alg
     ./$dir/PQCgenKAT_sign$alg
   done
-  sha256sum -c SHA256SUMS
+  # sha256sum not guaranteed to be installed in OSX
+  if [ `uname` == "Darwin" ]; then
+     shasum -a256 -c SHA256SUMS
+  else
+     sha256sum -c SHA256SUMS
+  fi
 done

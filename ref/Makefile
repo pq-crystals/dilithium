@@ -1,6 +1,7 @@
 CC ?= /usr/bin/cc
 CFLAGS += -Wall -Wextra -Wpedantic -Wmissing-prototypes -Wredundant-decls \
-   -Wshadow -Wpointer-arith -march=native -mtune=native -O3
+   -Wshadow -Wpointer-arith -march=native -mtune=native -g
+LDFLAGS=
 NISTFLAGS += -Wno-unused-result -march=native -mtune=native -O3
 SOURCES = sign.c packing.c polyvec.c poly.c ntt.c reduce.c rounding.c
 HEADERS = config.h params.h api.h sign.h packing.h polyvec.h poly.h ntt.h \
@@ -10,9 +11,29 @@ KECCAK_HEADERS = $(HEADERS) fips202.h
 AES_SOURCES = $(SOURCES) fips202.c aes256ctr.c symmetric-aes.c
 AES_HEADERS = $(HEADERS) fips202.h aes256ctr.h
 
+# a poor man's alternative to cmake...dd
+UNAME_S := $(shell uname -s)
+ifeq ($(UNAME_S),Darwin)
+    CFLAGS += -I/usr/local/Cellar/openssl@1.1/1.1.1d/include
+    NISTFLAGS += -I/usr/local/Cellar/openssl@1.1/1.1.1d/include
+    LDFLAGS += -L/usr/local/Cellar/openssl@1.1/1.1.1d/lib
+else
+    # clang on OSX doesn't like this; alpine neither
+    OSID := $(shell grep ^ID= /etc/os-release)
+    ifneq ($(OSID),ID=alpine)
+      CFLAGS += -pg
+    endif
+    ifeq ($(OSID),ID="centos")
+      CFLAGS += -I/usr/local/ssl/include
+      NISTFLAGS += -I/usr/local/ssl/include
+      LDFLAGS += -L/usr/local/ssl/lib
+    endif
+endif
+
 .PHONY: all shared clean
 
 all: \
+  showvars \
   test/test_dilithium2 \
   test/test_dilithium3 \
   test/test_dilithium4 \
@@ -37,6 +58,9 @@ all: \
   PQCgenKAT_sign2aes \
   PQCgenKAT_sign3aes \
   PQCgenKAT_sign4aes
+
+showvars:
+	echo $(OSID) $(CFLAGS)
 
 shared: \
   libpqcrystals_dilithium2_ref.so \
@@ -111,32 +135,32 @@ test/test_dilithium4aes: test/test_dilithium.c randombytes.c $(AES_SOURCES) \
 test/test_vectors2: test/test_vectors.c rng.c rng.h $(KECCAK_SOURCES) \
   $(KECCAK_HEADERS)
 	$(CC) $(NISTFLAGS) -DDILITHIUM_MODE=2 \
-	  -o $@ $< rng.c $(KECCAK_SOURCES) -lcrypto
+	  -o $@ $< rng.c $(KECCAK_SOURCES) $(LDFLAGS) -lcrypto
 
 test/test_vectors3: test/test_vectors.c rng.c rng.h $(KECCAK_SOURCES) \
   $(KECCAK_HEADERS)
 	$(CC) $(NISTFLAGS) -DDILITHIUM_MODE=3 \
-	  -o $@ $< rng.c $(KECCAK_SOURCES) -lcrypto
+	  -o $@ $< rng.c $(KECCAK_SOURCES) $(LDFLAGS) -lcrypto
 
 test/test_vectors4: test/test_vectors.c rng.c rng.h $(KECCAK_SOURCES) \
   $(KECCAK_HEADERS)
 	$(CC) $(NISTFLAGS) -DDILITHIUM_MODE=4 \
-	  -o $@ $< rng.c $(KECCAK_SOURCES) -lcrypto
+	  -o $@ $< rng.c $(KECCAK_SOURCES) $(LDFLAGS) -lcrypto
 
 test/test_vectors2aes: test/test_vectors.c rng.c rng.h $(AES_SOURCES) \
   $(AES_HEADERS)
 	$(CC) $(NISTFLAGS) -DDILITHIUM_MODE=2 -DDILITHIUM_USE_AES \
-	  -o $@ $< rng.c $(AES_SOURCES) -lcrypto
+	  -o $@ $< rng.c $(AES_SOURCES) $(LDFLAGS) -lcrypto
 
 test/test_vectors3aes: test/test_vectors.c rng.c rng.h $(AES_SOURCES) \
   $(AES_HEADERS)
 	$(CC) $(NISTFLAGS) -DDILITHIUM_MODE=3 -DDILITHIUM_USE_AES \
-	  -o $@ $< rng.c $(AES_SOURCES) -lcrypto
+	  -o $@ $< rng.c $(AES_SOURCES) $(LDFLAGS) -lcrypto
 
 test/test_vectors4aes: test/test_vectors.c rng.c rng.h $(AES_SOURCES) \
   $(AES_HEADERS)
 	$(CC) $(NISTFLAGS) -DDILITHIUM_MODE=4 -DDILITHIUM_USE_AES \
-	  -o $@ $< rng.c $(AES_SOURCES) -lcrypto
+	  -o $@ $< rng.c $(AES_SOURCES) $(LDFLAGS) -lcrypto
 
 test/test_speed2: test/test_speed.c test/speed_print.c test/speed_print.h \
   test/cpucycles.c test/cpucycles.h randombytes.c $(KECCAK_SOURCES) \
@@ -183,32 +207,32 @@ test/test_mul: test/test_mul.c randombytes.c $(KECCAK_SOURCES) $(KECCAK_HEADERS)
 PQCgenKAT_sign2: PQCgenKAT_sign.c rng.c rng.h $(KECCAK_SOURCES) \
   $(KECCAK_HEADERS)
 	$(CC) $(NISTFLAGS) -DDILITHIUM_MODE=2 \
-	  -o $@ $< rng.c $(KECCAK_SOURCES) -lcrypto
+	  -o $@ $< rng.c $(KECCAK_SOURCES) $(LDFLAGS) -lcrypto
 
 PQCgenKAT_sign3: PQCgenKAT_sign.c rng.c rng.h $(KECCAK_SOURCES) \
   $(KECCAK_HEADERS)
 	$(CC) $(NISTFLAGS) -DDILITHIUM_MODE=3 \
-	  -o $@ $< rng.c $(KECCAK_SOURCES) -lcrypto
+	  -o $@ $< rng.c $(KECCAK_SOURCES) $(LDFLAGS) -lcrypto
 
 PQCgenKAT_sign4: PQCgenKAT_sign.c rng.c rng.h $(KECCAK_SOURCES) \
   $(KECCAK_HEADERS)
 	$(CC) $(NISTFLAGS) -DDILITHIUM_MODE=4 \
-	  -o $@ $< rng.c $(KECCAK_SOURCES) -lcrypto
+	  -o $@ $< rng.c $(KECCAK_SOURCES) $(LDFLAGS) -lcrypto
 
 PQCgenKAT_sign2aes: PQCgenKAT_sign.c rng.c rng.h $(AES_SOURCES) \
   $(AES_HEADERS)
 	$(CC) $(NISTFLAGS) -DDILITHIUM_MODE=2 -DDILITHIUM_USE_AES \
-	  -o $@ $< rng.c $(AES_SOURCES) -lcrypto
+	  -o $@ $< rng.c $(AES_SOURCES) $(LDFLAGS) -lcrypto
 
 PQCgenKAT_sign3aes: PQCgenKAT_sign.c rng.c rng.h $(AES_SOURCES) \
   $(AES_HEADERS)
 	$(CC) $(NISTFLAGS) -DDILITHIUM_MODE=3 -DDILITHIUM_USE_AES \
-	  -o $@ $< rng.c $(AES_SOURCES) -lcrypto
+	  -o $@ $< rng.c $(AES_SOURCES) $(LDFLAGS) -lcrypto
 
 PQCgenKAT_sign4aes: PQCgenKAT_sign.c rng.c rng.h $(AES_SOURCES) \
   $(AES_HEADERS)
 	$(CC) $(NISTFLAGS) -DDILITHIUM_MODE=4 -DDILITHIUM_USE_AES \
-	  -o $@ $< rng.c $(AES_SOURCES) -lcrypto
+	  -o $@ $< rng.c $(AES_SOURCES) $(LDFLAGS) -lcrypto
 
 clean:
 	rm -f *~ test/*~

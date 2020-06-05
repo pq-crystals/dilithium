@@ -1,0 +1,123 @@
+# Use the latest 2.1 version of CircleCI pipeline process engine. See: https://circleci.com/docs/2.0/configuration-reference
+version: 2.1
+orbs:
+  win: circleci/windows@2.2.0
+
+# CircleCI doesn't handle large file sets properly for local builds
+# https://github.com/CircleCI-Public/circleci-cli/issues/281#issuecomment-472808051
+localCheckout: &localCheckout
+  run: |-
+    PROJECT_PATH=$(cd ${CIRCLE_WORKING_DIRECTORY}; pwd)
+    mkdir -p ${PROJECT_PATH}
+    cd /tmp/_circleci_local_build_repo
+    git ls-files -z | xargs -0 -s 2090860 tar -c | tar -x -C ${PROJECT_PATH}
+    cp -a /tmp/_circleci_local_build_repo/.git ${PROJECT_PATH}
+
+.unixjob: &unixjob
+  docker:
+    - image: ${IMAGE}
+  steps:
+    - checkout # change this from "checkout" to "*localCheckout" when running CircleCI locally
+    - run:
+        name: Build-and-Test
+        command: source ~/.bashrc && ./runtests.sh > test-results
+    - store_artifacts:
+        path: test-results
+
+# For now, consider this sample code only; need to fill with life for Win-Testing
+.winjob: &winjob
+    executor:
+      name: win/default
+    steps:
+        - checkout
+        - run:
+           name: Install ninja
+           command: $ProgressPreference="SilentlyContinue" ; Invoke-RestMethod -Uri https://github.com/ninja-build/ninja/releases/download/v1.10.0/ninja-win.zip -Method Get -OutFile ninja.zip; Expand-Archive ninja.zip
+           shell: powershell.exe
+        - run:
+            name: Install dependencies
+            command: |
+              scripts/git_no_checkin_in_last_day.sh || (
+              pip install pytest pytest-xdist
+              )
+            shell: bash.exe
+        - run:
+            name: Configure & Build
+            command: PATH=C:\Users\circleci\project\ninja;%PATH% & call C:\PROGRA~2\MICROS~2\2019\Community\VC\Auxiliary\Build\vcvars64.bat & mkdir build & cd build & cmake -GNinja ${CONFIGURE_ARGS} .. & ninja
+            shell: cmd.exe
+
+jobs:
+  alpine-amd64:
+    <<: *unixjob
+    environment:
+      IMAGE: openquantumsafe/ci-alpine-amd64:latest
+  centos-7-amd64:
+    <<: *unixjob
+    environment:
+      IMAGE: openquantumsafe/ci-centos-7-amd64:latest
+  centos-8-amd64:
+    <<: *unixjob
+    environment:
+      IMAGE: openquantumsafe/ci-centos-8-amd64:latest
+  debian-buster-amd64:
+    <<: *unixjob
+    environment:
+      IMAGE: openquantumsafe/ci-debian-buster-amd64:latest
+  ubuntu-bionic-x86_64-gcc8:
+    <<: *unixjob
+    environment:
+      IMAGE: openquantumsafe/ci-ubuntu-bionic-x86_64:latest
+      CC: gcc-8
+  ubuntu-bionic-x86_64-clang9:
+    <<: *unixjob
+    environment:
+      IMAGE: openquantumsafe/ci-ubuntu-bionic-x86_64:latest
+      CC: clang-9
+  ubuntu-bionic-x86_64-gcc7-shared:
+    <<: *unixjob
+    environment:
+      IMAGE: openquantumsafe/ci-ubuntu-bionic-x86_64:latest
+      CC: gcc-7
+
+
+  macOS:
+    macos:
+        xcode: "11.3.0"
+    steps:
+        - checkout
+        - run:
+            name: Install dependencies
+            command: |
+              ls -laR /usr/local/Cellar/openssl@1.1 
+              #brew update && brew install openssl@1.1 && echo 'export PATH="/usr/local/opt/openssl@1.1/bin:$PATH"' >> ~/.bash_profile && openssl version 
+        - run:
+            name: Build-and-Test
+            command: ./runtests.sh > test-results
+        - store_artifacts:
+            path: test-results
+
+
+
+workflows:
+  version: 2
+  build:
+    jobs:
+      # Only MIB has Windows credits
+      #- win-static:
+      #    filters:
+      #      branches:
+      #        only:
+      #          - /mb-.*/
+      #- win-shared:
+      #    filters:
+      #      branches:
+      #        only:
+      #          - /mb-.*/
+      - alpine-amd64
+      - centos-7-amd64
+      - centos-8-amd64
+      - debian-buster-amd64
+      - macOS
+      - ubuntu-bionic-x86_64-gcc8
+      - ubuntu-bionic-x86_64-clang9
+      - ubuntu-bionic-x86_64-gcc7-shared
