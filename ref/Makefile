@@ -11,7 +11,7 @@ KECCAK_HEADERS = $(HEADERS) fips202.h
 AES_SOURCES = $(SOURCES) fips202.c aes256ctr.c symmetric-aes.c
 AES_HEADERS = $(HEADERS) fips202.h aes256ctr.h
 
-# a poor man's alternative to cmake...dd
+# a poor man's alternative to cmake
 UNAME_S := $(shell uname -s)
 ifeq ($(UNAME_S),Darwin)
     CFLAGS += -I/usr/local/Cellar/openssl@1.1/1.1.1d/include
