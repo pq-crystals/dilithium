@@ -37,9 +37,7 @@ localCheckout: &localCheckout
         - run:
             name: Install dependencies
             command: |
-              scripts/git_no_checkin_in_last_day.sh || (
               pip install pytest pytest-xdist
-              )
             shell: bash.exe
         - run:
             name: Configure & Build
@@ -88,8 +86,9 @@ jobs:
         - run:
             name: Install dependencies
             command: |
-              ls -laR /usr/local/Cellar/openssl@1.1 
-              #brew update && brew install openssl@1.1 && echo 'export PATH="/usr/local/opt/openssl@1.1/bin:$PATH"' >> ~/.bash_profile && openssl version 
+              ls -la /usr/local/Cellar/openssl@1.1 
+              # OpenSSL 1.1 should already be installed -- if not:
+              # brew update && brew install openssl@1.1 && echo 'export PATH="/usr/local/Cellar/openssl@1.1/bin:$PATH"' >> ~/.bash_profile && openssl version 
         - run:
             name: Build-and-Test
             command: ./runtests.sh > test-results
