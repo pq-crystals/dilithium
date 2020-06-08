@@ -22,3 +22,5 @@ mkdir build-ninja && cd build-ninja && cmake -DBUILD_SHARED_LIBS=ON -GNinja .. &
 the whole Dilithium software family gets built in a highly portable as well as an avx2-optimized version, tested and delivered in a shared library.
 
 For example, by running `./avx2/test_speed4aes_avx2` in the newly created 'build-ninja' folder, performance testing of `Dilithium4-AES` in the optimized AVX2 variant is executed.
+
+The resultant library might also be installed using the `install` target.

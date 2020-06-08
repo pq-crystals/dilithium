@@ -22,18 +22,14 @@ foreach(X RANGE 2 4)
    target_link_libraries(test_dil${X}_ref PUBLIC dilithium)
    #add_test(test_dil${X}_ref test_dil${X}_ref)
    set(_REF_OBJS ${_REF_OBJS} $<TARGET_OBJECTS:dil${X}lib_ref>)
-endforeach()
 
-# Plain speed
-foreach(X RANGE 2 4)
+   # Plain speed
    add_executable(test_speed${X}_ref ${SPEED_SRCS})
    target_compile_options(test_speed${X}_ref PUBLIC -DDILITHIUM_MODE=${X})
    target_link_libraries(test_speed${X}_ref dilithium)
    #add_test(test_speed${X}_ref test_speed${X}_ref)
-endforeach()
 
-# Plain test vectors
-foreach(X RANGE 2 4)
+   # Plain test vectors
    add_executable(test_vectors${X}_ref ${VECTOR_SRCS})
    target_compile_options(test_vectors${X}_ref PUBLIC -DDILITHIUM_MODE=${X})
    target_link_libraries(test_vectors${X}_ref PRIVATE dilithium ${OPENSSL_CRYPTO_LIBRARY})
@@ -42,19 +38,14 @@ foreach(X RANGE 2 4)
    else()
       add_test(NAME test_vectors${X}_ref COMMAND sh -c "$<TARGET_FILE:test_vectors${X}_ref> > tvecs${X}")
    endif()
-endforeach()
 
-# Plain PQCKATs
-foreach(X RANGE 2 4)
+   # Plain PQCKATs
    add_executable(PQCgenKAT_sign${X}_ref ${PQCKAT_SRCS})
    target_compile_options(PQCgenKAT_sign${X}_ref PUBLIC -DDILITHIUM_MODE=${X})
    target_link_libraries(PQCgenKAT_sign${X}_ref PRIVATE dilithium ${OPENSSL_CRYPTO_LIBRARY})
    add_test(PQCgenKAT_sign${X}_ref PQCgenKAT_sign${X}_ref)
-endforeach()
 
-
-# AES tests
-foreach(X RANGE 2 4)
+   # AES tests
    add_library(dil${X}aeslib_ref OBJECT ${AES_SRCS})
    target_compile_options(dil${X}aeslib_ref PUBLIC -DDILITHIUM_MODE=${X} -DDILITHIUM_USE_AES)
    add_executable(test_dil${X}aes_ref ${TEST_SRCS})
@@ -62,18 +53,14 @@ foreach(X RANGE 2 4)
    target_link_libraries(test_dil${X}aes_ref dilithium)
    #add_test(test_dil${X}aes_ref test_dil${X}aes_ref)
    set(_REF_OBJS ${_REF_OBJS} $<TARGET_OBJECTS:dil${X}aeslib_ref>)
-endforeach()
 
-# AES speed
-foreach(X RANGE 2 4)
+   # AES speed
    add_executable(test_speed${X}aes_ref ${SPEED_SRCS})
    target_compile_options(test_speed${X}aes_ref PUBLIC -DDILITHIUM_MODE=${X} -DDILITHIUM_USE_AES)
    target_link_libraries(test_speed${X}aes_ref dilithium)
    #add_test(test_speed${X}aes_ref test_speed${X}aes_ref)
-endforeach()
 
-# AES test vectors
-foreach(X RANGE 2 4)
+   # AES test vectors
    add_executable(test_vectors${X}aes_ref ${VECTOR_SRCS})
    target_compile_options(test_vectors${X}aes_ref PUBLIC -DDILITHIUM_MODE=${X} -DDILITHIUM_USE_AES)
    target_link_libraries(test_vectors${X}aes_ref PRIVATE dilithium ${OPENSSL_CRYPTO_LIBRARY})
@@ -82,10 +69,8 @@ foreach(X RANGE 2 4)
    else()
       add_test(NAME test_vectors${X}aes_ref COMMAND sh -c "$<TARGET_FILE:test_vectors${X}aes_ref> > tvecs${X}aes")
    endif()
-endforeach()
 
-# AES PQCKATs
-foreach(X RANGE 2 4)
+   # AES PQCKATs
    add_executable(PQCgenKAT_sign${X}aes_ref ${PQCKAT_SRCS})
    target_compile_options(PQCgenKAT_sign${X}aes_ref PUBLIC -DDILITHIUM_MODE=${X} -DDILITHIUM_USE_AES)
    target_link_libraries(PQCgenKAT_sign${X}aes_ref PRIVATE dilithium ${OPENSSL_CRYPTO_LIBRARY})
