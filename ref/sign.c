@@ -151,8 +151,7 @@ int crypto_sign_signature(unsigned char *sig,
   uint16_t nonce = 0;
   poly c, chat;
   polyvecl mat[K], s1, y, z;
-  polyveck t0, s2, w1, w0;
-  polyveck h, cs2, ct0;
+  polyveck t0, s2, w1, w0, h;
   keccak_state state;
 
   rho = seedbuf;
@@ -215,24 +214,24 @@ rej:
   /* Check that subtracting cs2 does not change high bits of w and low bits
    * do not reveal secret information */
   for(i = 0; i < K; ++i) {
-    poly_pointwise_montgomery(&cs2.vec[i], &chat, &s2.vec[i]);
-    poly_invntt_tomont(&cs2.vec[i]);
+    poly_pointwise_montgomery(&h.vec[i], &chat, &s2.vec[i]);
+    poly_invntt_tomont(&h.vec[i]);
   }
-  polyveck_sub(&w0, &w0, &cs2);
+  polyveck_sub(&w0, &w0, &h);
   polyveck_freeze(&w0);
   if(polyveck_chknorm(&w0, GAMMA2 - BETA))
     goto rej;
 
   /* Compute hints for w1 */
   for(i = 0; i < K; ++i) {
-    poly_pointwise_montgomery(&ct0.vec[i], &chat, &t0.vec[i]);
-    poly_invntt_tomont(&ct0.vec[i]);
+    poly_pointwise_montgomery(&h.vec[i], &chat, &t0.vec[i]);
+    poly_invntt_tomont(&h.vec[i]);
   }
-  polyveck_csubq(&ct0);
-  if(polyveck_chknorm(&ct0, GAMMA2))
+  polyveck_csubq(&h);
+  if(polyveck_chknorm(&h, GAMMA2))
     goto rej;
 
-  polyveck_add(&w0, &w0, &ct0);
+  polyveck_add(&w0, &w0, &h);
   polyveck_csubq(&w0);
   n = polyveck_make_hint(&h, &w0, &w1);
   if(n > OMEGA)
