@@ -1,6 +1,6 @@
 CC ?= /usr/bin/cc
 CFLAGS += -Wall -Wextra -Wpedantic -Wmissing-prototypes -Wredundant-decls \
-   -Wshadow -Wpointer-arith -O3
+  -Wshadow -Wpointer-arith -O3
 NISTFLAGS += -Wno-unused-result -O3
 SOURCES = sign.c packing.c polyvec.c poly.c ntt.c reduce.c rounding.c
 HEADERS = config.h params.h api.h sign.h packing.h polyvec.h poly.h ntt.h \
@@ -10,7 +10,7 @@ KECCAK_HEADERS = $(HEADERS) fips202.h
 AES_SOURCES = $(SOURCES) fips202.c aes256ctr.c symmetric-aes.c
 AES_HEADERS = $(HEADERS) fips202.h aes256ctr.h
 
-.PHONY: all shared clean
+.PHONY: all speed shared clean
 
 all: \
   test/test_dilithium2 \
@@ -214,7 +214,7 @@ PQCgenKAT_sign4aes: PQCgenKAT_sign.c rng.c rng.h $(AES_SOURCES) \
 	  -o $@ $< rng.c $(AES_SOURCES) $(LDFLAGS) -lcrypto
 
 clean:
-	rm -f *~ test/*~ *.gcno *.gcda
+	rm -f *~ test/*~ *.gcno *.gcda *.lcov
 	rm -f libpqcrystals_dilithium2_ref.so
 	rm -f libpqcrystals_dilithium3_ref.so
 	rm -f libpqcrystals_dilithium4_ref.so
