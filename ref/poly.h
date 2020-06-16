@@ -6,7 +6,7 @@
 
 typedef struct {
   uint32_t coeffs[N];
-} poly __attribute__((aligned(32)));
+} poly;
 
 #define poly_reduce DILITHIUM_NAMESPACE(_poly_reduce)
 void poly_reduce(poly *a);
