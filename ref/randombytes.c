@@ -1,4 +1,5 @@
 #include <stddef.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include "randombytes.h"
 
@@ -18,7 +19,7 @@
 #endif
 
 #ifdef _WIN32
-void randombytes(unsigned char *out, size_t outlen) {
+void randombytes(uint8_t *out, size_t outlen) {
   HCRYPTPROV ctx;
   DWORD len;
 
@@ -38,14 +39,14 @@ void randombytes(unsigned char *out, size_t outlen) {
     abort();
 }
 #elif defined(__linux__) && defined(SYS_getrandom)
-void randombytes(unsigned char *out, size_t outlen) {
+void randombytes(uint8_t *out, size_t outlen) {
   ssize_t ret;
 
   while(outlen > 0) {
     ret = syscall(SYS_getrandom, out, outlen, 0);
     if(ret == -1 && errno == EINTR)
       continue;
-    else if(ret < 0)
+    else if(ret == -1)
       abort();
 
     out += ret;
@@ -53,9 +54,8 @@ void randombytes(unsigned char *out, size_t outlen) {
   }
 }
 #else
-void randombytes(unsigned char *out, size_t outlen) {
+void randombytes(uint8_t *out, size_t outlen) {
   static int fd = -1;
-  size_t len;
   ssize_t ret;
 
   while(fd == -1) {
@@ -67,11 +67,10 @@ void randombytes(unsigned char *out, size_t outlen) {
   }
 
   while(outlen > 0) {
-    len = (outlen > 1048576) ? 1048576 : outlen;
-    ret = read(fd, out, len);
+    ret = read(fd, out, outlen);
     if(ret == -1 && errno == EINTR)
       continue;
-    else if(ret < 0)
+    else if(ret == -1)
       abort();
 
     out += ret;

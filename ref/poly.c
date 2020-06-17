@@ -366,7 +366,7 @@ void poly_uniform(poly *a,
 {
   unsigned int i, ctr, off;
   unsigned int buflen = POLY_UNIFORM_NBLOCKS*STREAM128_BLOCKBYTES;
-  uint8_t buf[buflen + 2];
+  uint8_t buf[POLY_UNIFORM_NBLOCKS*STREAM128_BLOCKBYTES + 2];
   stream128_state state;
 
   stream128_init(&state, seed, nonce);
@@ -450,7 +450,7 @@ void poly_uniform_eta(poly *a,
 {
   unsigned int ctr;
   unsigned int buflen = POLY_UNIFORM_ETA_NBLOCKS*STREAM128_BLOCKBYTES;
-  uint8_t buf[buflen];
+  uint8_t buf[POLY_UNIFORM_ETA_NBLOCKS*STREAM128_BLOCKBYTES];
   stream128_state state;
 
   stream128_init(&state, seed, nonce);
@@ -534,7 +534,7 @@ void poly_uniform_gamma1m1(poly *a,
 {
   unsigned int i, ctr, off;
   unsigned int buflen = POLY_UNIFORM_GAMMA1M1_NBLOCKS*STREAM256_BLOCKBYTES;
-  uint8_t buf[buflen + 4];
+  uint8_t buf[POLY_UNIFORM_GAMMA1M1_NBLOCKS*STREAM256_BLOCKBYTES + 4];
   stream256_state state;
 
   stream256_init(&state, seed, nonce);

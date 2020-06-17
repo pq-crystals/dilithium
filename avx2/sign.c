@@ -73,14 +73,14 @@ void challenge(poly *c,
 *
 * Description: Generates public and private key.
 *
-* Arguments:   - unsigned char *pk: pointer to output public key (allocated
-*                                   array of CRYPTO_PUBLICKEYBYTES bytes)
-*              - unsigned char *sk: pointer to output private key (allocated
-*                                   array of CRYPTO_SECRETKEYBYTES bytes)
+* Arguments:   - uint8_t *pk: pointer to output public key (allocated
+*                             array of CRYPTO_PUBLICKEYBYTES bytes)
+*              - uint8_t *sk: pointer to output private key (allocated
+*                             array of CRYPTO_SECRETKEYBYTES bytes)
 *
 * Returns 0 (success)
 **************************************************/
-int crypto_sign_keypair(unsigned char *pk, unsigned char *sk) {
+int crypto_sign_keypair(uint8_t *pk, uint8_t *sk) {
   unsigned int i;
   __attribute__((aligned(32)))
   uint8_t seedbuf[3*SEEDBYTES];
@@ -171,22 +171,21 @@ int crypto_sign_keypair(unsigned char *pk, unsigned char *sk) {
 *
 * Description: Computes signature.
 *
-* Arguments:   - unsigned char *sig:         pointer to output signature (of length CRYPTO_BYTES)
-*              - unsigned long long *siglen: pointer to output length of signed message
-*              - unsigned char *m:           pointer to message to be signed
-*              - unsigned long long mlen:    length of message
-*              - unsigned char *sk:          pointer to bit-packed secret key
+* Arguments:   - uint8_t *sig: pointer to output signature (of length CRYPTO_BYTES)
+*              - size_t *siglen: pointer to output length of signed message
+*              - uint8_t *m: pointer to message to be signed
+*              - size_t mlen: length of message
+*              - uint8_t *sk: pointer to bit-packed secret key
 *
 * Returns 0 (success)
 **************************************************/
-int crypto_sign_signature(unsigned char *sig,
-                          unsigned long long *siglen,
-                          const unsigned char *m,
-                          unsigned long long mlen,
-                          const unsigned char *sk)
+int crypto_sign_signature(uint8_t *sig,
+                          size_t *siglen,
+                          const uint8_t *m,
+                          size_t mlen,
+                          const uint8_t *sk)
 {
-  unsigned long long i;
-  unsigned int n;
+  unsigned int i, n;
   __attribute__((aligned(32)))
   uint8_t seedbuf[2*SEEDBYTES + 3*CRHBYTES];
   uint8_t *rho, *tr, *key, *mu, *rhoprime;
@@ -321,24 +320,24 @@ rej:
 *
 * Description: Compute signed message.
 *
-* Arguments:   - unsigned char *sm: pointer to output signed message (allocated
-*                                   array with CRYPTO_BYTES + mlen bytes),
-*                                   can be equal to m
-*              - unsigned long long *smlen: pointer to output length of signed
-*                                           message
-*              - const unsigned char *m: pointer to message to be signed
-*              - unsigned long long mlen: length of message
-*              - const unsigned char *sk: pointer to bit-packed secret key
+* Arguments:   - uint8_t *sm: pointer to output signed message (allocated
+*                             array with CRYPTO_BYTES + mlen bytes),
+*                             can be equal to m
+*              - size_t *smlen: pointer to output length of signed
+*                               message
+*              - const uint8_t *m: pointer to message to be signed
+*              - size_t mlen: length of message
+*              - const uint8_t *sk: pointer to bit-packed secret key
 *
 * Returns 0 (success)
 **************************************************/
-int crypto_sign(unsigned char *sm,
-                unsigned long long *smlen,
-                const unsigned char *m,
-                unsigned long long mlen,
-                const unsigned char *sk)
+int crypto_sign(uint8_t *sm,
+                size_t *smlen,
+                const uint8_t *m,
+                size_t mlen,
+                const uint8_t *sk)
 {
-  unsigned long long i;
+  size_t i;
 
   for(i = 0; i < mlen; ++i)
     sm[CRYPTO_BYTES + mlen - 1 - i] = m[mlen - 1 - i];
@@ -352,21 +351,21 @@ int crypto_sign(unsigned char *sm,
 *
 * Description: Verifies signature.
 *
-* Arguments:   - unsigned char *m: pointer to input signature
-*              - unsigned long long siglen: length of signature
-*              - const unsigned char *m: pointer to message
-*              - unsigned long long mlen: length of message
-*              - const unsigned char *pk: pointer to bit-packed public key
+* Arguments:   - uint8_t *m: pointer to input signature
+*              - size_t siglen: length of signature
+*              - const uint8_t *m: pointer to message
+*              - size_t mlen: length of message
+*              - const uint8_t *pk: pointer to bit-packed public key
 *
 * Returns 0 if signature could be verified correctly and -1 otherwise
 **************************************************/
-int crypto_sign_verify(const unsigned char *sig,
-                       unsigned long long siglen,
-                       const unsigned char *m,
-                       unsigned long long mlen,
-                       const unsigned char *pk)
+int crypto_sign_verify(const uint8_t *sig,
+                       size_t siglen,
+                       const uint8_t *m,
+                       size_t mlen,
+                       const uint8_t *pk)
 {
-  unsigned long long i;
+  unsigned int i;
   __attribute__((aligned(32)))
   uint8_t rho[SEEDBYTES];
   __attribute__((aligned(32)))
@@ -428,22 +427,22 @@ int crypto_sign_verify(const unsigned char *sig,
 *
 * Description: Verify signed message.
 *
-* Arguments:   - unsigned char *m: pointer to output message (allocated
-*                                  array with smlen bytes), can be equal to sm
-*              - unsigned long long *mlen: pointer to output length of message
-*              - const unsigned char *sm: pointer to signed message
-*              - unsigned long long smlen: length of signed message
-*              - const unsigned char *pk: pointer to bit-packed public key
+* Arguments:   - uint8_t *m: pointer to output message (allocated
+*                            array with smlen bytes), can be equal to sm
+*              - size_t *mlen: pointer to output length of message
+*              - const uint8_t *sm: pointer to signed message
+*              - size_t smlen: length of signed message
+*              - const uint8_t *pk: pointer to bit-packed public key
 *
 * Returns 0 if signed message could be verified correctly and -1 otherwise
 **************************************************/
-int crypto_sign_open(unsigned char *m,
-                     unsigned long long *mlen,
-                     const unsigned char *sm,
-                     unsigned long long smlen,
-                     const unsigned char *pk)
+int crypto_sign_open(uint8_t *m,
+                     size_t *mlen,
+                     const uint8_t *sm,
+                     size_t smlen,
+                     const uint8_t *pk)
 {
-  unsigned long long i;
+  size_t i;
 
   if(smlen < CRYPTO_BYTES)
     goto badsig;
@@ -461,7 +460,7 @@ int crypto_sign_open(unsigned char *m,
 
 badsig:
   /* Signature verification failed */
-  *mlen = (unsigned long long) -1;
+  *mlen = -1;
   for(i = 0; i < smlen; ++i)
     m[i] = 0;
 

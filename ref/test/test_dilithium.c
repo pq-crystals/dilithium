@@ -1,4 +1,5 @@
 #include <stddef.h>
+#include <stdint.h>
 #include <stdio.h>
 #include "../randombytes.h"
 #include "../sign.h"
@@ -10,12 +11,12 @@ int main(void)
 {
   unsigned int i, j;
   int ret;
-  unsigned long long mlen, smlen;
-  unsigned char m[MLEN];
-  unsigned char sm[MLEN + CRYPTO_BYTES];
-  unsigned char m2[MLEN + CRYPTO_BYTES];
-  unsigned char pk[CRYPTO_PUBLICKEYBYTES];
-  unsigned char sk[CRYPTO_SECRETKEYBYTES];
+  size_t mlen, smlen;
+  uint8_t m[MLEN];
+  uint8_t sm[MLEN + CRYPTO_BYTES];
+  uint8_t m2[MLEN + CRYPTO_BYTES];
+  uint8_t pk[CRYPTO_PUBLICKEYBYTES];
+  uint8_t sk[CRYPTO_SECRETKEYBYTES];
 
   for(i = 0; i < NTESTS; ++i) {
     randombytes(m, MLEN);
@@ -41,7 +42,7 @@ int main(void)
       }
     }
 
-    randombytes((unsigned char *)&j, sizeof(j));
+    randombytes((uint8_t *)&j, sizeof(j));
     do {
       randombytes(m2, 1);
     } while(!m2[0]);

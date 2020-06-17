@@ -135,7 +135,8 @@ unsigned int make_hint_avx(uint32_t * restrict h, const uint32_t * restrict a0, 
 **************************************************/
 void use_hint_avx(uint32_t * restrict b, const uint32_t * restrict a, const uint32_t * restrict hint) {
   unsigned int i;
-  uint32_t a0[N] __attribute__((aligned(32)));
+  __attribute__((aligned(32)))
+  uint32_t a0[N];
   __m256i f,g,h;
   const __m256i q = _mm256_load_si256((__m256i *)&qdata[_8XQ]);;
   const __m256i mask = _mm256_set1_epi32(15);

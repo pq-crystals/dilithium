@@ -5,7 +5,8 @@
 //  Created by Bassham, Lawrence E (Fed) on 8/29/17.
 //  Copyright © 2017 Bassham, Lawrence E (Fed). All rights reserved.
 //
-#include <stdio.h>
+#include <stddef.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
@@ -30,14 +31,14 @@ main()
 {
     char                fn_req[32], fn_rsp[32];
     FILE                *fp_req, *fp_rsp;
-    unsigned char       seed[48];
-    unsigned char       msg[3300];
-    unsigned char       entropy_input[48];
-    unsigned char       *m, *sm, *m1;
-    unsigned long long  mlen, smlen, mlen1;
+    uint8_t             seed[48];
+    uint8_t             msg[3300];
+    uint8_t             entropy_input[48];
+    uint8_t             *m, *sm, *m1;
+    size_t              mlen, smlen, mlen1;
     int                 count;
     int                 done;
-    unsigned char       pk[CRYPTO_PUBLICKEYBYTES], sk[CRYPTO_SECRETKEYBYTES];
+    uint8_t             pk[CRYPTO_PUBLICKEYBYTES], sk[CRYPTO_SECRETKEYBYTES];
     int                 ret_val;
     
     // Create the REQUEST file
@@ -61,7 +62,7 @@ main()
         randombytes(seed, 48);
         fprintBstr(fp_req, "seed = ", seed, 48);
         mlen = 33*(i+1);
-        fprintf(fp_req, "mlen = %llu\n", mlen);
+        fprintf(fp_req, "mlen = %lu\n", mlen);
         randombytes(msg, mlen);
         fprintBstr(fp_req, "msg = ", msg, mlen);
         fprintf(fp_req, "pk =\n");
@@ -97,16 +98,16 @@ main()
         randombytes_init(seed, NULL, 256);
         
         if ( FindMarker(fp_req, "mlen = ") )
-            fscanf(fp_req, "%llu", &mlen);
+            fscanf(fp_req, "%lu", &mlen);
         else {
             printf("ERROR: unable to read 'mlen' from <%s>\n", fn_req);
             return KAT_DATA_ERROR;
         }
-        fprintf(fp_rsp, "mlen = %llu\n", mlen);
+        fprintf(fp_rsp, "mlen = %lu\n", mlen);
         
-        m = (unsigned char *)calloc(mlen, sizeof(unsigned char));
-        m1 = (unsigned char *)calloc(mlen+CRYPTO_BYTES, sizeof(unsigned char));
-        sm = (unsigned char *)calloc(mlen+CRYPTO_BYTES, sizeof(unsigned char));
+        m = (uint8_t *)calloc(mlen, sizeof(uint8_t));
+        m1 = (uint8_t *)calloc(mlen+CRYPTO_BYTES, sizeof(uint8_t));
+        sm = (uint8_t *)calloc(mlen+CRYPTO_BYTES, sizeof(uint8_t));
         
         if ( !ReadHex(fp_req, m, (int)mlen, "msg = ") ) {
             printf("ERROR: unable to read 'msg' from <%s>\n", fn_req);
@@ -126,7 +127,7 @@ main()
             printf("crypto_sign returned <%d>\n", ret_val);
             return KAT_CRYPTO_FAILURE;
         }
-        fprintf(fp_rsp, "smlen = %llu\n", smlen);
+        fprintf(fp_rsp, "smlen = %lu\n", smlen);
         fprintBstr(fp_rsp, "sm = ", sm, smlen);
         fprintf(fp_rsp, "\n");
         
@@ -136,7 +137,7 @@ main()
         }
         
         if ( mlen != mlen1 ) {
-            printf("crypto_sign_open returned bad 'mlen': Got <%llu>, expected <%llu>\n", mlen1, mlen);
+            printf("crypto_sign_open returned bad 'mlen': Got <%lu>, expected <%lu>\n", mlen1, mlen);
             return KAT_CRYPTO_FAILURE;
         }
         

@@ -13,10 +13,10 @@ uint64_t t[NTESTS];
 int main(void)
 {
   unsigned int i;
-  unsigned long long smlen;
-  unsigned char pk[CRYPTO_PUBLICKEYBYTES];
-  unsigned char sk[CRYPTO_SECRETKEYBYTES];
-  unsigned char sm[CRYPTO_BYTES + CRHBYTES];
+  size_t smlen;
+  uint8_t pk[CRYPTO_PUBLICKEYBYTES];
+  uint8_t sk[CRYPTO_SECRETKEYBYTES];
+  uint8_t sm[CRYPTO_BYTES + CRHBYTES];
   __attribute__((aligned(32)))
   uint8_t seed[CRHBYTES];
   polyvecl mat[K];

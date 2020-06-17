@@ -1,6 +1,8 @@
 #ifndef API_H
 #define API_H
 
+#include <stddef.h>
+#include <stdint.h>
 #include "config.h"
 
 #if DILITHIUM_MODE == 1
@@ -50,16 +52,16 @@
 #endif
 
 #define crypto_sign_keypair DILITHIUM_NAMESPACE(_keypair)
-int crypto_sign_keypair(unsigned char *pk, unsigned char *sk);
+int crypto_sign_keypair(uint8_t *pk, uint8_t *sk);
 
 #define crypto_sign DILITHIUM_NAMESPACE()
-int crypto_sign(unsigned char *sm, unsigned long long *smlen,
-                const unsigned char *m, unsigned long long mlen,
-                const unsigned char *sk);
+int crypto_sign(uint8_t *sm, size_t *smlen,
+                const uint8_t *m, size_t mlen,
+                const uint8_t *sk);
 
 #define crypto_sign_open DILITHIUM_NAMESPACE(_open)
-int crypto_sign_open(unsigned char *m, unsigned long long *mlen,
-                     const unsigned char *sm, unsigned long long smlen,
-                     const unsigned char *pk);
+int crypto_sign_open(uint8_t *m, size_t *mlen,
+                     const uint8_t *sm, size_t smlen,
+                     const uint8_t *pk);
 
 #endif
