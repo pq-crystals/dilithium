@@ -3,65 +3,147 @@
 
 #include <stddef.h>
 #include <stdint.h>
-#include "config.h"
 
-#if DILITHIUM_MODE == 1
-#define CRYPTO_PUBLICKEYBYTES 896
-#define CRYPTO_SECRETKEYBYTES 2096
-#define CRYPTO_BYTES 1387
+#define libpqcrystals_dilithium2_ref_PUBLICKEYBYTES 1184
+#define libpqcrystals_dilithium2_ref_SECRETKEYBYTES 2800
+#define libpqcrystals_dilithium2_ref_BYTES 2044
 
-#ifndef DILITHIUM_USE_AES
-#define CRYPTO_ALGNAME "Dilithium1"
-#else
-#define CRYPTO_ALGNAME "Dilithium1-AES"
-#endif
+int libpqcrystals_dilithium2_ref_keypair(uint8_t *pk, uint8_t *sk);
 
-#elif DILITHIUM_MODE == 2
-#define CRYPTO_PUBLICKEYBYTES 1184
-#define CRYPTO_SECRETKEYBYTES 2800
-#define CRYPTO_BYTES 2044
+int libpqcrystals_dilithium2_ref_signature(uint8_t *sig, size_t *siglen,
+                                           const uint8_t *m, size_t mlen,
+                                           const uint8_t *sk);
 
-#ifndef DILITHIUM_USE_AES
-#define CRYPTO_ALGNAME "Dilithium2"
-#else
-#define CRYPTO_ALGNAME "Dilithium2-AES"
-#endif
+int libpqcrystals_dilithium2_ref(uint8_t *sm, size_t *smlen,
+                                 const uint8_t *m, size_t mlen,
+                                 const uint8_t *sk);
 
-#elif DILITHIUM_MODE == 3
-#define CRYPTO_PUBLICKEYBYTES 1472
-#define CRYPTO_SECRETKEYBYTES 3504
-#define CRYPTO_BYTES 2701
+int libpqcrystals_dilithium2_ref_verify(const uint8_t *sig, size_t siglen,
+                                        const uint8_t *m, size_t mlen,
+                                        const uint8_t *pk);
 
-#ifndef DILITHIUM_USE_AES
-#define CRYPTO_ALGNAME "Dilithium3"
-#else
-#define CRYPTO_ALGNAME "Dilithium3-AES"
-#endif
+int libpqcrystals_dilithium2_ref_open(uint8_t *m, size_t *mlen,
+                                      const uint8_t *sm, size_t smlen,
+                                      const uint8_t *pk);
 
-#elif DILITHIUM_MODE == 4
-#define CRYPTO_PUBLICKEYBYTES 1760
-#define CRYPTO_SECRETKEYBYTES 3856
-#define CRYPTO_BYTES 3366
+#define libpqcrystals_dilithium2aes_ref_PUBLICKEYBYTES \
+        libpqcrystals_dilithium2_ref_PUBLICKEYBYTES
+#define libpqcrystals_dilithium2aes_ref_SECRETKEYBYTES \
+        libpqcrystals_dilithium2_ref_SECRETKEYBYTES
+#define libpqcrystals_dilithium2aes_ref_BYTES \
+        libpqcrystals_dilithium2_ref_BYTES
 
-#ifndef DILITHIUM_USE_AES
-#define CRYPTO_ALGNAME "Dilithium4"
-#else
-#define CRYPTO_ALGNAME "Dilithium4-AES"
-#endif
+int libpqcrystals_dilithium2aes_ref_keypair(uint8_t *pk, uint8_t *sk);
 
-#endif
+int libpqcrystals_dilithium2aes_ref_signature(uint8_t *sig, size_t *siglen,
+                                           const uint8_t *m, size_t mlen,
+                                           const uint8_t *sk);
 
-#define crypto_sign_keypair DILITHIUM_NAMESPACE(_keypair)
-int crypto_sign_keypair(uint8_t *pk, uint8_t *sk);
+int libpqcrystals_dilithium2aes_ref(uint8_t *sm, size_t *smlen,
+                                 const uint8_t *m, size_t mlen,
+                                 const uint8_t *sk);
 
-#define crypto_sign DILITHIUM_NAMESPACE()
-int crypto_sign(uint8_t *sm, size_t *smlen,
-                const uint8_t *m, size_t mlen,
-                const uint8_t *sk);
+int libpqcrystals_dilithium2aes_ref_verify(const uint8_t *sig, size_t siglen,
+                                        const uint8_t *m, size_t mlen,
+                                        const uint8_t *pk);
 
-#define crypto_sign_open DILITHIUM_NAMESPACE(_open)
-int crypto_sign_open(uint8_t *m, size_t *mlen,
-                     const uint8_t *sm, size_t smlen,
-                     const uint8_t *pk);
+int libpqcrystals_dilithium2aes_ref_open(uint8_t *m, size_t *mlen,
+                                      const uint8_t *sm, size_t smlen,
+                                      const uint8_t *pk);
+
+#define libpqcrystals_dilithium3_ref_PUBLICKEYBYTES 1472
+#define libpqcrystals_dilithium3_ref_SECRETKEYBYTES 3504
+#define libpqcrystals_dilithium3_ref_BYTES 2701
+
+int libpqcrystals_dilithium3_ref_keypair(uint8_t *pk, uint8_t *sk);
+
+int libpqcrystals_dilithium3_ref_signature(uint8_t *sig, size_t *siglen,
+                                           const uint8_t *m, size_t mlen,
+                                           const uint8_t *sk);
+
+int libpqcrystals_dilithium3_ref(uint8_t *sm, size_t *smlen,
+                                 const uint8_t *m, size_t mlen,
+                                 const uint8_t *sk);
+
+int libpqcrystals_dilithium3_ref_verify(const uint8_t *sig, size_t siglen,
+                                        const uint8_t *m, size_t mlen,
+                                        const uint8_t *pk);
+
+int libpqcrystals_dilithium3_ref_open(uint8_t *m, size_t *mlen,
+                                      const uint8_t *sm, size_t smlen,
+                                      const uint8_t *pk);
+
+#define libpqcrystals_dilithium3aes_ref_PUBLICKEYBYTES \
+        libpqcrystals_dilithium3_ref_PUBLICKEYBYTES
+#define libpqcrystals_dilithium3aes_ref_SECRETKEYBYTES \
+        libpqcrystals_dilithium3_ref_SECRETKEYBYTES
+#define libpqcrystals_dilithium3aes_ref_BYTES \
+        libpqcrystals_dilithium3_ref_BYTES
+
+int libpqcrystals_dilithium3aes_ref_keypair(uint8_t *pk, uint8_t *sk);
+
+int libpqcrystals_dilithium3aes_ref_signature(uint8_t *sig, size_t *siglen,
+                                              const uint8_t *m, size_t mlen,
+                                              const uint8_t *sk);
+
+int libpqcrystals_dilithium3aes_ref(uint8_t *sm, size_t *smlen,
+                                    const uint8_t *m, size_t mlen,
+                                    const uint8_t *sk);
+
+int libpqcrystals_dilithium3aes_ref_verify(const uint8_t *sig, size_t siglen,
+                                           const uint8_t *m, size_t mlen,
+                                           const uint8_t *pk);
+
+int libpqcrystals_dilithium3aes_ref_open(uint8_t *m, size_t *mlen,
+                                         const uint8_t *sm, size_t smlen,
+                                         const uint8_t *pk);
+
+#define libpqcrystals_dilithium4_ref_PUBLICKEYBYTES 1760
+#define libpqcrystals_dilithium4_ref_SECRETKEYBYTES 3856
+#define libpqcrystals_dilithium4_ref_BYTES 3366
+
+int libpqcrystals_dilithium4_ref_keypair(uint8_t *pk, uint8_t *sk);
+
+int libpqcrystals_dilithium4_ref_signature(uint8_t *sig, size_t *siglen,
+                                           const uint8_t *m, size_t mlen,
+                                           const uint8_t *sk);
+
+int libpqcrystals_dilithium4_ref(uint8_t *sm, size_t *smlen,
+                                 const uint8_t *m, size_t mlen,
+                                 const uint8_t *sk);
+
+int libpqcrystals_dilithium4_ref_verify(const uint8_t *sig, size_t siglen,
+                                        const uint8_t *m, size_t mlen,
+                                        const uint8_t *pk);
+
+int libpqcrystals_dilithium4_ref_open(uint8_t *m, size_t *mlen,
+                                      const uint8_t *sm, size_t smlen,
+                                      const uint8_t *pk);
+
+#define libpqcrystals_dilithium4aes_ref_PUBLICKEYBYTES \
+        libpqcrystals_dilithium4_ref_PUBLICKEYBYTES
+#define libpqcrystals_dilithium4aes_ref_SECRETKEYBYTES \
+        libpqcrystals_dilithium4_ref_SECRETKEYBYTES
+#define libpqcrystals_dilithium4aes_ref_BYTES \
+        libpqcrystals_dilithium4_ref_BYTES
+
+int libpqcrystals_dilithium4aes_ref_keypair(uint8_t *pk, uint8_t *sk);
+
+int libpqcrystals_dilithium4aes_ref_signature(uint8_t *sig, size_t *siglen,
+                                              const uint8_t *m, size_t mlen,
+                                              const uint8_t *sk);
+
+int libpqcrystals_dilithium4aes_ref(uint8_t *sm, size_t *smlen,
+                                    const uint8_t *m, size_t mlen,
+                                    const uint8_t *sk);
+
+int libpqcrystals_dilithium4aes_ref_verify(const uint8_t *sig, size_t siglen,
+                                           const uint8_t *m, size_t mlen,
+                                           const uint8_t *pk);
+
+int libpqcrystals_dilithium4aes_ref_open(uint8_t *m, size_t *mlen,
+                                         const uint8_t *sm, size_t smlen,
+                                         const uint8_t *pk);
+
 
 #endif

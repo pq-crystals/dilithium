@@ -14,8 +14,10 @@ script: ./runtests.sh
 jobs:
   include:
     - os: osx
+      osx_image: xcode11.6
       compiler: clang
       env:
+        - CFLAGS="-I/usr/local/opt/openssl@1.1/include/"
         - NISTFLAGS="-I/usr/local/opt/openssl@1.1/include/"
         - LDFLAGS="-L/usr/local/opt/openssl@1.1/lib/"
 

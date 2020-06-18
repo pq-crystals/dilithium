@@ -16,3 +16,4 @@ test_speed3
 test_speed3aes
 test_speed4
 test_speed4aes
+test_mul
