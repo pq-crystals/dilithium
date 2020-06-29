@@ -60,7 +60,7 @@ keccak4x/KeccakP-1600-times4-SIMD256.o: \
   keccak4x/SIMD256-config.h \
   keccak4x/align.h \
   keccak4x/brg_endian.h
-	$(CC) $(CFLAGS) -c $< -o $@
+	$(CC) -fPIC $(CFLAGS) -c $< -o $@
 
 libpqcrystals_fips202_ref.so: fips202.c fips202.h
 	$(CC) -shared -fPIC $(CFLAGS) -o $@ $<
