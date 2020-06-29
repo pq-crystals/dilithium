@@ -66,9 +66,14 @@ libpqcrystals_fips202_ref.so: fips202.c fips202.h
 	$(CC) -shared -fPIC $(CFLAGS) -o $@ $<
 
 libpqcrystals_fips202x4_avx2.so: fips202x4.c fips202x4.h \
-  keccak4x/KeccakP-1600-times4-SIMD256.o
+  keccak4x/KeccakP-1600-times4-SIMD256.c \
+  keccak4x/KeccakP-1600-times4-SnP.h \
+  keccak4x/KeccakP-1600-unrolling.macros \
+  keccak4x/SIMD256-config.h \
+  keccak4x/align.h \
+  keccak4x/brg_endian.h
 	$(CC) -shared -fPIC $(CFLAGS) -o $@ $< \
-	  keccak4x/KeccakP-1600-times4-SIMD256.o
+	  keccak4x/KeccakP-1600-times4-SIMD256.c
 
 libpqcrystals_aes256ctr_avx2.so: aes256ctr.c aes256ctr.h
 	$(CC) -shared -fPIC $(CFLAGS) -o $@ $<
