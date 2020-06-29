@@ -18,7 +18,6 @@ if(CMAKE_C_COMPILER_ID MATCHES "Clang")
 	add_compile_options(-Wpointer-arith)
 
 elseif(CMAKE_C_COMPILER_ID STREQUAL "GNU")
-	add_compile_options(-Werror)
 	add_compile_options(-Wall)
 	add_compile_options(-Wextra)
 	add_compile_options(-Wpedantic)
