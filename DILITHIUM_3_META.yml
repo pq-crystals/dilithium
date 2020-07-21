@@ -23,7 +23,7 @@ implementations:
       signature_keypair: pqcrystals_dilithium3_ref_keypair
       signature_signature: pqcrystals_dilithium3_ref_signature
       signature_verify: pqcrystals_dilithium3_ref_verify
-      sources: LICENSE api.h config.h params.h sign.c sign.h packing.c packing.h polyvec.c polyvec.h poly.c poly.h ntt.c ntt.h reduce.c reduce.h rounding.c rounding.h symmetric.h symmetric-shake.c fips202.h aes256ctr.h fips202.c aes256ctr.c symmetric-aes.c
+      sources: LICENSE api.h config.h params.h sign.c sign.h packing.c packing.h polyvec.c polyvec.h poly.c poly.h ntt.c ntt.h reduce.c reduce.h rounding.c rounding.h symmetric.h symmetric-shake.c fips202.h aes256ctr.h fips202.c aes256ctr.c
     - name: avx2
       version: https://github.com/pq-crystals/dilithium/commit/40097237d92dbff3c5c869df9dfcaa32001776c2
       compile_opts: -DDILITHIUM_MODE=3 -DDILITHIUM_RANDOMIZED_SIGNING
