@@ -12,14 +12,11 @@
 *
 * Returns r.
 **************************************************/
-uint32_t montgomery_reduce(uint64_t a) {
-  uint64_t t;
+int32_t montgomery_reduce(int64_t a) {
+  int32_t t;
 
-  t = a * QINV;
-  t &= ((uint64_t)1 << 32) - 1;
-  t *= Q;
-  t = a + t;
-  t >>= 32;
+  t = (int32_t)a*QINV;
+  t = (a - (int64_t)t*Q) >> 32;
   return t;
 }
 
@@ -33,12 +30,12 @@ uint32_t montgomery_reduce(uint64_t a) {
 *
 * Returns r.
 **************************************************/
-uint32_t reduce32(uint32_t a) {
-  uint32_t t;
+int32_t reduce32(int32_t a) {
+  int32_t t;
+  const int32_t v = 1074791297;
 
-  t = a & 0x7FFFFF;
-  a >>= 23;
-  t += (a << 13) - a;
+  t = ((int64_t)a*v + (1LL << 52)) >> 53;
+  t = a - t*Q;
   return t;
 }
 
@@ -51,9 +48,8 @@ uint32_t reduce32(uint32_t a) {
 *
 * Returns r.
 **************************************************/
-uint32_t csubq(uint32_t a) {
-  a -= Q;
-  a += ((int32_t)a >> 31) & Q;
+int32_t caddq(int32_t a) {
+  a += (a >> 31) & Q;
   return a;
 }
 
@@ -67,8 +63,8 @@ uint32_t csubq(uint32_t a) {
 *
 * Returns r.
 **************************************************/
-uint32_t freeze(uint32_t a) {
+int32_t freeze(int32_t a) {
   a = reduce32(a);
-  a = csubq(a);
+  a = caddq(a);
   return a;
 }
