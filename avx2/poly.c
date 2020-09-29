@@ -375,7 +375,7 @@ void poly_uniform_preinit(poly *a, stream128_state *state)
 {
   unsigned int ctr;
   __attribute__((aligned(32)))
-  uint8_t buf[POLY_UNIFORM_NBLOCKS*STREAM128_BLOCKBYTES];
+  uint8_t buf[POLY_UNIFORM_NBLOCKS*STREAM128_BLOCKBYTES+8];
 
   stream128_squeezeblocks(buf, POLY_UNIFORM_NBLOCKS, state);
   ctr = rej_uniform_avx(a->coeffs, buf);
@@ -517,7 +517,7 @@ void poly_uniform_eta_preinit(poly *a, stream128_state *state)
 {
   unsigned int ctr;
   __attribute__((aligned(32)))
-  uint8_t buf[POLY_UNIFORM_ETA_NBLOCKS*STREAM128_BLOCKBYTES];
+  uint8_t buf[POLY_UNIFORM_ETA_NBLOCKS*STREAM128_BLOCKBYTES+8];
 
   stream128_squeezeblocks(buf, POLY_UNIFORM_ETA_NBLOCKS, state);
   ctr = rej_eta_avx(a->coeffs, N, buf, sizeof(buf));
@@ -658,7 +658,7 @@ void poly_uniform_gamma1m1_preinit(poly *a, stream256_state *state)
 {
   unsigned int ctr;
   __attribute__((aligned(32)))
-  uint8_t buf[POLY_UNIFORM_GAMMA1M1_NBLOCKS*STREAM256_BLOCKBYTES];
+  uint8_t buf[POLY_UNIFORM_GAMMA1M1_NBLOCKS*STREAM256_BLOCKBYTES+12];
 
   stream256_squeezeblocks(buf, POLY_UNIFORM_GAMMA1M1_NBLOCKS, state);
   ctr = rej_gamma1m1_avx(a->coeffs, N, buf, sizeof(buf));
