@@ -5,10 +5,10 @@
 /*************************************************
 * Name:        montgomery_reduce
 *
-* Description: For finite field element a with 0 <= a <= Q*2^32,
-*              compute r \equiv a*2^{-32} (mod Q) such that 0 <= r < 2*Q.
+* Description: For finite field element a with -2^{31}Q <= a <= Q*2^31,
+*              compute r \equiv a*2^{-32} (mod Q) such that -Q <= r <= Q.
 *
-* Arguments:   - uint64_t: finite field element a
+* Arguments:   - int64_t: finite field element a
 *
 * Returns r.
 **************************************************/
@@ -23,28 +23,27 @@ int32_t montgomery_reduce(int64_t a) {
 /*************************************************
 * Name:        reduce32
 *
-* Description: For finite field element a, compute r \equiv a (mod Q)
-*              such that 0 <= r < 2*Q.
+* Description: For finite field element a with a <= 2^{31} - 2^{22} - 1,
+*              compute r \equiv a (mod Q) such that -6283009 <= r <= 6283007.
 *
-* Arguments:   - uint32_t: finite field element a
+* Arguments:   - int32_t: finite field element a
 *
 * Returns r.
 **************************************************/
 int32_t reduce32(int32_t a) {
   int32_t t;
-  const int32_t v = 1074791297;
 
-  t = ((int64_t)a*v + (1LL << 52)) >> 53;
+  t = (a + (1 << 22)) >> 23;
   t = a - t*Q;
   return t;
 }
 
 /*************************************************
-* Name:        csubq
+* Name:        caddq
 *
-* Description: Subtract Q if input coefficient is bigger than Q.
+* Description: Add Q if input coefficient is negative.
 *
-* Arguments:   - uint32_t: finite field element a
+* Arguments:   - int32_t: finite field element a
 *
 * Returns r.
 **************************************************/
@@ -57,9 +56,9 @@ int32_t caddq(int32_t a) {
 * Name:        freeze
 *
 * Description: For finite field element a, compute standard
-*              representative r = a mod Q.
+*              representative r = a mod^+ Q.
 *
-* Arguments:   - uint32_t: finite field element a
+* Arguments:   - int32_t: finite field element a
 *
 * Returns r.
 **************************************************/
