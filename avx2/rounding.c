@@ -174,7 +174,7 @@ void use_hint_avx(int32_t * restrict b, const int32_t * restrict a, const int32_
     f = _mm256_load_si256((__m256i *)&a0[8*i]);
     g = _mm256_load_si256((__m256i *)&b[8*i]);
     h = _mm256_load_si256((__m256i *)&hint[8*i]);
-    h = _mm256_sign_epi32(h,f); //FIXME
+    h = _mm256_sign_epi32(h,f);
     g = _mm256_add_epi32(g,h);
 #if GAMMA2 == (Q-1)/32
     g = _mm256_and_si256(g,mask);
