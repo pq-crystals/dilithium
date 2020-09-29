@@ -64,11 +64,11 @@ void unpack_pk(uint8_t rho[SEEDBYTES],
 **************************************************/
 void pack_sk(uint8_t sk[CRYPTO_SECRETKEYBYTES],
              const uint8_t rho[SEEDBYTES],
-             const uint8_t key[SEEDBYTES],
              const uint8_t tr[CRHBYTES],
+             const uint8_t key[SEEDBYTES],
+             const polyveck *t0,
              const polyvecl *s1,
-             const polyveck *s2,
-             const polyveck *t0)
+             const polyveck *s2)
 {
   unsigned int i;
 
@@ -110,11 +110,11 @@ void pack_sk(uint8_t sk[CRYPTO_SECRETKEYBYTES],
 *              - uint8_t sk[]: byte array containing bit-packed sk
 **************************************************/
 void unpack_sk(uint8_t rho[SEEDBYTES],
-               uint8_t key[SEEDBYTES],
                uint8_t tr[CRHBYTES],
+               uint8_t key[SEEDBYTES],
+               polyveck *t0,
                polyvecl *s1,
                polyveck *s2,
-               polyveck *t0,
                const uint8_t sk[CRYPTO_SECRETKEYBYTES])
 {
   unsigned int i;
@@ -146,26 +146,32 @@ void unpack_sk(uint8_t rho[SEEDBYTES],
 /*************************************************
 * Name:        pack_sig
 *
-* Description: Bit-pack signature sig = (z, h, c).
+* Description: Bit-pack signature sig = (c, z, h).
 *
 * Arguments:   - uint8_t sig[]: output byte array
+*              - const uint8_t *c: pointer to challenge seed of length SEEDBYTES
 *              - const polyvecl *z: pointer to vector z
 *              - const polyveck *h: pointer to hint vector h
-*              - const poly *c: pointer to challenge polynomial
 **************************************************/
 void pack_sig(uint8_t sig[CRYPTO_BYTES],
+              const uint8_t c[SEEDBYTES],
               const polyvecl *z,
-              const polyveck *h,
-              const poly *c)
+              const polyveck *h)
 {
   unsigned int i, j, k;
-  uint64_t signs, mask;
+
+  for(i=0; i < SEEDBYTES; ++i)
+    sig[i] = c[i];
+  sig += SEEDBYTES;
 
   for(i = 0; i < L; ++i)
     polyz_pack(sig + i*POLYZ_PACKEDBYTES, &z->vec[i]);
   sig += L*POLYZ_PACKEDBYTES;
 
   /* Encode h */
+  for(i = 0; i < OMEGA + K; ++i)
+    sig[i] = 0;
+
   k = 0;
   for(i = 0; i < K; ++i) {
     for(j = 0; j < N; ++j)
@@ -174,47 +180,31 @@ void pack_sig(uint8_t sig[CRYPTO_BYTES],
 
     sig[OMEGA + i] = k;
   }
-  while(k < OMEGA) sig[k++] = 0;
-  sig += OMEGA + K;
-
-  /* Encode c */
-  signs = 0;
-  mask = 1;
-  for(i = 0; i < N/8; ++i) {
-    sig[i] = 0;
-    for(j = 0; j < 8; ++j) {
-      if(c->coeffs[8*i+j] != 0) {
-        sig[i] |= (1U << j);
-        if(c->coeffs[8*i+j] == (Q - 1)) signs |= mask;
-        mask <<= 1;
-      }
-    }
-  }
-  sig += N/8;
-  for(i = 0; i < 8; ++i)
-    sig[i] = signs >> 8*i;
 }
 
 /*************************************************
 * Name:        unpack_sig
 *
-* Description: Unpack signature sig = (z, h, c).
+* Description: Unpack signature sig = (c, z, h).
 *
-* Arguments:   - polyvecl *z: pointer to output vector z
+* Arguments:   - uint8_t *c: pointer to output challenge hash
+*              - polyvecl *z: pointer to output vector z
 *              - polyveck *h: pointer to output hint vector h
-*              - poly *c: pointer to output challenge polynomial
 *              - const uint8_t sig[]: byte array containing
 *                bit-packed signature
 *
 * Returns 1 in case of malformed signature; otherwise 0.
 **************************************************/
-int unpack_sig(polyvecl *z,
+int unpack_sig(uint8_t c[SEEDBYTES],
+               polyvecl *z,
                polyveck *h,
-               poly *c,
                const uint8_t sig[CRYPTO_BYTES])
 {
   unsigned int i, j, k;
-  uint64_t signs;
+
+  for(i = 0; i < SEEDBYTES; ++i)
+    c[i] = sig[i];
+  sig += SEEDBYTES;
 
   for(i = 0; i < L; ++i)
     polyz_unpack(&z->vec[i], sig + i*POLYZ_PACKEDBYTES);
@@ -242,30 +232,6 @@ int unpack_sig(polyvecl *z,
   for(j = k; j < OMEGA; ++j)
     if(sig[j])
       return 1;
-
-  sig += OMEGA + K;
-
-  /* Decode c */
-  for(i = 0; i < N; ++i)
-    c->coeffs[i] = 0;
-
-  signs = 0;
-  for(i = 0; i < 8; ++i)
-    signs |= (uint64_t)sig[N/8+i] << 8*i;
-
-  /* Extra sign bits are zero for strong unforgeability */
-  if(signs >> 60)
-    return 1;
-
-  for(i = 0; i < N/8; ++i) {
-    for(j = 0; j < 8; ++j) {
-      if((sig[i] >> j) & 0x01) {
-        c->coeffs[8*i+j] = 1;
-        c->coeffs[8*i+j] ^= -(signs & 1) & (1 ^ (Q-1));
-        signs >>= 1;
-      }
-    }
-  }
 
   return 0;
 }

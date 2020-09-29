@@ -12,15 +12,15 @@ void pack_pk(uint8_t pk[CRYPTO_PUBLICKEYBYTES],
 #define pack_sk DILITHIUM_NAMESPACE(_pack_sk)
 void pack_sk(uint8_t sk[CRYPTO_SECRETKEYBYTES],
              const uint8_t rho[SEEDBYTES],
-             const uint8_t key[SEEDBYTES],
              const uint8_t tr[CRHBYTES],
+             const uint8_t key[SEEDBYTES],
+             const polyveck *t0,
              const polyvecl *s1,
-             const polyveck *s2,
-             const polyveck *t0);
+             const polyveck *s2);
 
 #define pack_sig DILITHIUM_NAMESPACE(_pack_sig)
 void pack_sig(uint8_t sig[CRYPTO_BYTES],
-              const polyvecl *z, const polyveck *h, const poly *c);
+              const uint8_t c[SEEDBYTES], const polyvecl *z, const polyveck *h);
 
 #define unpack_pk DILITHIUM_NAMESPACE(_unpack_pk)
 void unpack_pk(uint8_t rho[SEEDBYTES], polyveck *t1,
@@ -28,15 +28,15 @@ void unpack_pk(uint8_t rho[SEEDBYTES], polyveck *t1,
 
 #define unpack_sk DILITHIUM_NAMESPACE(_upack_sk)
 void unpack_sk(uint8_t rho[SEEDBYTES],
-               uint8_t key[SEEDBYTES],
                uint8_t tr[CRHBYTES],
+               uint8_t key[SEEDBYTES],
+               polyveck *t0,
                polyvecl *s1,
                polyveck *s2,
-               polyveck *t0,
                const uint8_t sk[CRYPTO_SECRETKEYBYTES]);
 
 #define unpack_sig DILITHIUM_NAMESPACE(_unpack_sig)
-int unpack_sig(polyvecl *z, polyveck *h, poly *c,
+int unpack_sig(uint8_t c[SEEDBYTES], polyvecl *z, polyveck *h,
                const uint8_t sig[CRYPTO_BYTES]);
 
 #endif

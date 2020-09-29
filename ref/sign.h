@@ -8,7 +8,7 @@
 #include "poly.h"
 
 #define challenge DILITHIUM_NAMESPACE(_challenge)
-void challenge(poly *c, const uint8_t mu[CRHBYTES], const polyveck *w1);
+void challenge(poly *c, const uint8_t seed[SEEDBYTES]);
 
 #define crypto_sign_keypair DILITHIUM_NAMESPACE(_keypair)
 int crypto_sign_keypair(uint8_t *pk, uint8_t *sk);

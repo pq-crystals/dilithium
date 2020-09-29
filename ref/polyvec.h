@@ -10,8 +10,14 @@ typedef struct {
   poly vec[L];
 } polyvecl;
 
-#define expand_mat DILITHIUM_NAMESPACE(_expand_mat)
-void expand_mat(polyvecl mat[K], const uint8_t rho[SEEDBYTES]);
+#define polyvecl_uniform_eta DILITHIUM_NAMESPACE(_polyvecl_uniform_eta)
+void polyvecl_uniform_eta(polyvecl *v, const uint8_t seed[SEEDBYTES], uint16_t nonce);
+
+#define polyvecl_uniform_gamma1 DILITHIUM_NAMESPACE(_polyvecl_uniform_gamma1)
+void polyvecl_uniform_gamma1(polyvecl *v, const uint8_t seed[SEEDBYTES], uint16_t nonce);
+
+#define polyvecl_reduce DILITHIUM_NAMESPACE(_polyvecl_reduce)
+void polyvecl_reduce(polyvecl *v);
 
 #define polyvecl_freeze DILITHIUM_NAMESPACE(_polyvecl_freeze)
 void polyvecl_freeze(polyvecl *v);
@@ -21,6 +27,10 @@ void polyvecl_add(polyvecl *w, const polyvecl *u, const polyvecl *v);
 
 #define polyvecl_ntt DILITHIUM_NAMESPACE(_polyvecl_ntt)
 void polyvecl_ntt(polyvecl *v);
+#define polyvecl_invntt_tomont DILITHIUM_NAMESPACE(_polyvecl_invntt_tomont)
+void polyvecl_invntt_tomont(polyvecl *v);
+#define polyvecl_pointwise_poly_montgomery DILITHIUM_NAMESPACE(_polyvecl_pointwise_poly_montgomery)
+void polyvecl_pointwise_poly_montgomery(polyvecl *r, const poly *a, const polyvecl *v);
 #define polyvecl_pointwise_acc_montgomery \
         DILITHIUM_NAMESPACE(_polyvecl_pointwise_acc_montgomery)
 void polyvecl_pointwise_acc_montgomery(poly *w,
@@ -38,10 +48,13 @@ typedef struct {
   poly vec[K];
 } polyveck;
 
+#define polyveck_uniform_eta DILITHIUM_NAMESPACE(_polyveck_uniform_eta)
+void polyveck_uniform_eta(polyveck *v, const uint8_t seed[SEEDBYTES], uint16_t nonce);
+
 #define polyveck_reduce DILITHIUM_NAMESPACE(_polyveck_reduce)
 void polyveck_reduce(polyveck *v);
-#define polyveck_csubq DILITHIUM_NAMESPACE(_polyveck_csubq)
-void polyveck_csubq(polyveck *v);
+#define polyveck_caddq DILITHIUM_NAMESPACE(_polyveck_caddq)
+void polyveck_caddq(polyveck *v);
 #define polyveck_freeze DILITHIUM_NAMESPACE(_polyveck_freeze)
 void polyveck_freeze(polyveck *v);
 
@@ -56,6 +69,8 @@ void polyveck_shiftl(polyveck *v);
 void polyveck_ntt(polyveck *v);
 #define polyveck_invntt_tomont DILITHIUM_NAMESPACE(_polyveck_invntt_tomont)
 void polyveck_invntt_tomont(polyveck *v);
+#define polyveck_pointwise_poly_montgomery DILITHIUM_NAMESPACE(_polyveck_pointwise_poly_montgomery)
+void polyveck_pointwise_poly_montgomery(polyveck *r, const poly *a, const polyveck *v);
 
 #define polyveck_chknorm DILITHIUM_NAMESPACE(_polyveck_chknorm)
 int polyveck_chknorm(const polyveck *v, uint32_t B);
@@ -70,5 +85,14 @@ unsigned int polyveck_make_hint(polyveck *h,
                                 const polyveck *v1);
 #define polyveck_use_hint DILITHIUM_NAMESPACE(_polyveck_use_hint)
 void polyveck_use_hint(polyveck *w, const polyveck *v, const polyveck *h);
+
+#define polyveck_pack_w1 DILITHIUM_NAMESPACE(_polyveck_pack_w1)
+void polyveck_pack_w1(uint8_t r[K*POLYW1_PACKEDBYTES], const polyveck *w1);
+
+#define polyvec_matrix_expand DILITHIUM_NAMESPACE(_polyvec_matrix_expand)
+void polyvec_matrix_expand(polyvecl mat[K], const uint8_t rho[SEEDBYTES]);
+
+#define polyvec_matrix_pointwise_montgomery DILITHIUM_NAMESPACE(_polyvec_matrix_pointwise_montgomery)
+void polyvec_matrix_pointwise_montgomery(polyveck *t, const polyvecl mat[K], const polyvecl *v);
 
 #endif
