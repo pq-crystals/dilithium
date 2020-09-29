@@ -5,14 +5,14 @@
 #include "../sign.h"
 
 #define MLEN 59
-#define NTESTS 1000
+#define NTESTS 100000
 
 int main(void)
 {
   unsigned int i, j;
   int ret;
   size_t mlen, smlen;
-  uint8_t m[MLEN];
+  uint8_t m[MLEN] = {0};
   uint8_t sm[MLEN + CRYPTO_BYTES];
   uint8_t m2[MLEN + CRYPTO_BYTES];
   uint8_t pk[CRYPTO_PUBLICKEYBYTES];
@@ -53,6 +53,10 @@ int main(void)
       return -1;
     }
   }
+
+  printf("CRYPTO_PUBLICKEYBYTES = %d\n", CRYPTO_PUBLICKEYBYTES);
+  printf("CRYPTO_SECRETKEYBYTES = %d\n", CRYPTO_SECRETKEYBYTES);
+  printf("CRYPTO_BYTES = %d\n", CRYPTO_BYTES);
 
   return 0;
 }
