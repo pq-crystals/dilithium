@@ -5,7 +5,7 @@
 #include "../sign.h"
 
 #define MLEN 59
-#define NTESTS 100000
+#define NTESTS 1000
 
 int main(void)
 {
