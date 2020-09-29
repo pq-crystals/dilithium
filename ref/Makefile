@@ -1,6 +1,6 @@
 CC ?= /usr/bin/cc
 CFLAGS += -Wall -Wextra -Wpedantic -Wmissing-prototypes -Wredundant-decls \
-  -Wshadow -Wvla -Wpointer-arith -O3 -march=native -mtune=native -flto
+  -Wshadow -Wvla -Wpointer-arith -O3 -march=native -mtune=native
 NISTFLAGS += -Wno-unused-result -O3
 SOURCES = sign.c packing.c polyvec.c poly.c ntt.c reduce.c rounding.c
 HEADERS = config.h params.h api.h sign.h packing.h polyvec.h poly.h ntt.h \
@@ -114,31 +114,31 @@ test/test_dilithium5aes: test/test_dilithium.c randombytes.c $(AES_SOURCES) \
 test/test_vectors2: test/test_vectors.c $(KECCAK_SOURCES) \
   $(KECCAK_HEADERS)
 	$(CC) $(CFLAGS) -DDILITHIUM_MODE=2 \
-	  -o $@ $< $(KECCAK_SOURCES) $(LDFLAGS)
+	  -o $@ $< $(KECCAK_SOURCES)
 
 test/test_vectors3: test/test_vectors.c $(KECCAK_SOURCES) $(KECCAK_HEADERS)
 	$(CC) $(CFLAGS) -DDILITHIUM_MODE=3 \
-	  -o $@ $< $(KECCAK_SOURCES) $(LDFLAGS)
+	  -o $@ $< $(KECCAK_SOURCES)
 
 test/test_vectors5: test/test_vectors.c $(KECCAK_SOURCES) \
   $(KECCAK_HEADERS)
 	$(CC) $(CFLAGS) -DDILITHIUM_MODE=5 \
-	  -o $@ $< $(KECCAK_SOURCES) $(LDFLAGS)
+	  -o $@ $< $(KECCAK_SOURCES)
 
 test/test_vectors2aes: test/test_vectors.c $(AES_SOURCES) \
   $(AES_HEADERS)
 	$(CC) $(CFLAGS) -DDILITHIUM_MODE=2 -DDILITHIUM_USE_AES \
-	  -o $@ $< $(AES_SOURCES) $(LDFLAGS)
+	  -o $@ $< $(AES_SOURCES)
 
 test/test_vectors3aes: test/test_vectors.c $(AES_SOURCES) \
   $(AES_HEADERS)
 	$(CC) $(CFLAGS) -DDILITHIUM_MODE=3 -DDILITHIUM_USE_AES \
-	  -o $@ $< $(AES_SOURCES) $(LDFLAGS)
+	  -o $@ $< $(AES_SOURCES)
 
 test/test_vectors5aes: test/test_vectors.c $(AES_SOURCES) \
   $(AES_HEADERS)
 	$(CC) $(NISTFLAGS) -DDILITHIUM_MODE=5 -DDILITHIUM_USE_AES \
-	  -o $@ $< $(AES_SOURCES) $(LDFLAGS)
+	  -o $@ $< $(AES_SOURCES)
 
 test/test_speed2: test/test_speed.c test/speed_print.c test/speed_print.h \
   test/cpucycles.c test/cpucycles.h randombytes.c $(KECCAK_SOURCES) \
