@@ -31,8 +31,9 @@ int main(void) {
   uint8_t sk[CRYPTO_SECRETKEYBYTES];
   uint8_t sig[CRYPTO_BYTES];
   uint8_t m[MLEN] = {0};
+  __attribute__((aligned(32)))
   uint8_t seed[CRHBYTES];
-  uint8_t buf[CRYPTO_BYTES];
+  uint8_t buf[CRYPTO_SECRETKEYBYTES];
   size_t siglen;
   poly c, tmp;
   polyvecl s, y, mat[K];
@@ -67,9 +68,11 @@ int main(void) {
       printf("%02x", buf[j]);
     printf("\n");
 
-#ifndef INTERMEDIATE_VECTORS
-    continue;
-#endif
+continue;
+
+    if(crypto_sign_verify(sig, siglen, m, MLEN, pk))
+      fprintf(stderr,"Signature verification failed!\n");
+
     randombytes(seed, sizeof(seed));
     printf("seed = ");
     for(j = 0; j < sizeof(seed); ++j)
@@ -81,7 +84,7 @@ int main(void) {
     for(j = 0; j < K; ++j) {
       for(k = 0; k < L; ++k) {
         for(l = 0; l < N; ++l) {
-          printf("%7d", mat[j].vec[k].coeffs[l]);
+          printf("%8d", mat[j].vec[k].coeffs[l]);
           if(l < N-1) printf(", ");
           else if(k < L-1) printf("], [");
           else if(j < K-1) printf("];\n     [");
@@ -90,7 +93,7 @@ int main(void) {
       }
     }
 
-    polyvecl_uniform_eta(&s, seed, j);
+    polyvecl_uniform_eta(&s, seed, 0);
 
     polyeta_pack(buf, &s.vec[0]);
     polyeta_unpack(&tmp, buf);
@@ -106,17 +109,15 @@ int main(void) {
     for(j = 0; j < L; ++j) {
       for(k = 0; k < N; ++k) {
         u = s.vec[j].coeffs[k];
-        if(u > (Q-1)/2) u -= Q;
-        printf("%2d", u);
+        printf("%3d", u);
         if(k < N-1) printf(", ");
         else if(j < L-1) printf("],\n     [");
         else printf("])\n");
       }
     }
 
-    polyvecl_uniform_gamma1(&y, seed, j);
+    polyvecl_uniform_gamma1(&y, seed, 0);
 
-    polyvecl_reduce(&y);
     polyz_pack(buf, &y.vec[0]);
     polyz_unpack(&tmp, buf);
     for(j = 0; j < N; ++j)
@@ -130,8 +131,7 @@ int main(void) {
     for(j = 0; j < L; ++j) {
       for(k = 0; k < N; ++k) {
         u = y.vec[j].coeffs[k];
-        if(u > (Q-1)/2) u -= Q;
-        printf("%7d", u);
+        printf("%8d", u);
         if(k < N-1) printf(", ");
         else if(j < L-1) printf("],\n     [");
         else printf("])\n");
@@ -147,13 +147,13 @@ int main(void) {
 
     for(j = 0; j < N; ++j) {
       tmp.coeffs[j] = w1.vec[0].coeffs[j]*2*GAMMA2 + w0.vec[0].coeffs[j];
-      if(tmp.coeffs[j] >= Q) tmp.coeffs[j] -= Q;
       if(tmp.coeffs[j] < 0) tmp.coeffs[j] += Q;
       if(tmp.coeffs[j] != w.vec[0].coeffs[j])
-        fprintf(stderr, "ERROR in poly_decompose\n");
+        fprintf(stderr, "ERROR in poly_decompose!\n");
     }
 
     polyw1_pack(buf, &w1.vec[0]);
+#if GAMMA2 == (Q-1)/32
     for(j = 0; j < N/2; ++j) {
       tmp.coeffs[2*j+0] = buf[j] & 0xF;
       tmp.coeffs[2*j+1] = buf[j] >> 4;
@@ -161,16 +161,22 @@ int main(void) {
          || tmp.coeffs[2*j+1] != w1.vec[0].coeffs[2*j+1])
         fprintf(stderr, "ERROR in polyw1_pack!\n");
     }
+#endif
 
+#if GAMMA2 == (Q-1)/32
     if(polyveck_chknorm(&w1, 16))
       fprintf(stderr, "ERROR in polyveck_chknorm(&w1, 16)!\n");
+#elif GAMMA2 == (Q-1)/88
+    if(polyveck_chknorm(&w1, 44))
+      fprintf(stderr, "ERROR in polyveck_chknorm(&w1, 4)!\n");
+#endif
     if(polyveck_chknorm(&w0, GAMMA2 + 1))
-      fprintf(stderr, "ERROR in polyveck_chknorm(&w0 ,ALPHA/2+1)!\n");
+      fprintf(stderr, "ERROR in polyveck_chknorm(&w0, GAMMA2+1)!\n");
 
     printf("w1 = ([");
     for(j = 0; j < K; ++j) {
       for(k = 0; k < N; ++k) {
-        printf("%2u", w1.vec[j].coeffs[k]);
+        printf("%2d", w1.vec[j].coeffs[k]);
         if(k < N-1) printf(", ");
         else if(j < K-1) printf("],\n      [");
         else printf("])\n");
@@ -180,8 +186,7 @@ int main(void) {
     for(j = 0; j < K; ++j) {
       for(k = 0; k < N; ++k) {
         u = w0.vec[j].coeffs[k];
-        if(u > (Q-1)/2) u -= Q;
-        printf("%7d", u);
+        printf("%8d", u);
         if(k < N-1) printf(", ");
         else if(j < K-1) printf("],\n      [");
         else printf("])\n");
@@ -212,12 +217,12 @@ int main(void) {
     if(polyveck_chknorm(&t1, 1024))
       fprintf(stderr, "ERROR in polyveck_chknorm(&t1, 1024)!\n");
     if(polyveck_chknorm(&t0, (1U << (D-1)) + 1))
-      fprintf(stderr, "ERROR in polyveck_chknorm(&t0, 1 << (D-1) + 1)!\n");
+      fprintf(stderr, "ERROR in polyveck_chknorm(&t0, (1 << (D-1)) + 1)!\n");
 
     printf("t1 = ([");
     for(j = 0; j < K; ++j) {
       for(k = 0; k < N; ++k) {
-        printf("%3u", t1.vec[j].coeffs[k]);
+        printf("%3d", t1.vec[j].coeffs[k]);
         if(k < N-1) printf(", ");
         else if(j < K-1) printf("],\n      [");
         else printf("])\n");
@@ -227,7 +232,6 @@ int main(void) {
     for(j = 0; j < K; ++j) {
       for(k = 0; k < N; ++k) {
         u = t0.vec[j].coeffs[k];
-        if(u > (Q-1)/2) u -= Q;
         printf("%5d", u);
         if(k < N-1) printf(", ");
         else if(j < K-1) printf("],\n      [");
@@ -239,7 +243,6 @@ int main(void) {
     printf("c = [");
     for(j = 0; j < N; ++j) {
       u = c.coeffs[j];
-      if(u > (Q-1)/2) u -= Q;
       printf("%2d", u);
       if(j < N-1) printf(", ");
       else printf("]\n");
