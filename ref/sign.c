@@ -70,7 +70,7 @@ int crypto_sign_keypair(uint8_t *pk, uint8_t *sk) {
 * Description: Computes signature.
 *
 * Arguments:   - uint8_t *sig:   pointer to output signature (of length CRYPTO_BYTES)
-*              - size_t *siglen: pointer to output length of signed message
+*              - size_t *siglen: pointer to output length of signature
 *              - uint8_t *m:     pointer to message to be signed
 *              - size_t mlen:    length of message
 *              - uint8_t *sk:    pointer to bit-packed secret key
@@ -145,8 +145,8 @@ rej:
   /* Compute z, reject if it reveals secret */
   polyvecl_pointwise_poly_montgomery(&z, &cp, &s1);
   polyvecl_invntt_tomont(&z);
-  polyvecl_reduce(&z);
   polyvecl_add(&z, &z, &y);
+  polyvecl_reduce(&z);
   if(polyvecl_chknorm(&z, GAMMA1 - BETA))
     goto rej;
 
@@ -154,8 +154,8 @@ rej:
    * do not reveal secret information */
   polyveck_pointwise_poly_montgomery(&h, &cp, &s2);
   polyveck_invntt_tomont(&h);
-  polyveck_reduce(&h);
   polyveck_sub(&w0, &w0, &h);
+  polyveck_reduce(&h);
   if(polyveck_chknorm(&w0, GAMMA2 - BETA))
     goto rej;
 

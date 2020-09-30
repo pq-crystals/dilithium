@@ -52,15 +52,15 @@ void unpack_pk(uint8_t rho[SEEDBYTES],
 /*************************************************
 * Name:        pack_sk
 *
-* Description: Bit-pack secret key sk = (rho, key, tr, s1, s2, t0).
+* Description: Bit-pack secret key sk = (rho, tr, key, t0, s1, s2).
 *
 * Arguments:   - uint8_t sk[]: output byte array
 *              - const uint8_t rho[]: byte array containing rho
-*              - const uint8_t key[]: byte array containing key
 *              - const uint8_t tr[]: byte array containing tr
+*              - const uint8_t key[]: byte array containing key
+*              - const polyveck *t0: pointer to vector t0
 *              - const polyvecl *s1: pointer to vector s1
 *              - const polyveck *s2: pointer to vector s2
-*              - const polyveck *t0: pointer to vector t0
 **************************************************/
 void pack_sk(uint8_t sk[CRYPTO_SECRETKEYBYTES],
              const uint8_t rho[SEEDBYTES],
@@ -99,14 +99,14 @@ void pack_sk(uint8_t sk[CRYPTO_SECRETKEYBYTES],
 /*************************************************
 * Name:        unpack_sk
 *
-* Description: Unpack secret key sk = (rho, key, tr, s1, s2, t0).
+* Description: Unpack secret key sk = (rho, tr, key, t0, s1, s2).
 *
 * Arguments:   - const uint8_t rho[]: output byte array for rho
-*              - const uint8_t key[]: output byte array for key
 *              - const uint8_t tr[]: output byte array for tr
+*              - const uint8_t key[]: output byte array for key
+*              - const polyveck *t0: pointer to output vector t0
 *              - const polyvecl *s1: pointer to output vector s1
 *              - const polyveck *s2: pointer to output vector s2
-*              - const polyveck *r0: pointer to output vector t0
 *              - uint8_t sk[]: byte array containing bit-packed sk
 **************************************************/
 void unpack_sk(uint8_t rho[SEEDBYTES],
@@ -149,7 +149,7 @@ void unpack_sk(uint8_t rho[SEEDBYTES],
 * Description: Bit-pack signature sig = (c, z, h).
 *
 * Arguments:   - uint8_t sig[]: output byte array
-*              - const uint8_t *c: pointer to challenge seed of length SEEDBYTES
+*              - const uint8_t *c: pointer to challenge hash length SEEDBYTES
 *              - const polyvecl *z: pointer to vector z
 *              - const polyveck *h: pointer to hint vector h
 **************************************************/

@@ -42,9 +42,7 @@ static const int32_t zetas[N] = {
 * Name:        ntt
 *
 * Description: Forward NTT, in-place. No modular reduction is performed after
-*              additions or subtractions. If input coefficients are below 2*Q,
-*              then output coefficients are below 18*Q.
-*              Output vector is in bitreversed order.
+*              additions or subtractions. Output vector is in bitreversed order.
 *
 * Arguments:   - uint32_t p[N]: input/output coefficient array
 **************************************************/
@@ -70,8 +68,9 @@ void ntt(int32_t a[N]) {
 *
 * Description: Inverse NTT and multiplication by Montgomery factor 2^32.
 *              In-place. No modular reductions after additions or
-*              subtractions. Input coefficient need to be smaller than 2*Q.
-*              Output coefficient are smaller than 2*Q.
+*              subtractions; input coefficients need to be smaller than
+*              Q in absolute value. Output coefficient are smaller than Q in
+*              absolute value.
 *
 * Arguments:   - uint32_t p[N]: input/output coefficient array
 **************************************************/

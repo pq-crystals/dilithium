@@ -132,8 +132,8 @@ void poly_shiftl(poly *a) {
 /*************************************************
 * Name:        poly_ntt
 *
-* Description: Inplace forward NTT. Output coefficients can be up to
-*              16*Q larger than input coefficients.
+* Description: Inplace forward NTT. Coefficients can grow by
+*              8*Q in absolute value.
 *
 * Arguments:   - poly *a: pointer to input/output polynomial
 **************************************************/
@@ -149,8 +149,8 @@ void poly_ntt(poly *a) {
 * Name:        poly_invntt_tomont
 *
 * Description: Inplace inverse NTT and multiplication by 2^{32}.
-*              Input coefficients need to be less than 2*Q.
-*              Output coefficients are less than 2*Q.
+*              Input coefficients need to be less than Q in absolute
+*              value and output coefficients are again bounded by Q.
 *
 * Arguments:   - poly *a: pointer to input/output polynomial
 **************************************************/
@@ -167,8 +167,7 @@ void poly_invntt_tomont(poly *a) {
 *
 * Description: Pointwise multiplication of polynomials in NTT domain
 *              representation and multiplication of resulting polynomial
-*              by 2^{-32}. Output coefficients are less than 2*Q if input
-*              coefficient are less than 22*Q.
+*              by 2^{-32}.
 *
 * Arguments:   - poly *c: pointer to output polynomial
 *              - const poly *a: pointer to first input polynomial
@@ -549,7 +548,7 @@ void poly_challenge(poly *c, const uint8_t seed[SEEDBYTES]) {
 * Description: Bit-pack polynomial with coefficients in [-ETA,ETA].
 *
 * Arguments:   - uint8_t *r: pointer to output byte array with at least
-*                            POLYETA_SIZE_PACKED bytes
+*                            POLYETA_PACKEDBYTES bytes
 *              - const poly *a: pointer to input polynomial
 **************************************************/
 void polyeta_pack(uint8_t *r, const poly *a) {
@@ -634,7 +633,7 @@ void polyeta_unpack(poly *r, const uint8_t *a) {
 *              Input coefficients are assumed to be standard representatives.
 *
 * Arguments:   - uint8_t *r: pointer to output byte array with at least
-*                            POLYT1_SIZE_PACKED bytes
+*                            POLYT1_PACKEDBYTES bytes
 *              - const poly *a: pointer to input polynomial
 **************************************************/
 void polyt1_pack(uint8_t *r, const poly *a) {
@@ -681,7 +680,7 @@ void polyt1_unpack(poly *r, const uint8_t *a) {
 * Description: Bit-pack polynomial t0 with coefficients in ]-2^{D-1}, 2^{D-1}].
 *
 * Arguments:   - uint8_t *r: pointer to output byte array with at least
-*                            POLYT0_SIZE_PACKED bytes
+*                            POLYT0_PACKEDBYTES bytes
 *              - const poly *a: pointer to input polynomial
 **************************************************/
 void polyt0_pack(uint8_t *r, const poly *a) {
@@ -793,7 +792,7 @@ void polyt0_unpack(poly *r, const uint8_t *a) {
 *              in [-(GAMMA1 - 1), GAMMA1].
 *
 * Arguments:   - uint8_t *r: pointer to output byte array with at least
-*                            POLYZ_SIZE_PACKED bytes
+*                            POLYZ_PACKEDBYTES bytes
 *              - const poly *a: pointer to input polynomial
 **************************************************/
 void polyz_pack(uint8_t *r, const poly *a) {
@@ -905,7 +904,7 @@ void polyz_unpack(poly *r, const uint8_t *a) {
 *              Input coefficients are assumed to be standard representatives.
 *
 * Arguments:   - uint8_t *r: pointer to output byte array with at least
-*                            POLYW1_SIZE_PACKED bytes
+*                            POLYW1_PACKEDBYTES bytes
 *              - const poly *a: pointer to input polynomial
 **************************************************/
 void polyw1_pack(uint8_t *r, const poly *a) {

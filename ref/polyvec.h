@@ -39,7 +39,7 @@ void polyvecl_pointwise_acc_montgomery(poly *w,
 
 
 #define polyvecl_chknorm DILITHIUM_NAMESPACE(_polyvecl_chknorm)
-int polyvecl_chknorm(const polyvecl *v, uint32_t B);
+int polyvecl_chknorm(const polyvecl *v, int32_t B);
 
 
 
@@ -73,7 +73,7 @@ void polyveck_invntt_tomont(polyveck *v);
 void polyveck_pointwise_poly_montgomery(polyveck *r, const poly *a, const polyveck *v);
 
 #define polyveck_chknorm DILITHIUM_NAMESPACE(_polyveck_chknorm)
-int polyveck_chknorm(const polyveck *v, uint32_t B);
+int polyveck_chknorm(const polyveck *v, int32_t B);
 
 #define polyveck_power2round DILITHIUM_NAMESPACE(_polyveck_power2round)
 void polyveck_power2round(polyveck *v1, polyveck *v0, const polyveck *v);

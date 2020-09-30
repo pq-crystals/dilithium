@@ -45,7 +45,7 @@ void poly_reduce(poly *a) {
   for(i = 0; i < N/8; ++i) {
     f = _mm256_load_si256((__m256i *)&a->coeffs[8*i]);
     g = _mm256_add_epi32(f,off);
-    g = _mm256_srli_epi32(g,23);
+    g = _mm256_srai_epi32(g,23);
     g = _mm256_mullo_epi32(g,q);
     f = _mm256_sub_epi32(f,g);
     _mm256_store_si256((__m256i *)&a->coeffs[8*i],f);
@@ -171,15 +171,17 @@ void poly_shiftl(poly *a) {
 /*************************************************
 * Name:        poly_ntt
 *
-* Description: Inplace forward NTT. Output coefficients can be up to
-*              16*Q larger than input coefficients.
+* Description: Inplace forward NTT. Coefficients can grow by up to
+*              8*Q in absolute value.
 *
 * Arguments:   - poly *a: pointer to input/output polynomial
 **************************************************/
 void poly_ntt(poly *a) {
   DBENCH_START();
 
-  ntt_avx(a->coeffs, qdata);
+  poly_freeze(a); //FIXME
+  ntt_avx((uint32_t*)a->coeffs, qdata);
+  poly_reduce(a);
 
   DBENCH_STOP(*tmul);
 }
@@ -188,15 +190,17 @@ void poly_ntt(poly *a) {
 * Name:        poly_invntt_tomont
 *
 * Description: Inplace inverse NTT and multiplication by 2^{32}.
-*              Input coefficients need to be less than 2*Q.
-*              Output coefficients are less than 2*Q.
+*              Input coefficients need to be less than Q in absolute
+*              value and output coefficients are again bounded by Q.
 *
 * Arguments:   - poly *a: pointer to input/output polynomial
 **************************************************/
 void poly_invntt_tomont(poly *a) {
   DBENCH_START();
 
-  invntt_avx(a->coeffs, qdata);
+  poly_freeze(a); //FIXME
+  invntt_avx((uint32_t*)a->coeffs, qdata);
+  poly_reduce(a);
 
   DBENCH_STOP(*tmul);
 }
@@ -206,8 +210,7 @@ void poly_invntt_tomont(poly *a) {
 *
 * Description: Pointwise multiplication of polynomials in NTT domain
 *              representation and multiplication of resulting polynomial
-*              by 2^{-32}. Output coefficients are less than 2*Q if input
-*              coefficients are less than 22*Q.
+*              by 2^{-32}.
 *
 * Arguments:   - poly *c: pointer to output polynomial
 *              - const poly *a: pointer to first input polynomial
@@ -215,8 +218,14 @@ void poly_invntt_tomont(poly *a) {
 **************************************************/
 void poly_pointwise_montgomery(poly *c, const poly *a, const poly *b) {
   DBENCH_START();
+  poly t,u;
 
-  pointwise_avx(c->coeffs, a->coeffs, b->coeffs, qdata);
+  t = *a;
+  poly_freeze(&t);
+  u = *b;
+  poly_freeze(&u);
+  pointwise_avx((uint32_t*)c->coeffs, (uint32_t*)t.coeffs, (uint32_t*)u.coeffs, qdata);
+  poly_reduce(c);
 
   DBENCH_STOP(*tmul);
 }
@@ -743,7 +752,7 @@ void poly_challenge(poly *c, const uint8_t seed[SEEDBYTES]) {
 * Description: Bit-pack polynomial with coefficients in [-ETA,ETA].
 *
 * Arguments:   - uint8_t *r: pointer to output byte array with at least
-*                            POLYETA_SIZE_PACKED bytes
+*                            POLYETA_PACKED_BYTES bytes
 *              - const poly *a: pointer to input polynomial
 **************************************************/
 void polyeta_pack(uint8_t *r, const poly *a) {
@@ -828,7 +837,7 @@ void polyeta_unpack(poly *r, const uint8_t *a) {
 *              Input coefficients are assumed to be standard representatives.
 *
 * Arguments:   - uint8_t *r: pointer to output byte array with at least
-*                            POLYT1_SIZE_PACKED bytes
+*                            POLYT1_PACKED_BYTES bytes
 *              - const poly *a: pointer to input polynomial
 **************************************************/
 void polyt1_pack(uint8_t *r, const poly *a) {
@@ -875,7 +884,7 @@ void polyt1_unpack(poly *r, const uint8_t *a) {
 * Description: Bit-pack polynomial t0 with coefficients in ]-2^{D-1}, 2^{D-1}].
 *
 * Arguments:   - uint8_t *r: pointer to output byte array with at least
-*                            POLYT0_SIZE_PACKED bytes
+*                            POLYT0_PACKED_BYTES bytes
 *              - const poly *a: pointer to input polynomial
 **************************************************/
 void polyt0_pack(uint8_t *r, const poly *a) {
@@ -987,7 +996,7 @@ void polyt0_unpack(poly *r, const uint8_t *a) {
 *              in [-(GAMMA1 - 1), GAMMA1].
 *
 * Arguments:   - uint8_t *r: pointer to output byte array with at least
-*                            POLYZ_SIZE_PACKED bytes
+*                            POLYZ_PACKED_BYTES bytes
 *              - const poly *a: pointer to input polynomial
 **************************************************/
 void polyz_pack(uint8_t *r, const poly *a) {
@@ -1099,7 +1108,7 @@ void polyz_unpack(poly *r, const uint8_t *a) {
 *              Input coefficients are assumed to be standard representatives.
 *
 * Arguments:   - uint8_t *r: pointer to output byte array with at least
-*                            POLYW1_SIZE_PACKED bytes
+*                            POLYW1_PACKED_BYTES bytes
 *              - const poly *a: pointer to input polynomial
 **************************************************/
 void polyw1_pack(uint8_t *r, const poly *a) {
