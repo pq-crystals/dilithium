@@ -35,7 +35,7 @@ int main(void) {
     c = a;
     poly_ntt(&c);
     for(j = 0; j < N; ++j)
-      c.coeffs[j] = (int64_t)c.coeffs[j]*-114592 % Q;
+      c.coeffs[j] = (int64_t)c.coeffs[j]*8265825 % Q;
     poly_invntt_tomont(&c);
     for(j = 0; j < N; ++j) {
       if((c.coeffs[j] - a.coeffs[j]) % Q)

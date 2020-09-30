@@ -11,7 +11,7 @@ fi
 
 for dir in $DIRS; do
   make -C $dir
-  for alg in 2 2aes 3 3aes 4 4aes; do
+  for alg in 2 2aes 3 3aes 5 5aes; do
     ./$dir/test/test_dilithium$alg
     ./$dir/test/test_vectors$alg > tvecs$alg
     ./$dir/PQCgenKAT_sign$alg

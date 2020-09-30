@@ -11,7 +11,7 @@
 #include "../packing.h"
 
 #define MLEN 32
-#define NVECTORS 1000000
+#define NVECTORS 10000
 
 void randombytes(uint8_t *out, size_t outlen) {
   unsigned int i;
@@ -67,8 +67,6 @@ int main(void) {
     for(j = 0; j < 32; ++j)
       printf("%02x", buf[j]);
     printf("\n");
-
-continue;
 
     if(crypto_sign_verify(sig, siglen, m, MLEN, pk))
       fprintf(stderr,"Signature verification failed!\n");
@@ -185,7 +183,6 @@ continue;
 
     polyvecl_ntt(&y);
     polyvec_matrix_pointwise_montgomery(&w, mat, &y);
-    polyveck_reduce(&w);
     polyveck_invntt_tomont(&w);
     polyveck_caddq(&w);
     polyveck_decompose(&w1, &w0, &w);

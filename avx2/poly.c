@@ -179,9 +179,8 @@ void poly_shiftl(poly *a) {
 void poly_ntt(poly *a) {
   DBENCH_START();
 
-  poly_freeze(a); //FIXME
+  poly_caddq(a); //FIXME
   ntt_avx((uint32_t*)a->coeffs, qdata);
-  poly_reduce(a);
 
   DBENCH_STOP(*tmul);
 }
@@ -198,9 +197,8 @@ void poly_ntt(poly *a) {
 void poly_invntt_tomont(poly *a) {
   DBENCH_START();
 
-  poly_freeze(a); //FIXME
   invntt_avx((uint32_t*)a->coeffs, qdata);
-  poly_reduce(a);
+  poly_reduce(a); //FIXME
 
   DBENCH_STOP(*tmul);
 }
@@ -218,14 +216,8 @@ void poly_invntt_tomont(poly *a) {
 **************************************************/
 void poly_pointwise_montgomery(poly *c, const poly *a, const poly *b) {
   DBENCH_START();
-  poly t,u;
 
-  t = *a;
-  poly_freeze(&t);
-  u = *b;
-  poly_freeze(&u);
-  pointwise_avx((uint32_t*)c->coeffs, (uint32_t*)t.coeffs, (uint32_t*)u.coeffs, qdata);
-  poly_reduce(c);
+  pointwise_avx((uint32_t*)c->coeffs, (uint32_t*)a->coeffs, (uint32_t*)b->coeffs, qdata);
 
   DBENCH_STOP(*tmul);
 }
@@ -549,7 +541,7 @@ void poly_uniform_eta_preinit(poly *a, stream128_state *state)
   uint8_t buf[POLY_UNIFORM_ETA_NBLOCKS*STREAM128_BLOCKBYTES+8];
 
   stream128_squeezeblocks(buf, POLY_UNIFORM_ETA_NBLOCKS, state);
-  ctr = rej_eta(a->coeffs, N, buf, sizeof(buf));
+  ctr = rej_eta(a->coeffs, N, buf, POLY_UNIFORM_ETA_NBLOCKS*STREAM128_BLOCKBYTES);
 
   while(ctr < N) {
     stream128_squeezeblocks(buf, 1, state);

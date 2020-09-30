@@ -48,12 +48,12 @@ int crypto_sign_keypair(uint8_t *pk, uint8_t *sk) {
   uint64_t nonce = 0;
   aes256ctr_ctx aesctx;
   aes256ctr_init(&aesctx, rhoprime, nonce++);
-  for(i = 0; i < L; ++i) {
+  for(unsigned int i = 0; i < L; ++i) {
     poly_uniform_eta_preinit(&s1.vec[i], &aesctx);
     aesctx.n = _mm_loadl_epi64((__m128i *)&nonce);
     nonce++;
   }
-  for(i = 0; i < K; ++i) {
+  for(unsigned int i = 0; i < K; ++i) {
     poly_uniform_eta_preinit(&s2.vec[i], &aesctx);
     aesctx.n = _mm_loadl_epi64((__m128i *)&nonce);
     nonce++;
@@ -158,7 +158,7 @@ int crypto_sign_signature(uint8_t *sig,
 rej:
   /* Sample intermediate vector y */
 #ifdef DILITHIUM_USE_AES
-  for(i = 0; i < L; ++i) {
+  for(unsigned int i = 0; i < L; ++i) {
     poly_uniform_gamma1_preinit(&z.vec[i], &aesctx);
     aesctx.n = _mm_loadl_epi64((__m128i *)&nonce);
     nonce++;
@@ -332,6 +332,7 @@ int crypto_sign_verify(const uint8_t *sig,
 
   polyveck_sub(&w1, &w1, &t1);
   polyveck_reduce(&w1);
+  polyveck_caddq(&w1); //FIXME
   polyveck_invntt_tomont(&w1);
 
   /* Reconstruct w1 */

@@ -295,13 +295,7 @@ void polyvecl_pointwise_acc_montgomery(poly *w,
                                        const polyvecl *u,
                                        const polyvecl *v)
 {
-  polyvecl a,b;
-  a = *u;
-  polyvecl_freeze(&a);
-  b = *v;
-  polyvecl_freeze(&b);
-  pointwise_acc_avx((uint32_t*)w->coeffs, (uint32_t*)a.vec->coeffs, (uint32_t*)b.vec->coeffs, qdata);
-  poly_reduce(w);
+  pointwise_acc_avx((uint32_t*)w->coeffs, (uint32_t*)u->vec->coeffs, (uint32_t*)v->vec->coeffs, qdata);
 }
 
 /*************************************************
