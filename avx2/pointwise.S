@@ -168,6 +168,16 @@ pointwise	4096
 acc
 #endif
 
+#if L >= 6
+pointwise	5120
+acc
+#endif
+
+#if L >= 7
+pointwise	6144
+acc
+#endif
+
 #reduce
 vpmuludq	%ymm0,%ymm2,%ymm6
 vpmuludq	%ymm0,%ymm3,%ymm7
