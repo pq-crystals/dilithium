@@ -265,7 +265,7 @@ static const uint8_t idx[256][8] = {
 };
 
 #define REJ_UNIFORM_BUFLEN ((768 + STREAM128_BLOCKBYTES - 1)/STREAM128_BLOCKBYTES*STREAM128_BLOCKBYTES)
-unsigned int rej_uniform_avx(uint32_t * restrict r,
+unsigned int rej_uniform_avx(int32_t * restrict r,
                              const uint8_t * restrict buf)
 {
   unsigned int ctr, pos;
@@ -316,7 +316,7 @@ unsigned int rej_uniform_avx(uint32_t * restrict r,
   return ctr;
 }
 
-unsigned int rej_eta_avx(uint32_t * restrict r,
+unsigned int rej_eta_avx(int32_t * restrict r,
                          unsigned int len,
                          const uint8_t * restrict buf,
                          unsigned int buflen)
@@ -389,7 +389,7 @@ unsigned int rej_eta_avx(uint32_t * restrict r,
   return ctr;
 }
 
-unsigned int rej_gamma1m1_avx(uint32_t * restrict r,
+unsigned int rej_gamma1m1_avx(int32_t * restrict r,
                               unsigned int len,
                               const uint8_t * restrict buf,
                               unsigned int buflen)

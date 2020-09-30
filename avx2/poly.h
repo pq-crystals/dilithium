@@ -13,7 +13,7 @@ typedef struct {
 #define poly_reduce DILITHIUM_NAMESPACE(_poly_reduce)
 void poly_reduce(poly *a);
 #define poly_caddq DILITHIUM_NAMESPACE(_poly_caddq)
-void poly_csadd(poly *a);
+void poly_caddq(poly *a);
 #define poly_freeze DILITHIUM_NAMESPACE(_poly_freeze)
 void poly_freeze(poly *a);
 
@@ -41,7 +41,7 @@ unsigned int poly_make_hint(poly *h, const poly *a0, const poly *a1);
 void poly_use_hint(poly *b, const poly *a, const poly *h);
 
 #define poly_chknorm DILITHIUM_NAMESPACE(_poly_chknorm)
-int  poly_chknorm(const poly *a, int32_t B);
+int poly_chknorm(const poly *a, int32_t B);
 #define poly_uniform_preinit DILITHIUM_NAMESPACE(_poly_uniform_preinit)
 void poly_uniform_preinit(poly *a, stream128_state *state);
 #define poly_uniform DILITHIUM_NAMESPACE(_poly_uniform)
@@ -60,6 +60,8 @@ void poly_uniform_gamma1_preinit(poly *a, stream256_state *state);
 void poly_uniform_gamma1(poly *a,
                          const uint8_t seed[CRHBYTES],
                          uint16_t nonce);
+#define poly_challenge DILITHIUM_NAMESPACE(_poly_challenge)
+void poly_challenge(poly *c, const uint8_t seed[SEEDBYTES]);
 
 #ifndef DILITHIUM_USE_AES
 #define poly_uniform_4x DILITHIUM_NAMESPACE(_poly_uniform_4x)

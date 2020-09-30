@@ -5,9 +5,9 @@
 #include "consts.h"
 
 #define _mm256_blendv_epi32(a,b,mask) \
-  _mm256_castps_si256(_mm256_blenv_ps(_mm256_castsi256_ps(a), \
-                                      _mm256_castsi256_ps(b), \
-                                      _mm256_castsi256_ps(mask))
+  _mm256_castps_si256(_mm256_blendv_ps(_mm256_castsi256_ps(a), \
+                                       _mm256_castsi256_ps(b), \
+                                       _mm256_castsi256_ps(mask)))
 
 /*************************************************
 * Name:        power2round
@@ -57,7 +57,9 @@ void power2round_avx(int32_t * restrict a1, int32_t * restrict a0, const int32_t
 void decompose_avx(int32_t * restrict a1, int32_t * restrict a0, const int32_t * restrict a)
 {
   unsigned int i;
-  __m256i f,f0,f1,t0,t1;
+  __m256i f,f0,f1;
+  const __m256i q = _mm256_load_si256((__m256i *)&qdata[_8XQ]);
+  const __m256i hq = _mm256_srli_epi32(q,1);
   const __m256i v = _mm256_set1_epi32(1025);
   const __m256i alpha = _mm256_set1_epi32(2*GAMMA2);
   const __m256i off = _mm256_set1_epi32(127);
@@ -67,22 +69,27 @@ void decompose_avx(int32_t * restrict a1, int32_t * restrict a0, const int32_t *
   for(i=0;i<N/8;i++) {
     f = _mm256_load_si256((__m256i *)&a[8*i]);
     f1 = _mm256_add_epi32(f,off);
-    f1 = _mm256_srli_epi32(f,7);
+    f1 = _mm256_srli_epi32(f1,7);
     f1 = _mm256_mulhi_epu16(f1,v);
     f1 = _mm256_mulhrs_epi16(f1,shift);
     f1 = _mm256_and_si256(f1,mask);
     f0 = _mm256_mullo_epi32(f1,alpha);
     f0 = _mm256_sub_epi32(f,f0);
+    f = _mm256_cmpgt_epi32(f0,hq);
+    f = _mm256_and_si256(f,q);
+    f0 = _mm256_sub_epi32(f0,f);
     _mm256_store_si256((__m256i *)&a1[8*i],f1);
     _mm256_store_si256((__m256i *)&a0[8*i],f0);
   }
 }
 
-#elif GAMMA2 = (Q-1)/88
+#elif GAMMA2 == (Q-1)/88
 void decompose_avx(int32_t * restrict a1, int32_t * restrict a0, const int32_t * restrict a)
 {
   unsigned int i;
   __m256i f,f0,f1,t;
+  const __m256i q = _mm256_load_si256((__m256i *)&qdata[_8XQ]);
+  const __m256i hq = _mm256_srli_epi32(q,1);
   const __m256i v = _mm256_set1_epi32(11275);
   const __m256i alpha = _mm256_set1_epi32(2*GAMMA2);
   const __m256i off = _mm256_set1_epi32(127);
@@ -100,6 +107,9 @@ void decompose_avx(int32_t * restrict a1, int32_t * restrict a0, const int32_t *
     f1 = _mm256_blendv_epi8(f1,zero,t);
     f0 = _mm256_mullo_epi32(f1,alpha);
     f0 = _mm256_sub_epi32(f,f0);
+    f = _mm256_cmpgt_epi32(f0,hq);
+    f = _mm256_and_si256(f,q);
+    f0 = _mm256_sub_epi32(f0,f);
     _mm256_store_si256((__m256i *)&a1[8*i],f1);
     _mm256_store_si256((__m256i *)&a0[8*i],f0);
   }
@@ -161,7 +171,7 @@ void use_hint_avx(int32_t * restrict b, const int32_t * restrict a, const int32_
   unsigned int i;
   __attribute__((aligned(32)))
   int32_t a0[N];
-  __m256i f,g,h;
+  __m256i f,g,h,t;
   const __m256i zero = _mm256_setzero_si256();
 #if GAMMA2 == (Q-1)/32
   const __m256i mask = _mm256_set1_epi32(15);
@@ -174,7 +184,9 @@ void use_hint_avx(int32_t * restrict b, const int32_t * restrict a, const int32_
     f = _mm256_load_si256((__m256i *)&a0[8*i]);
     g = _mm256_load_si256((__m256i *)&b[8*i]);
     h = _mm256_load_si256((__m256i *)&hint[8*i]);
-    h = _mm256_sign_epi32(h,f);
+    t = _mm256_blendv_epi32(zero,h,f);
+    t = _mm256_slli_epi32(t,1);
+    h = _mm256_sub_epi32(h,t);
     g = _mm256_add_epi32(g,h);
 #if GAMMA2 == (Q-1)/32
     g = _mm256_and_si256(g,mask);
@@ -186,3 +198,4 @@ void use_hint_avx(int32_t * restrict b, const int32_t * restrict a, const int32_
     _mm256_store_si256((__m256i *)&b[8*i],g);
   }
 }
+
