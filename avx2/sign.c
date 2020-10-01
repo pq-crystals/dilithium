@@ -186,6 +186,7 @@ rej:
   polyvecl *tmpl = (polyvecl *)&h;
   *tmpl = z;
   polyvecl_ntt(tmpl);
+#if 1
   polyvec_matrix_pointwise_montgomery(&w1, mat, tmpl);
   polyveck_invntt_tomont(&w1);
 
@@ -193,6 +194,16 @@ rej:
   polyveck_caddq(&w1);
   polyveck_decompose(&w1, &w0, &w1);
   polyveck_pack_w1(sig, &w1);
+
+#else
+  for(i = 0; i < K; i++) {
+    polyvecl_pointwise_acc_montgomery(&w1.vec[i], &mat[i], tmpl);
+    poly_invntt_tomont(&w1.vec[i]);
+    poly_caddq(&w1.vec[i]);
+    poly_decompose(&w1.vec[i], &w0.vec[i], &w1.vec[i]);
+    polyw1_pack(sig + i*POLYW1_PACKEDBYTES, &w1.vec[i]);
+  }
+#endif
 
   shake256_init(&state);
   shake256_absorb(&state, mu, CRHBYTES);
@@ -203,12 +214,23 @@ rej:
   poly_ntt(&cp);
 
   /* Compute z, reject if it reveals secret */
+#if 1
   polyvecl_pointwise_poly_montgomery(tmpl, &cp, &s1);
   polyvecl_invntt_tomont(tmpl);
   polyvecl_add(&z, &z, tmpl);
   polyvecl_reduce(tmpl);
   if(polyvecl_chknorm(&z, GAMMA1 - BETA))
     goto rej;
+#else
+  for(i = 0; i < L; i++) {
+    poly_pointwise_montgomery(&tmpl.vec[i], &cp, &s1.vec[i]);
+    poly_invntt_tomont(&tmp;.vec[i]);
+    poly_add(&z.vec[i], &z.vec[i], &tmpl.vec[i]);
+    poly_reduce(&tmpl.vec[i]);
+    if(poly_chknorm(&z.vec[i], GAMMA1 - BETA);
+      goto rej;
+  }
+#endif
 
   /* Check that subtracting cs2 does not change high bits of w and low bits
    * do not reveal secret information */
@@ -332,7 +354,7 @@ int crypto_sign_verify(const uint8_t *sig,
 
   polyveck_sub(&w1, &w1, &t1);
   polyveck_reduce(&w1);
-  polyveck_caddq(&w1); //FIXME
+  //polyveck_caddq(&w1); //FIXME
   polyveck_invntt_tomont(&w1);
 
   /* Reconstruct w1 */

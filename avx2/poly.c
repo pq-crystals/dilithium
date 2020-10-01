@@ -179,8 +179,7 @@ void poly_shiftl(poly *a) {
 void poly_ntt(poly *a) {
   DBENCH_START();
 
-  poly_caddq(a); //FIXME
-  ntt_avx((uint32_t*)a->coeffs, qdata);
+  ntt_avx(a->coeffs, qdata);
 
   DBENCH_STOP(*tmul);
 }
@@ -197,8 +196,7 @@ void poly_ntt(poly *a) {
 void poly_invntt_tomont(poly *a) {
   DBENCH_START();
 
-  invntt_avx((uint32_t*)a->coeffs, qdata);
-  poly_reduce(a); //FIXME
+  invntt_avx(a->coeffs, qdata);
 
   DBENCH_STOP(*tmul);
 }
@@ -217,7 +215,7 @@ void poly_invntt_tomont(poly *a) {
 void poly_pointwise_montgomery(poly *c, const poly *a, const poly *b) {
   DBENCH_START();
 
-  pointwise_avx((uint32_t*)c->coeffs, (uint32_t*)a->coeffs, (uint32_t*)b->coeffs, qdata);
+  pointwise_avx(c->coeffs, a->coeffs, b->coeffs, qdata);
 
   DBENCH_STOP(*tmul);
 }

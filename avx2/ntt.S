@@ -3,42 +3,38 @@
 
 .macro butterfly rl0,rl1,rl2,rl3,rh0,rh1,rh2,rh3,z0=3,z1=3,z2=3,z3=3
 #mul
-vpmuludq	%ymm\z0,%ymm\rh0,%ymm\rh0
-vpmuludq	%ymm\z1,%ymm\rh1,%ymm\rh1
-vpmuludq	%ymm\z2,%ymm\rh2,%ymm\rh2
-vpmuludq	%ymm\z3,%ymm\rh3,%ymm\rh3
+vpmuldq		%ymm\z0,%ymm\rh0,%ymm\rh0
+vpmuldq		%ymm\z1,%ymm\rh1,%ymm\rh1
+vpmuldq		%ymm\z2,%ymm\rh2,%ymm\rh2
+vpmuldq		%ymm\z3,%ymm\rh3,%ymm\rh3
 
 #reduce
-vpmuludq	%ymm0,%ymm\rh0,%ymm12
-vpmuludq	%ymm0,%ymm\rh1,%ymm13
-vpmuludq	%ymm0,%ymm\rh2,%ymm14
-vpmuludq	%ymm0,%ymm\rh3,%ymm15
-vpmuludq	%ymm1,%ymm12,%ymm12
-vpmuludq	%ymm1,%ymm13,%ymm13
-vpmuludq	%ymm1,%ymm14,%ymm14
-vpmuludq	%ymm1,%ymm15,%ymm15
-vpaddq		%ymm\rh0,%ymm12,%ymm12
-vpaddq		%ymm\rh1,%ymm13,%ymm13
-vpaddq		%ymm\rh2,%ymm14,%ymm14
-vpaddq		%ymm\rh3,%ymm15,%ymm15
+vpmuldq		%ymm0,%ymm\rh0,%ymm12
+vpmuldq		%ymm0,%ymm\rh1,%ymm13
+vpmuldq		%ymm0,%ymm\rh2,%ymm14
+vpmuldq		%ymm0,%ymm\rh3,%ymm15
+vpmuldq		%ymm1,%ymm12,%ymm12
+vpmuldq		%ymm1,%ymm13,%ymm13
+vpmuldq		%ymm1,%ymm14,%ymm14
+vpmuldq		%ymm1,%ymm15,%ymm15
+vpsubq		%ymm12,%ymm\rh0,%ymm12
+vpsubq		%ymm13,%ymm\rh1,%ymm13
+vpsubq		%ymm14,%ymm\rh2,%ymm14
+vpsubq		%ymm15,%ymm\rh3,%ymm15
 vpsrlq		$32,%ymm12,%ymm12
 vpsrlq		$32,%ymm13,%ymm13
 vpsrlq		$32,%ymm14,%ymm14
 vpsrlq		$32,%ymm15,%ymm15
 
 #update
-vpaddd		%ymm2,%ymm\rl0,%ymm\rh0
-vpaddd		%ymm2,%ymm\rl1,%ymm\rh1
-vpaddd		%ymm2,%ymm\rl2,%ymm\rh2
-vpaddd		%ymm2,%ymm\rl3,%ymm\rh3
+vpsubd		%ymm12,%ymm\rl0,%ymm\rh0
+vpsubd		%ymm13,%ymm\rl1,%ymm\rh1
+vpsubd		%ymm14,%ymm\rl2,%ymm\rh2
+vpsubd		%ymm15,%ymm\rl3,%ymm\rh3
 vpaddd		%ymm12,%ymm\rl0,%ymm\rl0
 vpaddd		%ymm13,%ymm\rl1,%ymm\rl1
 vpaddd		%ymm14,%ymm\rl2,%ymm\rl2
 vpaddd		%ymm15,%ymm\rl3,%ymm\rl3
-vpsubd		%ymm12,%ymm\rh0,%ymm\rh0
-vpsubd		%ymm13,%ymm\rh1,%ymm\rh1
-vpsubd		%ymm14,%ymm\rh2,%ymm\rh2
-vpsubd		%ymm15,%ymm\rh3,%ymm\rh3
 .endm
 
 .text
@@ -179,7 +175,6 @@ sub		$2048,%rsp
 #consts
 vmovdqa		_8XQINV*4(%rsi),%ymm0
 vmovdqa		_8XQ*4(%rsi),%ymm1
-vmovdqa		_8X2Q*4(%rsi),%ymm2
 
 #levels0t2
 mov		%rsi,%rcx
