@@ -11,7 +11,7 @@
 #include "../packing.h"
 
 #define MLEN 32
-#define NVECTORS 1
+#define NVECTORS 10000
 
 void randombytes(uint8_t *out, size_t outlen) {
   unsigned int i;
