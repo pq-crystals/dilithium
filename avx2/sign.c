@@ -67,12 +67,12 @@ int crypto_sign_keypair(uint8_t *pk, uint8_t *sk) {
   uint64_t nonce = 0;
   aes256ctr_ctx aesctx;
   aes256ctr_init(&aesctx, rhoprime, nonce++);
-  for(unsigned int i = 0; i < L; ++i) {
+  for(i = 0; i < L; ++i) {
     poly_uniform_eta_preinit(&s1.vec[i], &aesctx);
     aesctx.n = _mm_loadl_epi64((__m128i *)&nonce);
     nonce++;
   }
-  for(unsigned int i = 0; i < K; ++i) {
+  for(i = 0; i < K; ++i) {
     poly_uniform_eta_preinit(&s2.vec[i], &aesctx);
     aesctx.n = _mm_loadl_epi64((__m128i *)&nonce);
     nonce++;

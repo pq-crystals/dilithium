@@ -35,7 +35,7 @@ void polyvec_matrix_expand_row(polyvecl mat[K], const uint8_t rho[SEEDBYTES], un
   }
 }
 
-void polyvec_matrix_expand(polyvecl mat[K] const uint8_t rho[SEEDBYTES]) {
+void polyvec_matrix_expand(polyvecl mat[K], const uint8_t rho[SEEDBYTES]) {
   unsigned int i;
 
   for(i = 0; i < K; i++)
