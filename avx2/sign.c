@@ -11,6 +11,19 @@
 #include "aes256ctr.h"
 #endif
 
+#ifndef DILITHIUM_USE_AES
+static inline void polyvec_matrix_expand_row(polyvecl mat[K], const uint8_t rho[SEEDBYTES], unsigned int i) {
+  if(i == 0) polyvec_matrix_expand_row0(mat, rho);
+  if(i == 1) polyvec_matrix_expand_row1(mat, rho);
+  if(i == 2) polyvec_matrix_expand_row2(mat, rho);
+  if(i == 3) polyvec_matrix_expand_row3(mat, rho);
+  if(i == 4) polyvec_matrix_expand_row4(mat, rho);
+  if(i == 5) polyvec_matrix_expand_row5(mat, rho);
+  if(i == 6) polyvec_matrix_expand_row6(mat, rho);
+  if(i == 7) polyvec_matrix_expand_row7(mat, rho);
+}
+#endif
+
 /*************************************************
 * Name:        crypto_sign_keypair
 *
@@ -24,14 +37,15 @@
 * Returns 0 (success)
 **************************************************/
 int crypto_sign_keypair(uint8_t *pk, uint8_t *sk) {
+  unsigned int i;
   __attribute__((aligned(32)))
   uint8_t seedbuf[3*SEEDBYTES];
   __attribute__((aligned(32)))
   uint8_t tr[CRHBYTES];
   const uint8_t *rho, *rhoprime, *key;
-  polyvecl mat[K];
-  polyvecl s1, s1hat;
-  polyveck s2, t1, t0;
+  polyvecl mat[K], s1;
+  polyveck s2;
+  poly t1, t0;
 
   /* Get randomness for rho, rhoprime and key */
   randombytes(seedbuf, SEEDBYTES);
@@ -40,8 +54,13 @@ int crypto_sign_keypair(uint8_t *pk, uint8_t *sk) {
   rhoprime = seedbuf + SEEDBYTES;
   key = seedbuf + 2*SEEDBYTES;
 
-  /* Expand matrix */
-  polyvec_matrix_expand(mat, rho);
+  /* Store rho, key */
+  for(i = 0; i < SEEDBYTES; ++i)
+    pk[i] = rho[i];
+  for(i = 0; i < SEEDBYTES; ++i)
+    sk[i] = rho[i];
+  for(i = 0; i < SEEDBYTES; ++i)
+    sk[SEEDBYTES + i] = key[i];
 
   /* Sample short vectors s1 and s2 */
 #ifdef DILITHIUM_USE_AES
@@ -64,33 +83,47 @@ int crypto_sign_keypair(uint8_t *pk, uint8_t *sk) {
 #elif K == 6 && L == 5
   poly_uniform_eta_4x(&s1.vec[0], &s1.vec[1], &s1.vec[2], &s1.vec[3], rhoprime, 0, 1, 2, 3);
   poly_uniform_eta_4x(&s1.vec[4], &s2.vec[0], &s2.vec[1], &s2.vec[2], rhoprime, 4, 5, 6, 7);
-  poly_uniform_eta_4x(&s2.vec[3], &s2.vec[4], &s2.vec[5], &t1.vec[0], rhoprime, 8, 9, 10, 11);
+  poly_uniform_eta_4x(&s2.vec[3], &s2.vec[4], &s2.vec[5], &t0, rhoprime, 8, 9, 10, 11);
 #elif K == 8 && L == 7
   poly_uniform_eta_4x(&s1.vec[0], &s1.vec[1], &s1.vec[2], &s1.vec[3], rhoprime, 0, 1, 2, 3);
   poly_uniform_eta_4x(&s1.vec[4], &s1.vec[5], &s1.vec[6], &s2.vec[0], rhoprime, 4, 5, 6, 7);
   poly_uniform_eta_4x(&s2.vec[1], &s2.vec[2], &s2.vec[3], &s2.vec[4], rhoprime, 8, 9, 10, 11);
-  poly_uniform_eta_4x(&s2.vec[5], &s2.vec[6], &s2.vec[7], &t1.vec[0], rhoprime, 12, 13, 14, 15);
+  poly_uniform_eta_4x(&s2.vec[5], &s2.vec[6], &s2.vec[7], &t0, rhoprime, 12, 13, 14, 15);
 #else
 #error
 #endif
 
-  /* Matrix-vector multiplication */
-  s1hat = s1;
-  polyvecl_ntt(&s1hat);
-  polyvec_matrix_pointwise_montgomery(&t1, mat, &s1hat);
-  polyveck_invntt_tomont(&t1);
+  /* Pack secret vectors */
+  for(i = 0; i < L; i++)
+    polyeta_pack(sk + 2*SEEDBYTES + CRHBYTES + i*POLYETA_PACKEDBYTES, &s1.vec[i]);
+  for(i = 0; i < K; i++)
+    polyeta_pack(sk + 2*SEEDBYTES + CRHBYTES + (L + i)*POLYETA_PACKEDBYTES, &s2.vec[i]);
 
-  /* Add error vector s2 */
-  polyveck_add(&t1, &t1, &s2);
+  /* Transform s1 */
+  polyvecl_ntt(&s1);
 
-  /* Extract t1 and write public key */
-  polyveck_caddq(&t1);
-  polyveck_power2round(&t1, &t0, &t1);
-  pack_pk(pk, rho, &t1);
+  for(i = 0; i < K; i++) {
+    /* Expand matrix row */
+    polyvec_matrix_expand_row(mat, rho, i);
 
-  /* Compute CRH(rho, t1) and write secret key */
+    /* Compute inner-product */
+    polyvecl_pointwise_acc_montgomery(&t1, &mat[i], &s1);
+    poly_invntt_tomont(&t1);
+
+    /* Add error polynomial */
+    poly_add(&t1, &t1, &s2.vec[i]);
+
+    /* Round t and pack t1, t0 */
+    poly_caddq(&t1);
+    poly_power2round(&t1, &t0, &t1);
+    polyt1_pack(pk + SEEDBYTES + i*POLYT1_PACKEDBYTES, &t1);
+    polyt0_pack(sk + 2*SEEDBYTES + CRHBYTES + (L+K)*POLYETA_PACKEDBYTES + i*POLYT0_PACKEDBYTES, &t0);
+  }
+
+  /* Compute CRH(rho, t1) and store in secret key */
   crh(tr, pk, CRYPTO_PUBLICKEYBYTES);
-  pack_sk(sk, rho, tr, key, &t0, &s1, &s2);
+  for(i = 0; i < CRHBYTES; ++i)
+    sk[2*SEEDBYTES + i] = tr[i];
 
   return 0;
 }

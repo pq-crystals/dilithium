@@ -20,49 +20,85 @@
 *              - const uint8_t rho[]: byte array containing seed rho
 **************************************************/
 #ifdef DILITHIUM_USE_AES
-void polyvec_matrix_expand(polyvecl mat[K], const uint8_t rho[SEEDBYTES]) {
-  unsigned int i, j;
-  __attribute__((aligned(16)))
+void polyvec_matrix_expand_row(polyvecl mat[K], const uint8_t rho[SEEDBYTES], unsigned int i) {
+  unsigned int j;
   uint64_t nonce;
-  aes256ctr_ctx state;
+  static int init = 0;
+  static aes256ctr_ctx state;
 
-  aes256ctr_init(&state, rho, 0);
+  if(!init) aes256ctr_init(&state, rho, 0);
 
-  for(i = 0; i < K; ++i) {
-    for(j = 0; j < L; ++j) {
-      nonce = (i << 8) + j;
-      state.n = _mm_loadl_epi64((__m128i *)&nonce);
-      poly_uniform_preinit(&mat[i].vec[j], &state);
-    }
+  for(j = 0; j < L; ++j) {
+    nonce = (i << 8) + j;
+    state.n = _mm_loadl_epi64((__m128i *)&nonce);
+    poly_uniform_preinit(&mat[i].vec[j], &state);
   }
 }
+
+void polyvec_matrix_expand(polyvecl mat[K] const uint8_t rho[SEEDBYTES]) {
+  unsigned int i;
+
+  for(i = 0; i < K; i++)
+    polyvec_matrix_expand_row(mat, rho, i);
+}
+
 #elif K == 4 && L == 4
 void polyvec_matrix_expand(polyvecl mat[K], const uint8_t rho[SEEDBYTES]) {
+  polyvec_matrix_expand_row0(mat, rho);
+  polyvec_matrix_expand_row1(mat, rho);
+  polyvec_matrix_expand_row2(mat, rho);
+  polyvec_matrix_expand_row3(mat, rho);
+}
+
+void polyvec_matrix_expand_row0(polyvecl mat[K], const uint8_t rho[SEEDBYTES]) {
   poly_uniform_4x(&mat[0].vec[0],
                   &mat[0].vec[1],
                   &mat[0].vec[2],
                   &mat[0].vec[3],
                   rho, 0, 1, 2, 3);
+}
+
+void polyvec_matrix_expand_row1(polyvecl mat[K], const uint8_t rho[SEEDBYTES]) {
   poly_uniform_4x(&mat[1].vec[0],
                   &mat[1].vec[1],
                   &mat[1].vec[2],
                   &mat[1].vec[3],
                   rho, 256, 257, 258, 259);
+}
+
+void polyvec_matrix_expand_row2(polyvecl mat[K], const uint8_t rho[SEEDBYTES]) {
   poly_uniform_4x(&mat[2].vec[0],
                   &mat[2].vec[1],
                   &mat[2].vec[2],
                   &mat[2].vec[3],
                   rho, 512, 513, 514, 515);
+}
+
+void polyvec_matrix_expand_row3(polyvecl mat[K], const uint8_t rho[SEEDBYTES]) {
   poly_uniform_4x(&mat[3].vec[0],
                   &mat[3].vec[1],
                   &mat[3].vec[2],
                   &mat[3].vec[3],
                   rho, 768, 769, 770, 771);
 }
+
+void polyvec_matrix_expand_row4(polyvecl mat[K], const uint8_t rho[SEEDBYTES]) {}
+void polyvec_matrix_expand_row5(polyvecl mat[K], const uint8_t rho[SEEDBYTES]) {}
+void polyvec_matrix_expand_row6(polyvecl mat[K], const uint8_t rho[SEEDBYTES]) {}
+void polyvec_matrix_expand_row7(polyvecl mat[K], const uint8_t rho[SEEDBYTES]) {}
+void polyvec_matrix_expand_row8(polyvecl mat[K], const uint8_t rho[SEEDBYTES]) {}
+
 #elif K == 6 && L == 5
 void polyvec_matrix_expand(polyvecl mat[K], const uint8_t rho[SEEDBYTES]) {
-  poly t0, t1;
+  polyvec_matrix_expand_row0(mat, rho);
+  polyvec_matrix_expand_row1(mat, rho);
+  polyvec_matrix_expand_row2(mat, rho);
+  polyvec_matrix_expand_row3(mat, rho);
+  polyvec_matrix_expand_row4(mat, rho);
+  polyvec_matrix_expand_row5(mat, rho);
+}
 
+void polyvec_matrix_expand_row0(polyvecl mat[K], const uint8_t rho[SEEDBYTES]) {
   poly_uniform_4x(&mat[0].vec[0],
                   &mat[0].vec[1],
                   &mat[0].vec[2],
@@ -73,21 +109,33 @@ void polyvec_matrix_expand(polyvecl mat[K], const uint8_t rho[SEEDBYTES]) {
                   &mat[1].vec[1],
                   &mat[1].vec[2],
                   rho, 4, 256, 257, 258);
+}
+
+void polyvec_matrix_expand_row1(polyvecl mat[K], const uint8_t rho[SEEDBYTES]) {
   poly_uniform_4x(&mat[1].vec[3],
                   &mat[1].vec[4],
                   &mat[2].vec[0],
                   &mat[2].vec[1],
                   rho, 259, 260, 512, 513);
+}
+
+void polyvec_matrix_expand_row2(polyvecl mat[K], const uint8_t rho[SEEDBYTES]) {
   poly_uniform_4x(&mat[2].vec[2],
                   &mat[2].vec[3],
                   &mat[2].vec[4],
                   &mat[3].vec[0],
                   rho, 514, 515, 516, 768);
+}
+
+void polyvec_matrix_expand_row3(polyvecl mat[K], const uint8_t rho[SEEDBYTES]) {
   poly_uniform_4x(&mat[3].vec[1],
                   &mat[3].vec[2],
                   &mat[3].vec[3],
                   &mat[3].vec[4],
                   rho, 769, 770, 771, 772);
+}
+
+void polyvec_matrix_expand_row4(polyvecl mat[K], const uint8_t rho[SEEDBYTES]) {
   poly_uniform_4x(&mat[4].vec[0],
                   &mat[4].vec[1],
                   &mat[4].vec[2],
@@ -98,14 +146,34 @@ void polyvec_matrix_expand(polyvecl mat[K], const uint8_t rho[SEEDBYTES]) {
                   &mat[5].vec[1],
                   &mat[5].vec[2],
                   rho, 1028, 1280, 1281, 1282);
+}
+
+void polyvec_matrix_expand_row5(polyvecl mat[K], const uint8_t rho[SEEDBYTES]) {
+  poly t0,t1;
+
   poly_uniform_4x(&mat[5].vec[3],
                   &mat[5].vec[4],
                   &t0,
                   &t1,
                   rho, 1283, 1284, 0, 0);
 }
+
+void polyvec_matrix_expand_row6(polyvecl mat[K], const uint8_t rho[SEEDBYTES]) {}
+void polyvec_matrix_expand_row7(polyvecl mat[K], const uint8_t rho[SEEDBYTES]) {}
+
 #elif K == 8 && L == 7
 void polyvec_matrix_expand(polyvecl mat[K], const uint8_t rho[SEEDBYTES]) {
+  polyvec_matrix_expand_row0(mat, rho);
+  polyvec_matrix_expand_row1(mat, rho);
+  polyvec_matrix_expand_row2(mat, rho);
+  polyvec_matrix_expand_row3(mat, rho);
+  polyvec_matrix_expand_row4(mat, rho);
+  polyvec_matrix_expand_row5(mat, rho);
+  polyvec_matrix_expand_row6(mat, rho);
+  polyvec_matrix_expand_row7(mat, rho);
+}
+
+void polyvec_matrix_expand_row0(polyvecl mat[K], const uint8_t rho[SEEDBYTES]) {
   poly_uniform_4x(&mat[0].vec[0],
                   &mat[0].vec[1],
                   &mat[0].vec[2],
@@ -116,6 +184,9 @@ void polyvec_matrix_expand(polyvecl mat[K], const uint8_t rho[SEEDBYTES]) {
                   &mat[0].vec[6],
                   &mat[1].vec[0],
                   rho, 4, 5, 6, 256);
+}
+
+void polyvec_matrix_expand_row1(polyvecl mat[K], const uint8_t rho[SEEDBYTES]) {
   poly_uniform_4x(&mat[1].vec[1],
                   &mat[1].vec[2],
                   &mat[1].vec[3],
@@ -126,6 +197,9 @@ void polyvec_matrix_expand(polyvecl mat[K], const uint8_t rho[SEEDBYTES]) {
                   &mat[2].vec[0],
                   &mat[2].vec[1],
                   rho, 261, 262, 512, 513);
+}
+
+void polyvec_matrix_expand_row2(polyvecl mat[K], const uint8_t rho[SEEDBYTES]) {
   poly_uniform_4x(&mat[2].vec[2],
                   &mat[2].vec[3],
                   &mat[2].vec[4],
@@ -136,11 +210,17 @@ void polyvec_matrix_expand(polyvecl mat[K], const uint8_t rho[SEEDBYTES]) {
                   &mat[3].vec[1],
                   &mat[3].vec[2],
                   rho, 518, 768, 769, 770);
+}
+
+void polyvec_matrix_expand_row3(polyvecl mat[K], const uint8_t rho[SEEDBYTES]) {
   poly_uniform_4x(&mat[3].vec[3],
                   &mat[3].vec[4],
                   &mat[3].vec[5],
                   &mat[3].vec[6],
                   rho, 771, 772, 773, 774);
+}
+
+void polyvec_matrix_expand_row4(polyvecl mat[K], const uint8_t rho[SEEDBYTES]) {
   poly_uniform_4x(&mat[4].vec[0],
                   &mat[4].vec[1],
                   &mat[4].vec[2],
@@ -151,6 +231,9 @@ void polyvec_matrix_expand(polyvecl mat[K], const uint8_t rho[SEEDBYTES]) {
                   &mat[4].vec[6],
                   &mat[5].vec[0],
                   rho, 1028, 1029, 1030, 1280);
+}
+
+void polyvec_matrix_expand_row5(polyvecl mat[K], const uint8_t rho[SEEDBYTES]) {
   poly_uniform_4x(&mat[5].vec[1],
                   &mat[5].vec[2],
                   &mat[5].vec[3],
@@ -161,6 +244,9 @@ void polyvec_matrix_expand(polyvecl mat[K], const uint8_t rho[SEEDBYTES]) {
                   &mat[6].vec[0],
                   &mat[6].vec[1],
                   rho, 1285, 1286, 1536, 1537);
+}
+
+void polyvec_matrix_expand_row6(polyvecl mat[K], const uint8_t rho[SEEDBYTES]) {
   poly_uniform_4x(&mat[6].vec[2],
                   &mat[6].vec[3],
                   &mat[6].vec[4],
@@ -171,6 +257,9 @@ void polyvec_matrix_expand(polyvecl mat[K], const uint8_t rho[SEEDBYTES]) {
                   &mat[7].vec[1],
                   &mat[7].vec[2],
                   rho, 1542, 1792, 1793, 1794);
+}
+
+void polyvec_matrix_expand_row7(polyvecl mat[K], const uint8_t rho[SEEDBYTES]) {
   poly_uniform_4x(&mat[7].vec[3],
                   &mat[7].vec[4],
                   &mat[7].vec[5],
