@@ -22,7 +22,6 @@ void polyvec_matrix_expand(polyvecl mat[K], const uint8_t rho[SEEDBYTES]) {
       poly_uniform(&mat[i].vec[j], rho, (i << 8) + j);
 }
 
-// TODO: Comment
 void polyvec_matrix_pointwise_montgomery(polyveck *t, const polyvecl mat[K], const polyvecl *v) {
   unsigned int i;
 
@@ -34,7 +33,6 @@ void polyvec_matrix_pointwise_montgomery(polyveck *t, const polyvecl mat[K], con
 /************ Vectors of polynomials of length L **************/
 /**************************************************************/
 
-// TODO: Comment
 void polyvecl_uniform_eta(polyvecl *v, const uint8_t seed[SEEDBYTES], uint16_t nonce) {
   unsigned int i;
 
@@ -42,7 +40,6 @@ void polyvecl_uniform_eta(polyvecl *v, const uint8_t seed[SEEDBYTES], uint16_t n
     poly_uniform_eta(&v->vec[i], seed, nonce++);
 }
 
-// TODO: Comment
 void polyvecl_uniform_gamma1(polyvecl *v, const uint8_t seed[SEEDBYTES], uint16_t nonce) {
   unsigned int i;
 
@@ -50,7 +47,6 @@ void polyvecl_uniform_gamma1(polyvecl *v, const uint8_t seed[SEEDBYTES], uint16_
     poly_uniform_gamma1(&v->vec[i], seed, L*nonce + i);
 }
 
-// TODO: Comment
 void polyvecl_reduce(polyvecl *v) {
   unsigned int i;
 
@@ -105,7 +101,6 @@ void polyvecl_ntt(polyvecl *v) {
     poly_ntt(&v->vec[i]);
 }
 
-// TODO: Comment
 void polyvecl_invntt_tomont(polyvecl *v) {
   unsigned int i;
 
@@ -113,7 +108,6 @@ void polyvecl_invntt_tomont(polyvecl *v) {
     poly_invntt_tomont(&v->vec[i]);
 }
 
-// TODO: Comment
 void polyvecl_pointwise_poly_montgomery(polyvecl *r, const poly *a, const polyvecl *v) {
   unsigned int i;
 
@@ -172,7 +166,6 @@ int polyvecl_chknorm(const polyvecl *v, int32_t bound)  {
 /************ Vectors of polynomials of length K **************/
 /**************************************************************/
 
-// TODO: Comment
 void polyveck_uniform_eta(polyveck *v, const uint8_t seed[SEEDBYTES], uint16_t nonce) {
   unsigned int i;
 
@@ -306,7 +299,6 @@ void polyveck_invntt_tomont(polyveck *v) {
     poly_invntt_tomont(&v->vec[i]);
 }
 
-// TODO: Comment
 void polyveck_pointwise_poly_montgomery(polyveck *r, const poly *a, const polyveck *v) {
   unsigned int i;
 
@@ -420,7 +412,6 @@ void polyveck_use_hint(polyveck *w, const polyveck *u, const polyveck *h) {
     poly_use_hint(&w->vec[i], &u->vec[i], &h->vec[i]);
 }
 
-// TODO: Comment
 void polyveck_pack_w1(uint8_t r[K*POLYW1_PACKEDBYTES], const polyveck *w1) {
   unsigned int i;
 
