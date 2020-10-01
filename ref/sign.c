@@ -155,7 +155,7 @@ rej:
   polyveck_pointwise_poly_montgomery(&h, &cp, &s2);
   polyveck_invntt_tomont(&h);
   polyveck_sub(&w0, &w0, &h);
-  polyveck_reduce(&h);
+  polyveck_reduce(&w0);
   if(polyveck_chknorm(&w0, GAMMA2 - BETA))
     goto rej;
 

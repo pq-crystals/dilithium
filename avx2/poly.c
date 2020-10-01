@@ -1101,6 +1101,7 @@ void polyz_unpack(poly *r, const uint8_t *a) {
 *                            POLYW1_PACKED_BYTES bytes
 *              - const poly *a: pointer to input polynomial
 **************************************************/
+#if GAMMA2 == (Q-1)/88
 void polyw1_pack(uint8_t *r, const poly *a) {
   unsigned int i;
   DBENCH_START();
@@ -1122,7 +1123,7 @@ void polyw1_pack(uint8_t *r, const poly *a) {
   DBENCH_STOP(*tpack);
 }
 
-#if 0
+#elif GAMMA2 == (Q-1)/32
 void polyw1_pack(uint8_t * restrict r, const poly * restrict a) {
   unsigned int i;
   __m256i f0, f1, f2, f3, f4, f5, f6, f7;

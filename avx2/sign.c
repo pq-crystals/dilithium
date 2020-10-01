@@ -17,10 +17,14 @@ static inline void polyvec_matrix_expand_row(polyvecl mat[K], const uint8_t rho[
   if(i == 1) polyvec_matrix_expand_row1(mat, rho);
   if(i == 2) polyvec_matrix_expand_row2(mat, rho);
   if(i == 3) polyvec_matrix_expand_row3(mat, rho);
+#if K > 4
   if(i == 4) polyvec_matrix_expand_row4(mat, rho);
   if(i == 5) polyvec_matrix_expand_row5(mat, rho);
+#if K > 6
   if(i == 6) polyvec_matrix_expand_row6(mat, rho);
   if(i == 7) polyvec_matrix_expand_row7(mat, rho);
+#endif
+#endif
 }
 #endif
 
@@ -147,14 +151,15 @@ int crypto_sign_signature(uint8_t *sig,
                           size_t mlen,
                           const uint8_t *sk)
 {
-  unsigned int n;
+  unsigned int i, j, n, pos;
   __attribute__((aligned(32)))
   uint8_t seedbuf[2*SEEDBYTES + 3*CRHBYTES];
   uint8_t *rho, *tr, *key, *mu, *rhoprime;
+  uint8_t *hint = sig + SEEDBYTES + L*POLYZ_PACKEDBYTES;
   uint64_t nonce = 0;
-  polyvecl mat[K], s1, z;
-  polyveck t0, s2, w1, w0, h;
-  poly cp;
+  polyvecl mat[K], s1, y, z;
+  polyveck t0, s2, w1, w0;
+  poly cp, h;
   keccak_state state;
 
   rho = seedbuf;
@@ -191,53 +196,46 @@ int crypto_sign_signature(uint8_t *sig,
 rej:
   /* Sample intermediate vector y */
 #ifdef DILITHIUM_USE_AES
-  for(unsigned int i = 0; i < L; ++i) {
-    poly_uniform_gamma1_preinit(&z.vec[i], &aesctx);
+  for(i = 0; i < L; ++i) {
+    poly_uniform_gamma1_preinit(&y.vec[i], &aesctx);
     aesctx.n = _mm_loadl_epi64((__m128i *)&nonce);
     nonce++;
   }
 #elif L == 4
-  poly_uniform_gamma1_4x(&z.vec[0], &z.vec[1], &z.vec[2], &z.vec[3],
+  poly_uniform_gamma1_4x(&y.vec[0], &y.vec[1], &y.vec[2], &y.vec[3],
                          rhoprime, nonce, nonce + 1, nonce + 2, nonce + 3);
   nonce += 4;
 #elif L == 5
-  poly_uniform_gamma1_4x(&z.vec[0], &z.vec[1], &z.vec[2], &z.vec[3],
+  poly_uniform_gamma1_4x(&y.vec[0], &y.vec[1], &y.vec[2], &y.vec[3],
                          rhoprime, nonce, nonce + 1, nonce + 2, nonce + 3);
-  poly_uniform_gamma1(&z.vec[4], rhoprime, nonce + 4);
+  poly_uniform_gamma1(&y.vec[4], rhoprime, nonce + 4);
   nonce += 5;
 #elif L == 7
-  poly_uniform_gamma1_4x(&z.vec[0], &z.vec[1], &z.vec[2], &z.vec[3],
+  poly_uniform_gamma1_4x(&y.vec[0], &y.vec[1], &y.vec[2], &y.vec[3],
                          rhoprime, nonce, nonce + 1, nonce + 2, nonce + 3);
-  poly_uniform_gamma1_4x(&z.vec[4], &z.vec[5], &z.vec[6], &h.vec[0],
+  poly_uniform_gamma1_4x(&y.vec[4], &y.vec[5], &y.vec[6], &h,
                          rhoprime, nonce + 4, nonce + 5, nonce + 6, 0);
   nonce += 7;
 #else
 #error
 #endif
 
-  /* Matrix-vector multiplication */
-  polyvecl *tmpl = (polyvecl *)&h;
-  *tmpl = z;
-  polyvecl_ntt(tmpl);
-#if 1
-  polyvec_matrix_pointwise_montgomery(&w1, mat, tmpl);
-  polyveck_invntt_tomont(&w1);
+  /* Save y and transform it */
+  z = y;
+  polyvecl_ntt(&y);
 
-  /* Decompose w and call the random oracle */
-  polyveck_caddq(&w1);
-  polyveck_decompose(&w1, &w0, &w1);
-  polyveck_pack_w1(sig, &w1);
-
-#else
   for(i = 0; i < K; i++) {
-    polyvecl_pointwise_acc_montgomery(&w1.vec[i], &mat[i], tmpl);
+    /* Compute inner-product */
+    polyvecl_pointwise_acc_montgomery(&w1.vec[i], &mat[i], &y);
     poly_invntt_tomont(&w1.vec[i]);
+
+    /* Decompose w and use sig as temporary buffer for packed w1 */
     poly_caddq(&w1.vec[i]);
     poly_decompose(&w1.vec[i], &w0.vec[i], &w1.vec[i]);
     polyw1_pack(sig + i*POLYW1_PACKEDBYTES, &w1.vec[i]);
   }
-#endif
 
+  /* Call the random oracle */
   shake256_init(&state);
   shake256_absorb(&state, mu, CRHBYTES);
   shake256_absorb(&state, sig, K*POLYW1_PACKEDBYTES);
@@ -247,48 +245,54 @@ rej:
   poly_ntt(&cp);
 
   /* Compute z, reject if it reveals secret */
-#if 1
-  polyvecl_pointwise_poly_montgomery(tmpl, &cp, &s1);
-  polyvecl_invntt_tomont(tmpl);
-  polyvecl_add(&z, &z, tmpl);
-  polyvecl_reduce(tmpl);
-  if(polyvecl_chknorm(&z, GAMMA1 - BETA))
-    goto rej;
-#else
   for(i = 0; i < L; i++) {
-    poly_pointwise_montgomery(&tmpl.vec[i], &cp, &s1.vec[i]);
-    poly_invntt_tomont(&tmp;.vec[i]);
-    poly_add(&z.vec[i], &z.vec[i], &tmpl.vec[i]);
-    poly_reduce(&tmpl.vec[i]);
-    if(poly_chknorm(&z.vec[i], GAMMA1 - BETA);
+    poly_pointwise_montgomery(&h, &cp, &s1.vec[i]);
+    poly_invntt_tomont(&h);
+    poly_add(&z.vec[i], &z.vec[i], &h);
+    poly_reduce(&z.vec[i]);
+    if(poly_chknorm(&z.vec[i], GAMMA1 - BETA))
       goto rej;
   }
-#endif
 
-  /* Check that subtracting cs2 does not change high bits of w and low bits
-   * do not reveal secret information */
-  polyveck_pointwise_poly_montgomery(&h, &cp, &s2);
-  polyveck_invntt_tomont(&h);
-  polyveck_sub(&w0, &w0, &h);
-  polyveck_reduce(&h);
-  if(polyveck_chknorm(&w0, GAMMA2 - BETA))
-    goto rej;
+  /* Zero hint in signature */
+  n = pos = 0;
+  for(i = 0; i < OMEGA + K; i++)
+    hint[i] = 0;
 
-  /* Compute hints for w1 */
-  polyveck_pointwise_poly_montgomery(&h, &cp, &t0);
-  polyveck_invntt_tomont(&h);
-  polyveck_reduce(&h);
-  if(polyveck_chknorm(&h, GAMMA2))
-    goto rej;
+  for(i = 0; i < K; i++) {
+    /* Check that subtracting cs2 does not change high bits of w and low bits
+     * do not reveal secret information */
+    poly_pointwise_montgomery(&h, &cp, &s2.vec[i]);
+    poly_invntt_tomont(&h);
+    poly_sub(&w0.vec[i], &w0.vec[i], &h);
+    poly_reduce(&w0.vec[i]);
+    if(poly_chknorm(&w0.vec[i], GAMMA2 - BETA))
+      goto rej;
 
-  polyveck_add(&w0, &w0, &h);
-  polyveck_caddq(&w0);
-  n = polyveck_make_hint(&h, &w0, &w1);
-  if(n > OMEGA)
-    goto rej;
+    /* Compute hints */
+    poly_pointwise_montgomery(&h, &cp, &t0.vec[i]);
+    poly_invntt_tomont(&h);
+    poly_reduce(&h);
+    if(poly_chknorm(&h, GAMMA2))
+      goto rej;
 
-  /* Write signature */
-  pack_sig(sig, sig, &z, &h);
+    poly_add(&w0.vec[i], &w0.vec[i], &h);
+    poly_caddq(&w0.vec[i]);
+    n += poly_make_hint(&h, &w0.vec[i], &w1.vec[i]);
+    if(n > OMEGA)
+      goto rej;
+
+    /* Store hints in signature */
+    for(j = 0; j < N; ++j)
+      if(h.coeffs[j] != 0)
+        hint[pos++] = j;
+    hint[OMEGA + i] = pos;
+  }
+
+  /* Pack z into signature */
+  for(i = 0; i < L; i++)
+    polyz_pack(sig + SEEDBYTES + i*POLYZ_PACKEDBYTES, &z.vec[i]);
+
   *siglen = CRYPTO_BYTES;
   return 0;
 }
