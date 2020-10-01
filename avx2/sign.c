@@ -354,7 +354,6 @@ int crypto_sign_verify(const uint8_t *sig,
 
   polyveck_sub(&w1, &w1, &t1);
   polyveck_reduce(&w1);
-  //polyveck_caddq(&w1); //FIXME
   polyveck_invntt_tomont(&w1);
 
   /* Reconstruct w1 */
