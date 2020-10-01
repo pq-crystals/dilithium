@@ -347,26 +347,17 @@ int crypto_sign_verify(const uint8_t *sig,
                        size_t mlen,
                        const uint8_t *pk)
 {
-  unsigned int i;
+  unsigned int i, j, pos = 0;
   __attribute__((aligned(32)))
   uint8_t buf[K*POLYW1_PACKEDBYTES];
-  __attribute__((aligned(32)))
-  uint8_t rho[SEEDBYTES];
   uint8_t mu[CRHBYTES];
   uint8_t c[SEEDBYTES];
-  uint8_t c2[SEEDBYTES];
-  poly cp;
+  const uint8_t *hint = sig + SEEDBYTES + L*POLYZ_PACKEDBYTES;
   polyvecl mat[K], z;
-  polyveck t1, w1, h;
+  poly cp, w1, t1, h;
   keccak_state state;
 
   if(siglen != CRYPTO_BYTES)
-    return -1;
-
-  unpack_pk(rho, &t1, pk);
-  if(unpack_sig(c, &z, &h, sig))
-    return -1;
-  if(polyvecl_chknorm(&z, GAMMA1 - BETA))
     return -1;
 
   /* Compute CRH(CRH(rho, t1), msg) */
@@ -377,35 +368,63 @@ int crypto_sign_verify(const uint8_t *sig,
   shake256_finalize(&state);
   shake256_squeeze(mu, CRHBYTES, &state);
 
-  /* Matrix-vector multiplication; compute Az - c2^dt1 */
-  poly_challenge(&cp, c);
-  polyvec_matrix_expand(mat, rho);
-
-  polyvecl_ntt(&z);
-  polyvec_matrix_pointwise_montgomery(&w1, mat, &z);
-
+  /* Expand challenge */
+  poly_challenge(&cp, sig);
   poly_ntt(&cp);
-  polyveck_shiftl(&t1);
-  polyveck_ntt(&t1);
-  polyveck_pointwise_poly_montgomery(&t1, &cp, &t1);
 
-  polyveck_sub(&w1, &w1, &t1);
-  polyveck_reduce(&w1);
-  polyveck_invntt_tomont(&w1);
+  /* Unpack z; shortness follows from unpacking */
+  for(i = 0; i < L; i++) {
+    polyz_unpack(&z.vec[i], sig + SEEDBYTES + i*POLYZ_PACKEDBYTES);
+    poly_ntt(&z.vec[i]);
+  }
 
-  /* Reconstruct w1 */
-  polyveck_caddq(&w1);
-  polyveck_use_hint(&w1, &w1, &h);
-  polyveck_pack_w1(buf, &w1);
+  for(i = 0; i < K; i++) {
+    /* Expand matrix row */
+    polyvec_matrix_expand_row(mat, pk, i);
+
+    /* Compute i-th row of Az - c2^Dt1 */
+    polyvecl_pointwise_acc_montgomery(&w1, &mat[i], &z);
+
+    polyt1_unpack(&t1, pk + SEEDBYTES + i*POLYT1_PACKEDBYTES);
+    poly_shiftl(&t1);
+    poly_ntt(&t1);
+    poly_pointwise_montgomery(&t1, &cp, &t1);
+
+    poly_sub(&w1, &w1, &t1);
+    poly_reduce(&w1);
+    poly_invntt_tomont(&w1);
+
+    /* Get hint polynomial and reconstruct w1 */
+    for(j = 0; j < N; ++j)
+      h.coeffs[j] = 0;
+
+    if(hint[OMEGA + i] < pos || hint[OMEGA + i] > OMEGA)
+      return -1;
+
+    for(j = pos; j < hint[OMEGA + i]; ++j) {
+      /* Coefficients are ordered for strong unforgeability */
+      if(j > pos && hint[j] <= hint[j-1]) return -1;
+      h.coeffs[hint[j]] = 1;
+    }
+    pos = hint[OMEGA + i];
+
+    poly_caddq(&w1);
+    poly_use_hint(&w1, &w1, &h);
+    polyw1_pack(buf + i*POLYW1_PACKEDBYTES, &w1);
+  }
+
+  /* Extra indices are zero for strong unforgeability */
+  for(j = pos; j < OMEGA; ++j)
+    if(hint[j]) return -1;
 
   /* Call random oracle and verify challenge */
   shake256_init(&state);
   shake256_absorb(&state, mu, CRHBYTES);
   shake256_absorb(&state, buf, K*POLYW1_PACKEDBYTES);
   shake256_finalize(&state);
-  shake256_squeeze(c2, SEEDBYTES, &state);
+  shake256_squeeze(c, SEEDBYTES, &state);
   for(i = 0; i < SEEDBYTES; ++i)
-    if(c[i] != c2[i])
+    if(c[i] != sig[i])
       return -1;
 
   return 0;

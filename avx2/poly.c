@@ -431,7 +431,7 @@ void poly_uniform_4x(poly *a0,
   keccakx4_state state;
   __m256i f;
 
-  f = _mm256_load_si256((__m256i *)seed);
+  f = _mm256_loadu_si256((__m256i *)seed);
   _mm256_store_si256((__m256i *)buf[0], f);
   _mm256_store_si256((__m256i *)buf[1], f);
   _mm256_store_si256((__m256i *)buf[2], f);
