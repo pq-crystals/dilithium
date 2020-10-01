@@ -6,19 +6,19 @@
 #include "cpucycles.h"
 #include "speed_print.h"
 
-#define NTESTS 10000
+#define NTESTS 1000
 
 uint64_t t[NTESTS];
 
 int main(void)
 {
   unsigned int i;
-  size_t smlen;
+  size_t siglen;
   uint8_t pk[CRYPTO_PUBLICKEYBYTES];
   uint8_t sk[CRYPTO_SECRETKEYBYTES];
-  uint8_t sm[CRYPTO_BYTES + CRHBYTES];
+  uint8_t sig[CRYPTO_BYTES];
   __attribute__((aligned(32)))
-  uint8_t seed[CRHBYTES];
+  uint8_t seed[CRHBYTES] = {0};
   polyvecl mat[K];
   poly *a = &mat[0].vec[0];
   poly *b = &mat[0].vec[1];
@@ -26,27 +26,21 @@ int main(void)
 
   for(i = 0; i < NTESTS; ++i) {
     t[i] = cpucycles();
-    expand_mat(mat, seed);
+    polyvec_matrix_expand(mat, seed);
   }
-  print_results("expand_mat:", t, NTESTS);
-
-/*
-  unsigned int j;
-  polyvecl *vl = &mat[0];
-  for(i = 0; i < NTESTS; ++i) {
-    t[i] = cpucycles();
-    for(j = 0; j < L; ++j)
-      poly_uniform_eta(&vl->vec[j], seed, j);
-  }
-  print_results("polyvecl_uniform_eta:", t, NTESTS);
+  print_results("polyvec_matrix_expand:", t, NTESTS);
 
   for(i = 0; i < NTESTS; ++i) {
     t[i] = cpucycles();
-    for(j = 0; j < L; ++j)
-      poly_uniform_gamma1m1(&vl->vec[j], seed, j);
+    poly_uniform_eta(a, seed, 0);
   }
-  print_results("polyvecl_uniform_gamma1m1:", t, NTESTS);
-*/
+  print_results("poly_uniform_eta:", t, NTESTS);
+
+  for(i = 0; i < NTESTS; ++i) {
+    t[i] = cpucycles();
+    poly_uniform_gamma1(a, seed, 0);
+  }
+  print_results("poly_uniform_gamma1:", t, NTESTS);
 
   for(i = 0; i < NTESTS; ++i) {
     t[i] = cpucycles();
@@ -68,9 +62,9 @@ int main(void)
 
   for(i = 0; i < NTESTS; ++i) {
     t[i] = cpucycles();
-    challenge(c, seed, (polyveck *)mat);
+    poly_challenge(c, seed);
   }
-  print_results("challenge:", t, NTESTS);
+  print_results("poly_challenge:", t, NTESTS);
 
   for(i = 0; i < NTESTS; ++i) {
     t[i] = cpucycles();
@@ -80,13 +74,13 @@ int main(void)
 
   for(i = 0; i < NTESTS; ++i) {
     t[i] = cpucycles();
-    crypto_sign(sm, &smlen, sm, CRHBYTES, sk);
+    crypto_sign_signature(sig, &siglen, seed, CRHBYTES, sk);
   }
   print_results("Sign:", t, NTESTS);
 
   for(i = 0; i < NTESTS; ++i) {
     t[i] = cpucycles();
-    crypto_sign_verify(sm, CRYPTO_BYTES, sm + CRYPTO_BYTES, CRHBYTES, pk);
+    crypto_sign_verify(sig, CRYPTO_BYTES, seed, CRHBYTES, pk);
   }
   print_results("Verify:", t, NTESTS);
 
