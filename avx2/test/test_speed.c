@@ -13,10 +13,10 @@ uint64_t t[NTESTS];
 int main(void)
 {
   unsigned int i;
-  size_t siglen;
+  size_t smlen;
   uint8_t pk[CRYPTO_PUBLICKEYBYTES];
   uint8_t sk[CRYPTO_SECRETKEYBYTES];
-  uint8_t sig[CRYPTO_BYTES];
+  uint8_t sm[CRYPTO_BYTES + CRHBYTES];
   __attribute__((aligned(32)))
   uint8_t seed[CRHBYTES] = {0};
   polyvecl mat[K];
@@ -74,13 +74,13 @@ int main(void)
 
   for(i = 0; i < NTESTS; ++i) {
     t[i] = cpucycles();
-    crypto_sign_signature(sig, &siglen, seed, CRHBYTES, sk);
+    crypto_sign(sm, &smlen, sm, CRHBYTES, sk);
   }
   print_results("Sign:", t, NTESTS);
 
   for(i = 0; i < NTESTS; ++i) {
     t[i] = cpucycles();
-    crypto_sign_verify(sig, CRYPTO_BYTES, seed, CRHBYTES, pk);
+    crypto_sign_verify(sm, CRYPTO_BYTES, sm, CRHBYTES, pk);
   }
   print_results("Verify:", t, NTESTS);
 
