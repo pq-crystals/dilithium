@@ -38,6 +38,6 @@ implementations:
                 - Linux
             required_flags:
                 - avx2
-                - bmi
+                - bmi1
                 - aes
                 - popcnt
