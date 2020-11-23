@@ -16,7 +16,7 @@
 *              - const uint32_t *a: input array of length N
 *
 **************************************************/
-void power2round_avx(uint32_t * restrict a1, uint32_t * restrict a0, const uint32_t * restrict a)
+void power2round_avx(uint32_t *a1, uint32_t *a0, const uint32_t *a)
 {
   unsigned int i;
   __m256i f,f0,f1;
@@ -50,7 +50,7 @@ void power2round_avx(uint32_t * restrict a1, uint32_t * restrict a0, const uint3
 *              - const uint32_t *a: input array of length N
 *
 **************************************************/
-void decompose_avx(uint32_t * restrict a1, uint32_t * restrict a0, const uint32_t * restrict a)
+void decompose_avx(uint32_t *a1, uint32_t *a0, const uint32_t *a)
 {
   unsigned int i;
   __m256i f,f0,f1,t0,t1;
@@ -133,7 +133,7 @@ unsigned int make_hint_avx(uint32_t * restrict h, const uint32_t * restrict a0, 
 *              - const uint32_t *a: input array of length N with hint bits
 *
 **************************************************/
-void use_hint_avx(uint32_t * restrict b, const uint32_t * restrict a, const uint32_t * restrict hint) {
+void use_hint_avx(uint32_t *b, const uint32_t *a, const uint32_t *hint) {
   unsigned int i;
   __attribute__((aligned(32)))
   uint32_t a0[N];
