@@ -19,10 +19,10 @@ vmovdqa		32(%rdx),%ymm12
 vmovdqa		64(%rdx),%ymm14
 vpsrlq		$32,%ymm2,%ymm3
 vpsrlq		$32,%ymm4,%ymm5
-vpsrlq		$32,%ymm6,%ymm7
+vmovshdup	%ymm6,%ymm7
 vpsrlq		$32,%ymm10,%ymm11
 vpsrlq		$32,%ymm12,%ymm13
-vpsrlq		$32,%ymm14,%ymm15
+vmovshdup	%ymm14,%ymm15
 
 #mul
 vpmuldq		%ymm2,%ymm10,%ymm2
@@ -53,7 +53,7 @@ vpsubq		%ymm14,%ymm6,%ymm6
 vpsubq		%ymm15,%ymm7,%ymm7
 vpsrlq		$32,%ymm2,%ymm2
 vpsrlq		$32,%ymm4,%ymm4
-vpsrlq		$32,%ymm6,%ymm6
+vmovshdup	%ymm6,%ymm6
 
 #store
 vpblendd	$0xAA,%ymm3,%ymm2,%ymm2
@@ -76,8 +76,9 @@ vmovdqa		(%rdx),%ymm10
 vmovdqa		32(%rdx),%ymm12
 vpsrlq		$32,%ymm2,%ymm3
 vpsrlq		$32,%ymm4,%ymm5
-vpsrlq		$32,%ymm10,%ymm11
-vpsrlq		$32,%ymm12,%ymm13
+vpsrlq		$32,%ymm6,%ymm6
+vmovshdup	%ymm10,%ymm11
+vmovshdup	%ymm12,%ymm13
 
 #mul
 vpmuldq		%ymm2,%ymm10,%ymm2
@@ -99,7 +100,7 @@ vpsubq		%ymm11,%ymm3,%ymm3
 vpsubq		%ymm12,%ymm4,%ymm4
 vpsubq		%ymm13,%ymm5,%ymm5
 vpsrlq		$32,%ymm2,%ymm2
-vpsrlq		$32,%ymm4,%ymm4
+vmovshdup	%ymm4,%ymm4
 
 #store
 vpblendd	$0x55,%ymm2,%ymm3,%ymm2
@@ -117,8 +118,8 @@ vmovdqa		\off(%rdx),%ymm10
 vmovdqa		\off+32(%rdx),%ymm12
 vpsrlq		$32,%ymm6,%ymm7
 vpsrlq		$32,%ymm8,%ymm9
-vpsrlq		$32,%ymm10,%ymm11
-vpsrlq		$32,%ymm12,%ymm13
+vmovshdup	%ymm10,%ymm11
+vmovshdup	%ymm12,%ymm13
 
 #mul
 vpmuldq		%ymm6,%ymm10,%ymm6
@@ -192,7 +193,7 @@ vpsubq		%ymm7,%ymm3,%ymm3
 vpsubq		%ymm8,%ymm4,%ymm4
 vpsubq		%ymm9,%ymm5,%ymm5
 vpsrlq		$32,%ymm2,%ymm2
-vpsrlq		$32,%ymm4,%ymm4
+vmovshdup	%ymm4,%ymm4
 
 #store
 vpblendd	$0xAA,%ymm3,%ymm2,%ymm2
