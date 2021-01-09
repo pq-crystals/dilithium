@@ -129,41 +129,41 @@ butterfly	7,3,1,10,2,15
 butterfly	6,11,1,10,2,15
 
 /* level 6 */
-vmovdqa		(_ZETAS_QINV+104+16*\off)*4(%rsi),%ymm1
-vmovdqa		(_ZETAS+104+16*\off)*4(%rsi),%ymm2
+vmovdqa		(_ZETAS_QINV+104+8*\off)*4(%rsi),%ymm1
+vmovdqa		(_ZETAS+104+8*\off)*4(%rsi),%ymm2
 vpsrlq		$32,%ymm1,%ymm10
 vmovshdup	%ymm2,%ymm15
 butterfly	9,7,1,10,2,15
 butterfly	8,6,1,10,2,15
 
-vmovdqa		(_ZETAS_QINV+104+16*\off+8)*4(%rsi),%ymm1
-vmovdqa		(_ZETAS+104+16*\off+8)*4(%rsi),%ymm2
+vmovdqa		(_ZETAS_QINV+104+8*\off+32)*4(%rsi),%ymm1
+vmovdqa		(_ZETAS+104+8*\off+32)*4(%rsi),%ymm2
 vpsrlq		$32,%ymm1,%ymm10
 vmovshdup	%ymm2,%ymm15
 butterfly	5,3,1,10,2,15
 butterfly	4,11,1,10,2,15
 
 /* level 7 */
-vmovdqa		(_ZETAS_QINV+168+32*\off)*4(%rsi),%ymm1
-vmovdqa		(_ZETAS+168+32*\off)*4(%rsi),%ymm2
+vmovdqa		(_ZETAS_QINV+168+8*\off)*4(%rsi),%ymm1
+vmovdqa		(_ZETAS+168+8*\off)*4(%rsi),%ymm2
 vpsrlq		$32,%ymm1,%ymm10
 vmovshdup	%ymm2,%ymm15
 butterfly	9,8,1,10,2,15
 
-vmovdqa		(_ZETAS_QINV+168+32*\off+8)*4(%rsi),%ymm1
-vmovdqa		(_ZETAS+168+32*\off+8)*4(%rsi),%ymm2
+vmovdqa		(_ZETAS_QINV+168+8*\off+32)*4(%rsi),%ymm1
+vmovdqa		(_ZETAS+168+8*\off+32)*4(%rsi),%ymm2
 vpsrlq		$32,%ymm1,%ymm10
 vmovshdup	%ymm2,%ymm15
 butterfly	7,6,1,10,2,15
 
-vmovdqa		(_ZETAS_QINV+168+32*\off+16)*4(%rsi),%ymm1
-vmovdqa		(_ZETAS+168+32*\off+16)*4(%rsi),%ymm2
+vmovdqa		(_ZETAS_QINV+168+8*\off+64)*4(%rsi),%ymm1
+vmovdqa		(_ZETAS+168+8*\off+64)*4(%rsi),%ymm2
 vpsrlq		$32,%ymm1,%ymm10
 vmovshdup	%ymm2,%ymm15
 butterfly	5,4,1,10,2,15
 
-vmovdqa		(_ZETAS_QINV+168+32*\off+24)*4(%rsi),%ymm1
-vmovdqa		(_ZETAS+168+32*\off+24)*4(%rsi),%ymm2
+vmovdqa		(_ZETAS_QINV+168+8*\off+96)*4(%rsi),%ymm1
+vmovdqa		(_ZETAS+168+8*\off+96)*4(%rsi),%ymm2
 vpsrlq		$32,%ymm1,%ymm10
 vmovshdup	%ymm2,%ymm15
 butterfly	3,11,1,10,2,15

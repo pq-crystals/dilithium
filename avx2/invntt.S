@@ -33,40 +33,40 @@ vmovdqa		256*\off+192(%rdi),%ymm10
 vmovdqa	 	256*\off+224(%rdi),%ymm11
 
 /* level 0 */
-vpermq		$0x1B,(_ZETAS_QINV+296-32*\off-8)*4(%rsi),%ymm3
-vpermq		$0x1B,(_ZETAS+296-32*\off-8)*4(%rsi),%ymm15
+vpermq		$0x1B,(_ZETAS_QINV+296-8*\off-8)*4(%rsi),%ymm3
+vpermq		$0x1B,(_ZETAS+296-8*\off-8)*4(%rsi),%ymm15
 vmovshdup	%ymm3,%ymm1
 vmovshdup	%ymm15,%ymm2
 butterfly	4,5,1,3,2,15
 
-vpermq		$0x1B,(_ZETAS_QINV+296-32*\off-16)*4(%rsi),%ymm3
-vpermq		$0x1B,(_ZETAS+296-32*\off-16)*4(%rsi),%ymm15
+vpermq		$0x1B,(_ZETAS_QINV+296-8*\off-40)*4(%rsi),%ymm3
+vpermq		$0x1B,(_ZETAS+296-8*\off-40)*4(%rsi),%ymm15
 vmovshdup	%ymm3,%ymm1
 vmovshdup	%ymm15,%ymm2
 butterfly	6,7,1,3,2,15
 
-vpermq		$0x1B,(_ZETAS_QINV+296-32*\off-24)*4(%rsi),%ymm3
-vpermq		$0x1B,(_ZETAS+296-32*\off-24)*4(%rsi),%ymm15
+vpermq		$0x1B,(_ZETAS_QINV+296-8*\off-72)*4(%rsi),%ymm3
+vpermq		$0x1B,(_ZETAS+296-8*\off-72)*4(%rsi),%ymm15
 vmovshdup	%ymm3,%ymm1
 vmovshdup	%ymm15,%ymm2
 butterfly	8,9,1,3,2,15
 
-vpermq		$0x1B,(_ZETAS_QINV+296-32*\off-32)*4(%rsi),%ymm3
-vpermq		$0x1B,(_ZETAS+296-32*\off-32)*4(%rsi),%ymm15
+vpermq		$0x1B,(_ZETAS_QINV+296-8*\off-104)*4(%rsi),%ymm3
+vpermq		$0x1B,(_ZETAS+296-8*\off-104)*4(%rsi),%ymm15
 vmovshdup	%ymm3,%ymm1
 vmovshdup	%ymm15,%ymm2
 butterfly	10,11,1,3,2,15
 
 /* level 1 */
-vpermq		$0x1B,(_ZETAS_QINV+168-16*\off-8)*4(%rsi),%ymm3
-vpermq		$0x1B,(_ZETAS+168-16*\off-8)*4(%rsi),%ymm15
+vpermq		$0x1B,(_ZETAS_QINV+168-8*\off-8)*4(%rsi),%ymm3
+vpermq		$0x1B,(_ZETAS+168-8*\off-8)*4(%rsi),%ymm15
 vmovshdup	%ymm3,%ymm1
 vmovshdup	%ymm15,%ymm2
 butterfly	4,6,1,3,2,15
 butterfly	5,7,1,3,2,15
 
-vpermq		$0x1B,(_ZETAS_QINV+168-16*\off-16)*4(%rsi),%ymm3
-vpermq		$0x1B,(_ZETAS+168-16*\off-16)*4(%rsi),%ymm15
+vpermq		$0x1B,(_ZETAS_QINV+168-8*\off-40)*4(%rsi),%ymm3
+vpermq		$0x1B,(_ZETAS+168-8*\off-40)*4(%rsi),%ymm15
 vmovshdup	%ymm3,%ymm1
 vmovshdup	%ymm15,%ymm2
 butterfly	8,10,1,3,2,15

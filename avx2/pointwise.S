@@ -76,7 +76,6 @@ vmovdqa		(%rdx),%ymm10
 vmovdqa		32(%rdx),%ymm12
 vpsrlq		$32,%ymm2,%ymm3
 vpsrlq		$32,%ymm4,%ymm5
-vpsrlq		$32,%ymm6,%ymm6
 vmovshdup	%ymm10,%ymm11
 vmovshdup	%ymm12,%ymm13
 
