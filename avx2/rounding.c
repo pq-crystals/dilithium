@@ -106,8 +106,8 @@ void decompose_avx(__m256i * restrict a1, __m256i * restrict a0, const __m256i *
     f1 = _mm256_srli_epi32(f1,7);
     f1 = _mm256_mulhi_epu16(f1,v);
     f1 = _mm256_mulhrs_epi16(f1,shift);
-    t = _mm256_cmpgt_epi32(f1,max);
-    f1 = _mm256_blendv_epi8(f1,zero,t);
+    t = _mm256_sub_epi32(max,f1);
+    f1 = _mm256_blendv_epi32(f1,zero,t);
     f0 = _mm256_mullo_epi32(f1,alpha);
     f0 = _mm256_sub_epi32(f,f0);
     f = _mm256_cmpgt_epi32(f0,hq);

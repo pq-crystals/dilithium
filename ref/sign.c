@@ -167,7 +167,6 @@ rej:
     goto rej;
 
   polyveck_add(&w0, &w0, &h);
-  polyveck_caddq(&w0);
   n = polyveck_make_hint(&h, &w0, &w1);
   if(n > OMEGA)
     goto rej;

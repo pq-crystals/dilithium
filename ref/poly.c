@@ -481,11 +481,7 @@ void poly_uniform_eta(poly *a,
 *              - const uint8_t seed[]: byte array with seed of length CRHBYTES
 *              - uint16_t nonce: 16-bit nonce
 **************************************************/
-#if GAMMA1 == (1 << 17)
-#define POLY_UNIFORM_GAMMA1_NBLOCKS ((576 + STREAM256_BLOCKBYTES - 1)/STREAM256_BLOCKBYTES)
-#elif GAMMA1 == (1 << 19)
-#define POLY_UNIFORM_GAMMA1_NBLOCKS ((640 + STREAM256_BLOCKBYTES - 1)/STREAM256_BLOCKBYTES)
-#endif
+#define POLY_UNIFORM_GAMMA1_NBLOCKS ((POLYZ_PACKEDBYTES + STREAM256_BLOCKBYTES - 1)/STREAM256_BLOCKBYTES)
 void poly_uniform_gamma1(poly *a,
                          const uint8_t seed[CRHBYTES],
                          uint16_t nonce)
