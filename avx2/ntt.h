@@ -1,23 +1,19 @@
 #ifndef NTT_H
 #define NTT_H
 
-#include <stdint.h>
-#include "params.h"
+#include <immintrin.h>
 
 #define ntt_avx DILITHIUM_NAMESPACE(_ntt_avx)
-void ntt_avx(int32_t a[N], const int32_t *qdata);
+void ntt_avx(__m256i *a, const __m256i *qdata);
 #define invntt_avx DILITHIUM_NAMESPACE(_invntt_avx)
-void invntt_avx(int32_t a[N], const int32_t *qdata);
+void invntt_avx(__m256i *a, const __m256i *qdata);
+
+#define nttunpack_avx DILITHIUM_NAMESPACE(_nttunpack_avx)
+void nttunpack_avx(__m256i *a);
 
 #define pointwise_avx DILITHIUM_NAMESPACE(_pointwise_avx)
-void pointwise_avx(int32_t c[N],
-                   const int32_t a[N],
-                   const int32_t b[N],
-                   const int32_t *qdata);
+void pointwise_avx(__m256i *c, const __m256i *a, const __m256i *b, const __m256i *qdata);
 #define pointwise_acc_avx DILITHIUM_NAMESPACE(_pointwise_acc_avx)
-void pointwise_acc_avx(int32_t c[N],
-                       const int32_t *a,
-                       const int32_t *b,
-                       const int32_t *qdata);
+void pointwise_acc_avx(__m256i *c, const __m256i *a, const __m256i *b, const __m256i *qdata);
 
 #endif
