@@ -29,6 +29,9 @@ all: \
   test/test_vectors2aes \
   test/test_vectors3aes \
   test/test_vectors5aes \
+  speed
+
+speed: \
   test/test_speed2 \
   test/test_speed3 \
   test/test_speed5 \

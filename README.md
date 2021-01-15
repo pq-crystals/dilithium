@@ -2,7 +2,7 @@
 
 [![Build Status](https://travis-ci.org/pq-crystals/dilithium.svg?branch=master)](https://travis-ci.org/pq-crystals/dilithium) [![Coverage Status](https://coveralls.io/repos/github/pq-crystals/dilithium/badge.svg?branch=master)](https://coveralls.io/github/pq-crystals/dilithium?branch=master)
 
-This repository contains the official reference implementation of the [Dilithium](https://www.pq-crystals.org/dilithium/) signature scheme, and an optimized implementation for x86 CPUs supporting the AVX2 instruction set. Dilithium was accepted to [round 2](https://csrc.nist.gov/Projects/post-quantum-cryptography/round-2-submissions) of the [NIST PQC](https://csrc.nist.gov/projects/post-quantum-cryptography) standardization project.
+This repository contains the official reference implementation of the [Dilithium](https://www.pq-crystals.org/dilithium/) signature scheme, and an optimized implementation for x86 CPUs supporting the AVX2 instruction set. Dilithium is a [finalist](https://csrc.nist.gov/Projects/post-quantum-cryptography/round-3-submissions) in the [NIST PQC](https://csrc.nist.gov/projects/post-quantum-cryptography) standardization project.
 
 ## Build instructions
 
@@ -36,9 +36,9 @@ test/test_dilithium$ALG
 test/test_vectors$ALG
 PQCgenKAT_sign$ALG
 ```
-where `$ALG` ranges over the parameter sets 2, 3, 4, 2aes, 3aes, and 4aes.
+where `$ALG` ranges over the parameter sets 2, 3, 5, 2aes, 3aes, and 5aes.
 
-* `test_dilithium$ALG` tests 1000 times to generate keys, sign a random message of 59 bytes and verify the produced signature. Also, the program will try to verify wrong signatures where a single random byte of a valid signature was randomly distorted. The program will abort with an error message and return -1 if there was an error. Otherwise it will output nothing and return 0.
+* `test_dilithium$ALG` tests 10000 times to generate keys, sign a random message of 59 bytes and verify the produced signature. Also, the program will try to verify wrong signatures where a single random byte of a valid signature was randomly distorted. The program will abort with an error message and return -1 if there was an error. Otherwise it will output the key and signature sizes and return 0.
 * `test_vectors$ALG` performs further tests of internal functions and prints deterministically generated test vectors for several intermediate values that occur in the Dilithium algorithms. Namely, a 48 byte seed, the matrix A corresponding to the first 32 bytes of seed, a short secret vector s corresponding to the first 32 bytes of seed and nonce 0, a masking vector y corresponding to the seed and nonce 0, the high bits w1 and the low bits w0 of the vector w = Ay, the power-of-two rounding t1 of w and the corresponding low part t0, and the challenge c for the seed and w1. This program is meant to help to ensure compatibility of independent implementations.
 * `PQCgenKAT_sign$ALG` is the Known Answer Test (KAT) generation program provided by NIST. It computes the official KATs and writes them to the files `PQCsignKAT_$(CRYPTO_ALGNAME).{req,rsp}`.
 
@@ -82,24 +82,3 @@ libpqcrystals_aes256ctr_ref.so
 libpqcrystals_fips202_ref.so
 ```
 All global symbols in the libraries lie in the namespaces `pqcrystals_dilithium$ALG_ref`, `libpqcrystals_aes256ctr_ref` and `libpqcrystals_fips202_ref`. Hence it is possible to link a program against all libraries simultaneously and obtain access to all implementations for all parameter sets. The corresponding API header file is `ref/api.h`, which contains prototypes for all API functions and preprocessor defines for the key and signature lengths.
-
-## CMake
-
-Also available is a highly portable [cmake](https://cmake.org) based build system that permits building the same sources into a summary library as well as all the same tests.
-
-For fastest build performance, use of [Ninja](https://ninja-build.org) is recommended.
-
-All tests can be run by invoking the (your-favourite-build-tool-command-here) `test` target.
-
-### Worked example
-
-By calling 
-```
-mkdir build-ninja && cd build-ninja && cmake -DBUILD_SHARED_LIBS=ON -GNinja .. && ninja && ninja test
-```
-
-the whole Dilithium software family gets built in a highly portable as well as an avx2-optimized version, tested and delivered in a shared library.
-
-For example, by running `./avx2/test_speed4aes_avx2` in the newly created 'build-ninja' folder, performance testing of `Dilithium4-AES` in the optimized AVX2 variant is executed.
-
-The resultant library might also be installed using the `install` target.
