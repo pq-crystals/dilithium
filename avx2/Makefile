@@ -5,8 +5,8 @@ CFLAGS += -Wall -Wextra -Wpedantic -Wmissing-prototypes -Wredundant-decls \
 NISTFLAGS += -Wno-unused-result -mavx2 -mpopcnt -maes -mbmi2 \
   -march=native -mtune=native -O3
 SOURCES = sign.c packing.c polyvec.c poly.c ntt.S invntt.S pointwise.S \
-  consts.c rejsample.c rounding.c
-HEADERS = config.h params.h api.h sign.h packing.h polyvec.h poly.h ntt.h \
+  shuffle.S consts.c rejsample.c rounding.c
+HEADERS = align.h config.h params.h api.h sign.h packing.h polyvec.h poly.h ntt.h \
   consts.h shuffle.inc rejsample.h rounding.h symmetric.h randombytes.h
 KECCAK_SOURCES = $(SOURCES) fips202.c fips202x4.c symmetric-shake.c \
   keccak4x/KeccakP-1600-times4-SIMD256.o
@@ -34,13 +34,7 @@ all: \
   test/test_speed5 \
   test/test_speed2aes \
   test/test_speed3aes \
-  test/test_speed5aes \
-  PQCgenKAT_sign2 \
-  PQCgenKAT_sign3 \
-  PQCgenKAT_sign5 \
-  PQCgenKAT_sign2aes \
-  PQCgenKAT_sign3aes \
-  PQCgenKAT_sign5aes
+  test/test_speed5aes
 
 shared: \
   libpqcrystals_dilithium2_avx2.so \

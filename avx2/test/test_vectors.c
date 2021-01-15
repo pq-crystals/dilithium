@@ -13,6 +13,16 @@
 #define MLEN 32
 #define NVECTORS 10000
 
+static unsigned int nttidx(unsigned int k) {
+  unsigned int r;
+  r  = k/64*64;
+  k %= 64;
+  r += k/8;
+  k %= 8;
+  r += k*8;
+  return r;
+}
+
 void randombytes(uint8_t *out, size_t outlen) {
   unsigned int i;
   uint8_t buf[8];
@@ -31,14 +41,12 @@ int main(void) {
   uint8_t sk[CRYPTO_SECRETKEYBYTES];
   uint8_t sig[CRYPTO_BYTES];
   uint8_t m[MLEN] = {0};
-  __attribute__((aligned(32)))
   uint8_t seed[CRHBYTES];
   uint8_t buf[CRYPTO_SECRETKEYBYTES];
   size_t siglen;
   poly c, tmp;
   polyvecl s, y, mat[K];
-  polyveck w, w1, w0, t1, t0, h;
-  int32_t u;
+  polyveck w, w1, w0, t1, t0;
 
   for(i = 0; i < NVECTORS; ++i) {
     printf("count = %u\n", i);
@@ -82,7 +90,7 @@ int main(void) {
     for(j = 0; j < K; ++j) {
       for(k = 0; k < L; ++k) {
         for(l = 0; l < N; ++l) {
-          printf("%8d", mat[j].vec[k].coeffs[l]);
+          printf("%8d", mat[j].vec[k].coeffs[nttidx(l)]);
           if(l < N-1) printf(", ");
           else if(k < L-1) printf("], [");
           else if(j < K-1) printf("];\n     [");
@@ -92,8 +100,8 @@ int main(void) {
     }
 
 #ifdef DILITHIUM_USE_AES
-    aes256ctr_ctx state;
     uint64_t nonce = 0;
+    aes256ctr_ctx state;
     aes256ctr_init(&state, seed, nonce++);
     for(j = 0; j < L; ++j) {
       poly_uniform_eta_preinit(&s.vec[j], &state);
@@ -101,17 +109,13 @@ int main(void) {
       nonce++;
     }
 #elif L == 4
-    poly_uniform_eta_4x(&s.vec[0], &s.vec[1], &s.vec[2], &s.vec[3], seed,
-                        0, 1, 2, 3);
+    poly_uniform_eta_4x(&s.vec[0], &s.vec[1], &s.vec[2], &s.vec[3], seed, 0, 1, 2, 3);
 #elif L == 5
-    poly_uniform_eta_4x(&s.vec[0], &s.vec[1], &s.vec[2], &s.vec[3], seed,
-                        0, 1, 2, 3);
+    poly_uniform_eta_4x(&s.vec[0], &s.vec[1], &s.vec[2], &s.vec[3], seed, 0, 1, 2, 3);
     poly_uniform_eta(&s.vec[4], seed, 4);
 #elif L == 7
-    poly_uniform_eta_4x(&s.vec[0], &s.vec[1], &s.vec[2], &s.vec[3], seed,
-                        0, 1, 2, 3);
-    poly_uniform_eta_4x(&s.vec[4], &s.vec[5], &s.vec[6], &tmp, seed,
-                        4, 5, 6, 7);
+    poly_uniform_eta_4x(&s.vec[0], &s.vec[1], &s.vec[2], &s.vec[3], seed, 0, 1, 2, 3);
+    poly_uniform_eta_4x(&s.vec[4], &s.vec[5], &s.vec[6], &tmp, seed, 4, 5, 6, 7);
 #else
 #error
 #endif
@@ -129,8 +133,7 @@ int main(void) {
     printf("s = ([");
     for(j = 0; j < L; ++j) {
       for(k = 0; k < N; ++k) {
-        u = s.vec[j].coeffs[k];
-        printf("%3d", u);
+        printf("%3d", s.vec[j].coeffs[k]);
         if(k < N-1) printf(", ");
         else if(j < L-1) printf("],\n     [");
         else printf("])\n");
@@ -146,17 +149,13 @@ int main(void) {
       nonce++;
     }
 #elif L == 4
-    poly_uniform_gamma1_4x(&y.vec[0], &y.vec[1], &y.vec[2], &y.vec[3], seed,
-                           0, 1, 2, 3);
+    poly_uniform_gamma1_4x(&y.vec[0], &y.vec[1], &y.vec[2], &y.vec[3], seed, 0, 1, 2, 3);
 #elif L == 5
-    poly_uniform_gamma1_4x(&y.vec[0], &y.vec[1], &y.vec[2], &y.vec[3], seed,
-                           0, 1, 2, 3);
+    poly_uniform_gamma1_4x(&y.vec[0], &y.vec[1], &y.vec[2], &y.vec[3], seed, 0, 1, 2, 3);
     poly_uniform_gamma1(&y.vec[4], seed, 4);
 #elif L == 7
-    poly_uniform_gamma1_4x(&y.vec[0], &y.vec[1], &y.vec[2], &y.vec[3], seed,
-                           0, 1, 2, 3);
-    poly_uniform_gamma1_4x(&y.vec[4], &y.vec[5], &y.vec[6], &tmp, seed,
-                           4, 5, 6, 7);
+    poly_uniform_gamma1_4x(&y.vec[0], &y.vec[1], &y.vec[2], &y.vec[3], seed, 0, 1, 2, 3);
+    poly_uniform_gamma1_4x(&y.vec[4], &y.vec[5], &y.vec[6], &tmp, seed, 4, 5, 6, 7);
 #else
 #error
 #endif
@@ -167,14 +166,14 @@ int main(void) {
       if(tmp.coeffs[j] != y.vec[0].coeffs[j])
         fprintf(stderr, "ERROR in polyz_(un)pack!\n");
 
+    polyvecl_reduce(&y);
     if(polyvecl_chknorm(&y, GAMMA1+1))
       fprintf(stderr, "ERROR in polyvecl_chknorm(&y, GAMMA1)!\n");
 
     printf("y = ([");
     for(j = 0; j < L; ++j) {
       for(k = 0; k < N; ++k) {
-        u = y.vec[j].coeffs[k];
-        printf("%8d", u);
+        printf("%8d", y.vec[j].coeffs[k]);
         if(k < N-1) printf(", ");
         else if(j < L-1) printf("],\n     [");
         else printf("])\n");
@@ -227,9 +226,7 @@ int main(void) {
     printf("w0 = ([");
     for(j = 0; j < K; ++j) {
       for(k = 0; k < N; ++k) {
-        u = w0.vec[j].coeffs[k];
-        if(u > GAMMA2 || u < -GAMMA2) fprintf(stderr,"FAILURE: %d %d %d %d\n",j,k,u,w.vec[j].coeffs[k]);
-        printf("%8d", u);
+        printf("%8d", w0.vec[j].coeffs[k]);
         if(k < N-1) printf(", ");
         else if(j < K-1) printf("],\n      [");
         else printf("])\n");
@@ -274,8 +271,7 @@ int main(void) {
     printf("t0 = ([");
     for(j = 0; j < K; ++j) {
       for(k = 0; k < N; ++k) {
-        u = t0.vec[j].coeffs[k];
-        printf("%5d", u);
+        printf("%5d", t0.vec[j].coeffs[k]);
         if(k < N-1) printf(", ");
         else if(j < K-1) printf("],\n      [");
         else printf("])\n");
@@ -285,17 +281,10 @@ int main(void) {
     poly_challenge(&c, seed);
     printf("c = [");
     for(j = 0; j < N; ++j) {
-      u = c.coeffs[j];
-      printf("%2d", u);
+      printf("%2d", c.coeffs[j]);
       if(j < N-1) printf(", ");
       else printf("]\n");
     }
-
-    polyveck_make_hint(&h, &w0, &w1);
-    pack_sig(buf, seed, &y, &h);
-    unpack_sig(seed, &y, &w, buf);
-    if(memcmp(&h,&w,sizeof(h)))
-      fprintf(stderr, "ERROR in (un)pack_sig!\n");
 
     printf("\n");
   }

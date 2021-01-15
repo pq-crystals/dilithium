@@ -1,4 +1,6 @@
 #include <stdint.h>
+#include <string.h>
+#include "align.h"
 #include "params.h"
 #include "sign.h"
 #include "packing.h"
@@ -12,19 +14,45 @@
 #endif
 
 #ifndef DILITHIUM_USE_AES
-static inline void polyvec_matrix_expand_row(polyvecl mat[K], const uint8_t rho[SEEDBYTES], unsigned int i) {
-  if(i == 0) polyvec_matrix_expand_row0(mat, rho);
-  if(i == 1) polyvec_matrix_expand_row1(mat, rho);
-  if(i == 2) polyvec_matrix_expand_row2(mat, rho);
-  if(i == 3) polyvec_matrix_expand_row3(mat, rho);
+static inline void polyvec_matrix_expand_row(polyvecl **row, polyvecl buf[2], const uint8_t rho[SEEDBYTES], unsigned int i) {
+  switch(i) {
+    case 0:
+      polyvec_matrix_expand_row0(buf, buf + 1, rho);
+      *row = buf;
+      break;
+    case 1:
+      polyvec_matrix_expand_row1(buf + 1, buf, rho);
+      *row = buf + 1;
+      break;
+    case 2:
+      polyvec_matrix_expand_row2(buf, buf + 1, rho);
+      *row = buf;
+      break;
+    case 3:
+      polyvec_matrix_expand_row3(buf + 1, buf, rho);
+      *row = buf + 1;
+      break;
 #if K > 4
-  if(i == 4) polyvec_matrix_expand_row4(mat, rho);
-  if(i == 5) polyvec_matrix_expand_row5(mat, rho);
+    case 4:
+      polyvec_matrix_expand_row4(buf, buf + 1, rho);
+      *row = buf;
+      break;
+    case 5:
+      polyvec_matrix_expand_row5(buf + 1, buf, rho);
+      *row = buf + 1;
+      break;
+#endif
 #if K > 6
-  if(i == 6) polyvec_matrix_expand_row6(mat, rho);
-  if(i == 7) polyvec_matrix_expand_row7(mat, rho);
+    case 6:
+      polyvec_matrix_expand_row6(buf, buf + 1, rho);
+      *row = buf;
+      break;
+    case 7:
+      polyvec_matrix_expand_row7(buf + 1, buf, rho);
+      *row = buf + 1;
+      break;
 #endif
-#endif
+  }
 }
 #endif
 
@@ -42,12 +70,16 @@ static inline void polyvec_matrix_expand_row(polyvecl mat[K], const uint8_t rho[
 **************************************************/
 int crypto_sign_keypair(uint8_t *pk, uint8_t *sk) {
   unsigned int i;
-  __attribute__((aligned(32)))
   uint8_t seedbuf[3*SEEDBYTES];
-  __attribute__((aligned(32)))
-  uint8_t tr[CRHBYTES];
   const uint8_t *rho, *rhoprime, *key;
-  polyvecl mat[K], s1;
+#ifdef DILITHIUM_USE_AES
+  uint64_t nonce;
+  aes256ctr_ctx aesctx;
+  polyvecl rowbuf[1];
+#else
+  polyvecl rowbuf[2];
+#endif
+  polyvecl s1, *row = rowbuf;
   polyveck s2;
   poly t1, t0;
 
@@ -59,27 +91,22 @@ int crypto_sign_keypair(uint8_t *pk, uint8_t *sk) {
   key = seedbuf + 2*SEEDBYTES;
 
   /* Store rho, key */
-  for(i = 0; i < SEEDBYTES; ++i)
-    pk[i] = rho[i];
-  for(i = 0; i < SEEDBYTES; ++i)
-    sk[i] = rho[i];
-  for(i = 0; i < SEEDBYTES; ++i)
-    sk[SEEDBYTES + i] = key[i];
+  memcpy(pk, rho, SEEDBYTES);
+  memcpy(sk, rho, SEEDBYTES);
+  memcpy(sk + SEEDBYTES, key, SEEDBYTES);
 
   /* Sample short vectors s1 and s2 */
 #ifdef DILITHIUM_USE_AES
-  uint64_t nonce = 0;
-  aes256ctr_ctx aesctx;
-  aes256ctr_init(&aesctx, rhoprime, nonce++);
+  aes256ctr_init(&aesctx, rhoprime, 0);
   for(i = 0; i < L; ++i) {
-    poly_uniform_eta_preinit(&s1.vec[i], &aesctx);
+    nonce = i;
     aesctx.n = _mm_loadl_epi64((__m128i *)&nonce);
-    nonce++;
+    poly_uniform_eta_preinit(&s1.vec[i], &aesctx);
   }
   for(i = 0; i < K; ++i) {
-    poly_uniform_eta_preinit(&s2.vec[i], &aesctx);
+    nonce = L + i;
     aesctx.n = _mm_loadl_epi64((__m128i *)&nonce);
-    nonce++;
+    poly_uniform_eta_preinit(&s2.vec[i], &aesctx);
   }
 #elif K == 4 && L == 4
   poly_uniform_eta_4x(&s1.vec[0], &s1.vec[1], &s1.vec[2], &s1.vec[3], rhoprime, 0, 1, 2, 3);
@@ -106,12 +133,25 @@ int crypto_sign_keypair(uint8_t *pk, uint8_t *sk) {
   /* Transform s1 */
   polyvecl_ntt(&s1);
 
+#ifdef DILITHIUM_USE_AES
+  aes256ctr_init(&aesctx, rho, 0);
+#endif
+
   for(i = 0; i < K; i++) {
     /* Expand matrix row */
-    polyvec_matrix_expand_row(mat, rho, i);
+#ifdef DILITHIUM_USE_AES
+    for(unsigned int j = 0; j < L; j++) {
+      nonce = (i << 8) + j;
+      aesctx.n = _mm_loadl_epi64((__m128i *)&nonce);
+      poly_uniform_preinit(&row->vec[j], &aesctx);
+      poly_nttunpack(&row->vec[j]);
+    }
+#else
+    polyvec_matrix_expand_row(&row, rowbuf, rho, i);
+#endif
 
     /* Compute inner-product */
-    polyvecl_pointwise_acc_montgomery(&t1, &mat[i], &s1);
+    polyvecl_pointwise_acc_montgomery(&t1, row, &s1);
     poly_invntt_tomont(&t1);
 
     /* Add error polynomial */
@@ -125,9 +165,7 @@ int crypto_sign_keypair(uint8_t *pk, uint8_t *sk) {
   }
 
   /* Compute CRH(rho, t1) and store in secret key */
-  crh(tr, pk, CRYPTO_PUBLICKEYBYTES);
-  for(i = 0; i < CRHBYTES; ++i)
-    sk[2*SEEDBYTES + i] = tr[i];
+  crh(sk + 2*SEEDBYTES, pk, CRYPTO_PUBLICKEYBYTES);
 
   return 0;
 }
@@ -145,21 +183,20 @@ int crypto_sign_keypair(uint8_t *pk, uint8_t *sk) {
 *
 * Returns 0 (success)
 **************************************************/
-int crypto_sign_signature(uint8_t *sig,
-                          size_t *siglen,
-                          const uint8_t *m,
-                          size_t mlen,
-                          const uint8_t *sk)
-{
-  unsigned int i, j, n, pos;
-  __attribute__((aligned(32)))
+int crypto_sign_signature(uint8_t *sig, size_t *siglen, const uint8_t *m, size_t mlen, const uint8_t *sk) {
+  unsigned int i, n, pos;
   uint8_t seedbuf[2*SEEDBYTES + 3*CRHBYTES];
   uint8_t *rho, *tr, *key, *mu, *rhoprime;
+  uint8_t hintbuf[N];
   uint8_t *hint = sig + SEEDBYTES + L*POLYZ_PACKEDBYTES;
   uint64_t nonce = 0;
-  polyvecl mat[K], s1, y, z;
-  polyveck t0, s2, w1, w0;
-  poly cp, h;
+  polyvecl mat[K], s1, z;
+  polyveck t0, s2, w1;
+  poly c, tmp;
+  union {
+    polyvecl y;
+    polyveck w0;
+  } tmpv;
   keccak_state state;
 
   rho = seedbuf;
@@ -190,103 +227,94 @@ int crypto_sign_signature(uint8_t *sig,
 
 #ifdef DILITHIUM_USE_AES
   aes256ctr_ctx aesctx;
-  aes256ctr_init(&aesctx, rhoprime, nonce++);
+  aes256ctr_init(&aesctx, rhoprime, 0);
 #endif
 
 rej:
   /* Sample intermediate vector y */
 #ifdef DILITHIUM_USE_AES
   for(i = 0; i < L; ++i) {
-    poly_uniform_gamma1_preinit(&y.vec[i], &aesctx);
     aesctx.n = _mm_loadl_epi64((__m128i *)&nonce);
     nonce++;
+    poly_uniform_gamma1_preinit(&z.vec[i], &aesctx);
   }
 #elif L == 4
-  poly_uniform_gamma1_4x(&y.vec[0], &y.vec[1], &y.vec[2], &y.vec[3],
+  poly_uniform_gamma1_4x(&z.vec[0], &z.vec[1], &z.vec[2], &z.vec[3],
                          rhoprime, nonce, nonce + 1, nonce + 2, nonce + 3);
   nonce += 4;
 #elif L == 5
-  poly_uniform_gamma1_4x(&y.vec[0], &y.vec[1], &y.vec[2], &y.vec[3],
+  poly_uniform_gamma1_4x(&z.vec[0], &z.vec[1], &z.vec[2], &z.vec[3],
                          rhoprime, nonce, nonce + 1, nonce + 2, nonce + 3);
-  poly_uniform_gamma1(&y.vec[4], rhoprime, nonce + 4);
+  poly_uniform_gamma1(&z.vec[4], rhoprime, nonce + 4);
   nonce += 5;
 #elif L == 7
-  poly_uniform_gamma1_4x(&y.vec[0], &y.vec[1], &y.vec[2], &y.vec[3],
+  poly_uniform_gamma1_4x(&z.vec[0], &z.vec[1], &z.vec[2], &z.vec[3],
                          rhoprime, nonce, nonce + 1, nonce + 2, nonce + 3);
-  poly_uniform_gamma1_4x(&y.vec[4], &y.vec[5], &y.vec[6], &h,
+  poly_uniform_gamma1_4x(&z.vec[4], &z.vec[5], &z.vec[6], &tmp,
                          rhoprime, nonce + 4, nonce + 5, nonce + 6, 0);
   nonce += 7;
 #else
 #error
 #endif
 
-  /* Save y and transform it */
-  z = y;
-  polyvecl_ntt(&y);
+  /* Matrix-vector product */
+  tmpv.y = z;
+  polyvecl_ntt(&tmpv.y);
+  polyvec_matrix_pointwise_montgomery(&w1, mat, &tmpv.y);
+  polyveck_invntt_tomont(&w1);
 
-  for(i = 0; i < K; i++) {
-    /* Compute inner-product */
-    polyvecl_pointwise_acc_montgomery(&w1.vec[i], &mat[i], &y);
-    poly_invntt_tomont(&w1.vec[i]);
+  /* Decompose w and call the random oracle */
+  polyveck_caddq(&w1);
+  polyveck_decompose(&w1, &tmpv.w0, &w1);
+  polyveck_pack_w1(sig, &w1);
 
-    /* Decompose w and use sig as temporary buffer for packed w1 */
-    poly_caddq(&w1.vec[i]);
-    poly_decompose(&w1.vec[i], &w0.vec[i], &w1.vec[i]);
-    polyw1_pack(sig + i*POLYW1_PACKEDBYTES, &w1.vec[i]);
-  }
-
-  /* Call the random oracle */
   shake256_init(&state);
   shake256_absorb(&state, mu, CRHBYTES);
   shake256_absorb(&state, sig, K*POLYW1_PACKEDBYTES);
   shake256_finalize(&state);
   shake256_squeeze(sig, SEEDBYTES, &state);
-  poly_challenge(&cp, sig);
-  poly_ntt(&cp);
+  poly_challenge(&c, sig);
+  poly_ntt(&c);
 
   /* Compute z, reject if it reveals secret */
   for(i = 0; i < L; i++) {
-    poly_pointwise_montgomery(&h, &cp, &s1.vec[i]);
-    poly_invntt_tomont(&h);
-    poly_add(&z.vec[i], &z.vec[i], &h);
+    poly_pointwise_montgomery(&tmp, &c, &s1.vec[i]);
+    poly_invntt_tomont(&tmp);
+    poly_add(&z.vec[i], &z.vec[i], &tmp);
     poly_reduce(&z.vec[i]);
     if(poly_chknorm(&z.vec[i], GAMMA1 - BETA))
       goto rej;
   }
 
-  /* Zero hint in signature */
-  n = pos = 0;
-  for(i = 0; i < OMEGA + K; i++)
-    hint[i] = 0;
+  /* Zero hint vector in signature */
+  pos = 0;
+  memset(hint, 0, OMEGA);
 
   for(i = 0; i < K; i++) {
     /* Check that subtracting cs2 does not change high bits of w and low bits
      * do not reveal secret information */
-    poly_pointwise_montgomery(&h, &cp, &s2.vec[i]);
-    poly_invntt_tomont(&h);
-    poly_sub(&w0.vec[i], &w0.vec[i], &h);
-    poly_reduce(&w0.vec[i]);
-    if(poly_chknorm(&w0.vec[i], GAMMA2 - BETA))
+    poly_pointwise_montgomery(&tmp, &c, &s2.vec[i]);
+    poly_invntt_tomont(&tmp);
+    poly_sub(&tmpv.w0.vec[i], &tmpv.w0.vec[i], &tmp);
+    poly_reduce(&tmpv.w0.vec[i]);
+    if(poly_chknorm(&tmpv.w0.vec[i], GAMMA2 - BETA))
       goto rej;
 
     /* Compute hints */
-    poly_pointwise_montgomery(&h, &cp, &t0.vec[i]);
-    poly_invntt_tomont(&h);
-    poly_reduce(&h);
-    if(poly_chknorm(&h, GAMMA2))
+    poly_pointwise_montgomery(&tmp, &c, &t0.vec[i]);
+    poly_invntt_tomont(&tmp);
+    poly_reduce(&tmp);
+    if(poly_chknorm(&tmp, GAMMA2))
       goto rej;
 
-    poly_add(&w0.vec[i], &w0.vec[i], &h);
-    poly_caddq(&w0.vec[i]);
-    n += poly_make_hint(&h, &w0.vec[i], &w1.vec[i]);
-    if(n > OMEGA)
+    poly_add(&tmpv.w0.vec[i], &tmpv.w0.vec[i], &tmp);
+    n = poly_make_hint(hintbuf, &tmpv.w0.vec[i], &w1.vec[i]);
+    if(pos + n > OMEGA)
       goto rej;
 
     /* Store hints in signature */
-    for(j = 0; j < N; ++j)
-      if(h.coeffs[j] != 0)
-        hint[pos++] = j;
-    hint[OMEGA + i] = pos;
+    memcpy(&hint[pos], hintbuf, n);
+    hint[OMEGA + i] = pos = pos + n;
   }
 
   /* Pack z into signature */
@@ -313,12 +341,7 @@ rej:
 *
 * Returns 0 (success)
 **************************************************/
-int crypto_sign(uint8_t *sm,
-                size_t *smlen,
-                const uint8_t *m,
-                size_t mlen,
-                const uint8_t *sk)
-{
+int crypto_sign(uint8_t *sm, size_t *smlen, const uint8_t *m, size_t mlen, const uint8_t *sk) {
   size_t i;
 
   for(i = 0; i < mlen; ++i)
@@ -341,20 +364,22 @@ int crypto_sign(uint8_t *sm,
 *
 * Returns 0 if signature could be verified correctly and -1 otherwise
 **************************************************/
-int crypto_sign_verify(const uint8_t *sig,
-                       size_t siglen,
-                       const uint8_t *m,
-                       size_t mlen,
-                       const uint8_t *pk)
-{
+int crypto_sign_verify(const uint8_t *sig, size_t siglen, const uint8_t *m, size_t mlen, const uint8_t *pk) {
   unsigned int i, j, pos = 0;
-  __attribute__((aligned(32)))
-  uint8_t buf[K*POLYW1_PACKEDBYTES];
+  /* polyw1_pack writes additional 14 bytes */
+  ALIGNED_UINT8(K*POLYW1_PACKEDBYTES+14) buf;
   uint8_t mu[CRHBYTES];
-  uint8_t c[SEEDBYTES];
   const uint8_t *hint = sig + SEEDBYTES + L*POLYZ_PACKEDBYTES;
-  polyvecl mat[K], z;
-  poly cp, w1, t1, h;
+#ifdef DILITHIUM_USE_AES
+  uint64_t nonce;
+  aes256ctr_ctx aesctx;
+  polyvecl rowbuf[1];
+#else
+  polyvecl rowbuf[2];
+#endif
+  polyvecl *row = rowbuf;
+  polyvecl z;
+  poly c, w1, h;
   keccak_state state;
 
   if(siglen != CRYPTO_BYTES)
@@ -369,8 +394,8 @@ int crypto_sign_verify(const uint8_t *sig,
   shake256_squeeze(mu, CRHBYTES, &state);
 
   /* Expand challenge */
-  poly_challenge(&cp, sig);
-  poly_ntt(&cp);
+  poly_challenge(&c, sig);
+  poly_ntt(&c);
 
   /* Unpack z; shortness follows from unpacking */
   for(i = 0; i < L; i++) {
@@ -378,26 +403,37 @@ int crypto_sign_verify(const uint8_t *sig,
     poly_ntt(&z.vec[i]);
   }
 
+#ifdef DILITHIUM_USE_AES
+  aes256ctr_init(&aesctx, pk, 0);
+#endif
+
   for(i = 0; i < K; i++) {
     /* Expand matrix row */
-    polyvec_matrix_expand_row(mat, pk, i);
+#ifdef DILITHIUM_USE_AES
+    for(j = 0; j < L; j++) {
+      nonce = (i << 8) + j;
+      aesctx.n = _mm_loadl_epi64((__m128i *)&nonce);
+      poly_uniform_preinit(&row->vec[j], &aesctx);
+      poly_nttunpack(&row->vec[j]);
+    }
+#else
+    polyvec_matrix_expand_row(&row, rowbuf, pk, i);
+#endif
 
     /* Compute i-th row of Az - c2^Dt1 */
-    polyvecl_pointwise_acc_montgomery(&w1, &mat[i], &z);
+    polyvecl_pointwise_acc_montgomery(&w1, row, &z);
 
-    polyt1_unpack(&t1, pk + SEEDBYTES + i*POLYT1_PACKEDBYTES);
-    poly_shiftl(&t1);
-    poly_ntt(&t1);
-    poly_pointwise_montgomery(&t1, &cp, &t1);
+    polyt1_unpack(&h, pk + SEEDBYTES + i*POLYT1_PACKEDBYTES);
+    poly_shiftl(&h);
+    poly_ntt(&h);
+    poly_pointwise_montgomery(&h, &c, &h);
 
-    poly_sub(&w1, &w1, &t1);
+    poly_sub(&w1, &w1, &h);
     poly_reduce(&w1);
     poly_invntt_tomont(&w1);
 
     /* Get hint polynomial and reconstruct w1 */
-    for(j = 0; j < N; ++j)
-      h.coeffs[j] = 0;
-
+    memset(h.vec, 0, sizeof(poly));
     if(hint[OMEGA + i] < pos || hint[OMEGA + i] > OMEGA)
       return -1;
 
@@ -410,7 +446,7 @@ int crypto_sign_verify(const uint8_t *sig,
 
     poly_caddq(&w1);
     poly_use_hint(&w1, &w1, &h);
-    polyw1_pack(buf + i*POLYW1_PACKEDBYTES, &w1);
+    polyw1_pack(buf.coeffs + i*POLYW1_PACKEDBYTES, &w1);
   }
 
   /* Extra indices are zero for strong unforgeability */
@@ -420,11 +456,11 @@ int crypto_sign_verify(const uint8_t *sig,
   /* Call random oracle and verify challenge */
   shake256_init(&state);
   shake256_absorb(&state, mu, CRHBYTES);
-  shake256_absorb(&state, buf, K*POLYW1_PACKEDBYTES);
+  shake256_absorb(&state, buf.coeffs, K*POLYW1_PACKEDBYTES);
   shake256_finalize(&state);
-  shake256_squeeze(c, SEEDBYTES, &state);
+  shake256_squeeze(buf.coeffs, SEEDBYTES, &state);
   for(i = 0; i < SEEDBYTES; ++i)
-    if(c[i] != sig[i])
+    if(buf.coeffs[i] != sig[i])
       return -1;
 
   return 0;
@@ -444,12 +480,7 @@ int crypto_sign_verify(const uint8_t *sig,
 *
 * Returns 0 if signed message could be verified correctly and -1 otherwise
 **************************************************/
-int crypto_sign_open(uint8_t *m,
-                     size_t *mlen,
-                     const uint8_t *sm,
-                     size_t smlen,
-                     const uint8_t *pk)
-{
+int crypto_sign_open(uint8_t *m, size_t *mlen, const uint8_t *sm, size_t smlen, const uint8_t *pk) {
   size_t i;
 
   if(smlen < CRYPTO_BYTES)
