@@ -3,21 +3,23 @@
 
 #include <stdint.h>
 #include "params.h"
+#include "symmetric.h"
+
+#define REJ_UNIFORM_NBLOCKS ((768+STREAM128_BLOCKBYTES-1)/STREAM128_BLOCKBYTES)
+#define REJ_UNIFORM_BUFLEN (REJ_UNIFORM_NBLOCKS*STREAM128_BLOCKBYTES)
+
+#if ETA == 2
+#define REJ_UNIFORM_ETA_NBLOCKS ((137+STREAM128_BLOCKBYTES-1)/STREAM128_BLOCKBYTES)
+#elif ETA == 4
+#define REJ_UNIFORM_ETA_NBLOCKS ((228+STREAM128_BLOCKBYTES-1)/STREAM128_BLOCKBYTES)
+#endif
+#define REJ_UNIFORM_ETA_BUFLEN (REJ_UNIFORM_ETA_NBLOCKS*STREAM128_BLOCKBYTES)
 
 #define rej_uniform_avx DILITHIUM_NAMESPACE(_rej_uniform_avx)
-unsigned int rej_uniform_avx(int32_t *r, const uint8_t *buf);
-
+unsigned int rej_uniform_avx(int32_t *r, const uint8_t buf[REJ_UNIFORM_BUFLEN+8]);
 
 #define rej_eta_avx DILITHIUM_NAMESPACE(_rej_eta_avx)
-unsigned int rej_eta_avx(int32_t *r,
-                         unsigned int len,
-                         const uint8_t *buf,
-                         unsigned int buflen);
-
-#define rej_gamma1m1_avx DILITHIUM_NAMESPACE(_rej_uniform_gamma1m1_avx)
-unsigned int rej_gamma1m1_avx(int32_t *r,
-                              unsigned int len,
-                              const uint8_t *buf,
-                              unsigned int buflen);
+unsigned int rej_eta_avx(int32_t *r, const uint8_t buf[REJ_UNIFORM_BUFLEN]);
 
 #endif
+
