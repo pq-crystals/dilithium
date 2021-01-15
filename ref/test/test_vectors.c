@@ -30,15 +30,13 @@ int main(void) {
   uint8_t pk[CRYPTO_PUBLICKEYBYTES];
   uint8_t sk[CRYPTO_SECRETKEYBYTES];
   uint8_t sig[CRYPTO_BYTES];
-  uint8_t m[MLEN] = {0};
-  __attribute__((aligned(32)))
+  uint8_t m[MLEN];
   uint8_t seed[CRHBYTES];
   uint8_t buf[CRYPTO_SECRETKEYBYTES];
   size_t siglen;
   poly c, tmp;
   polyvecl s, y, mat[K];
   polyveck w, w1, w0, t1, t0, h;
-  int32_t u;
 
   for(i = 0; i < NVECTORS; ++i) {
     printf("count = %u\n", i);
@@ -99,15 +97,13 @@ int main(void) {
       if(tmp.coeffs[j] != s.vec[0].coeffs[j])
         fprintf(stderr, "ERROR in polyeta_(un)pack!\n");
 
-    polyvecl_reduce(&s);
     if(polyvecl_chknorm(&s, ETA+1))
       fprintf(stderr, "ERROR in polyvecl_chknorm(&s ,ETA+1)!\n");
 
     printf("s = ([");
     for(j = 0; j < L; ++j) {
       for(k = 0; k < N; ++k) {
-        u = s.vec[j].coeffs[k];
-        printf("%3d", u);
+        printf("%3d", s.vec[j].coeffs[k]);
         if(k < N-1) printf(", ");
         else if(j < L-1) printf("],\n     [");
         else printf("])\n");
@@ -128,8 +124,7 @@ int main(void) {
     printf("y = ([");
     for(j = 0; j < L; ++j) {
       for(k = 0; k < N; ++k) {
-        u = y.vec[j].coeffs[k];
-        printf("%8d", u);
+        printf("%8d", y.vec[j].coeffs[k]);
         if(k < N-1) printf(", ");
         else if(j < L-1) printf("],\n     [");
         else printf("])\n");
@@ -183,8 +178,7 @@ int main(void) {
     printf("w0 = ([");
     for(j = 0; j < K; ++j) {
       for(k = 0; k < N; ++k) {
-        u = w0.vec[j].coeffs[k];
-        printf("%8d", u);
+        printf("%8d", w0.vec[j].coeffs[k]);
         if(k < N-1) printf(", ");
         else if(j < K-1) printf("],\n      [");
         else printf("])\n");
@@ -229,8 +223,7 @@ int main(void) {
     printf("t0 = ([");
     for(j = 0; j < K; ++j) {
       for(k = 0; k < N; ++k) {
-        u = t0.vec[j].coeffs[k];
-        printf("%5d", u);
+        printf("%5d", t0.vec[j].coeffs[k]);
         if(k < N-1) printf(", ");
         else if(j < K-1) printf("],\n      [");
         else printf("])\n");
@@ -240,8 +233,7 @@ int main(void) {
     poly_challenge(&c, seed);
     printf("c = [");
     for(j = 0; j < N; ++j) {
-      u = c.coeffs[j];
-      printf("%2d", u);
+      printf("%2d", c.coeffs[j]);
       if(j < N-1) printf(", ");
       else printf("]\n");
     }

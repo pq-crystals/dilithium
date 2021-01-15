@@ -40,7 +40,7 @@ int main(void) {
   uint8_t pk[CRYPTO_PUBLICKEYBYTES];
   uint8_t sk[CRYPTO_SECRETKEYBYTES];
   uint8_t sig[CRYPTO_BYTES];
-  uint8_t m[MLEN] = {0};
+  uint8_t m[MLEN];
   uint8_t seed[CRHBYTES];
   uint8_t buf[CRYPTO_SECRETKEYBYTES];
   size_t siglen;
@@ -126,7 +126,6 @@ int main(void) {
       if(tmp.coeffs[j] != s.vec[0].coeffs[j])
         fprintf(stderr, "ERROR in polyeta_(un)pack!\n");
 
-    polyvecl_reduce(&s);
     if(polyvecl_chknorm(&s, ETA+1))
       fprintf(stderr, "ERROR in polyvecl_chknorm(&s ,ETA+1)!\n");
 
@@ -166,7 +165,6 @@ int main(void) {
       if(tmp.coeffs[j] != y.vec[0].coeffs[j])
         fprintf(stderr, "ERROR in polyz_(un)pack!\n");
 
-    polyvecl_reduce(&y);
     if(polyvecl_chknorm(&y, GAMMA1+1))
       fprintf(stderr, "ERROR in polyvecl_chknorm(&y, GAMMA1)!\n");
 
