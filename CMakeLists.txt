@@ -20,6 +20,9 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 if(WIN32)
     set(CMAKE_GENERATOR_CC cl)
+    message("  In case of linkage problems be sure to select the proper architecture, e.g. via 'cmake -A x64 ..'")
+    message("  In case of runtime problems be sure to select Release config to avoid dev-dll problems, e.g. via 'msbuild ALL_BUILD.vcxproj /property:Configuration=Release'")
+    message("  In case of test problems be sure to output error messages, e.g., via 'ctest --output-on-failure -C Release'")
 else()
 include(FindUnixCommands)
 endif()
@@ -33,11 +36,15 @@ if(NOT DEFINED OPENSSL_ROOT_DIR)
         endif()
 endif()
 find_package(OpenSSL 1.1.1 REQUIRED)
+include_directories(${OPENSSL_INCLUDE_DIR})
 
 enable_testing()
 
 add_subdirectory(ref)
+# For the time being, don't build AVX2 on Win:
+if(NOT WIN32)
 add_subdirectory(avx2)
+endif()
 
 add_library(dilithium ${REF_OBJS} ${AVX2_OBJS})
 

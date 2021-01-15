@@ -23,7 +23,7 @@ void pack_sig(uint8_t sig[CRYPTO_BYTES], const uint8_t c[SEEDBYTES], const polyv
 #define unpack_pk DILITHIUM_NAMESPACE(_unpack_pk)
 void unpack_pk(uint8_t rho[SEEDBYTES], polyveck *t1, const uint8_t pk[CRYPTO_PUBLICKEYBYTES]);
 
-#define unpack_sk DILITHIUM_NAMESPACE(_upack_sk)
+#define unpack_sk DILITHIUM_NAMESPACE(_unpack_sk)
 void unpack_sk(uint8_t rho[SEEDBYTES],
                uint8_t tr[CRHBYTES],
                uint8_t key[SEEDBYTES],
