@@ -121,10 +121,10 @@ int crypto_sign_signature(uint8_t *sig,
 rej:
   /* Sample intermediate vector y */
   polyvecl_uniform_gamma1(&y, rhoprime, nonce++);
-  z = y;
-  polyvecl_ntt(&z);
 
   /* Matrix-vector multiplication */
+  z = y;
+  polyvecl_ntt(&z);
   polyvec_matrix_pointwise_montgomery(&w1, mat, &z);
   polyveck_reduce(&w1);
   polyveck_invntt_tomont(&w1);

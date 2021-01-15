@@ -9,14 +9,21 @@ else
   DIRS="ref"
 fi
 
+if [ "$ARCH" = "amd64" -o "$ARCH" = "arm64" ]; then
+  export CFLAGS="-fsanitize=address,undefined ${CFLAGS}"
+fi
+
 for dir in $DIRS; do
-  make -C $dir
+  make -j$(nproc) -C $dir
   for alg in 2 2aes 3 3aes 5 5aes; do
-    ./$dir/test/test_dilithium$alg
-    ./$dir/test/test_vectors$alg > tvecs$alg
-    ./$dir/PQCgenKAT_sign$alg
+    #valgrind --vex-guest-max-insns=25 ./$dir/test/test_dilithium$alg
+    ./$dir/test/test_dilithium$alg &
+    PID1=$!
+    ./$dir/test/test_vectors$alg > tvecs$alg &
+    PID2=$!
+    wait $PID1 $PID2
   done
-  shasum -a 256 -c SHA256SUMS
+  shasum -a256 -c SHA256SUMS
 done
 
 exit 0
