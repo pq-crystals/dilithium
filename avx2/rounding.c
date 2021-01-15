@@ -24,7 +24,7 @@ extern const uint8_t idxlut[256][8];
 *              - const __m256i *a: input array of length N/8
 *
 **************************************************/
-void power2round_avx(__m256i * restrict a1, __m256i * restrict a0, const __m256i * restrict a)
+void power2round_avx(__m256i *a1, __m256i *a0, const __m256i *a)
 {
   unsigned int i;
   __m256i f,f0,f1;
@@ -57,7 +57,7 @@ void power2round_avx(__m256i * restrict a1, __m256i * restrict a0, const __m256i
 *
 **************************************************/
 #if GAMMA2 == (Q-1)/32
-void decompose_avx(__m256i * restrict a1, __m256i * restrict a0, const __m256i * restrict a)
+void decompose_avx(__m256i *a1, __m256i *a0, const __m256i *a)
 {
   unsigned int i;
   __m256i f,f0,f1;
@@ -87,7 +87,7 @@ void decompose_avx(__m256i * restrict a1, __m256i * restrict a0, const __m256i *
 }
 
 #elif GAMMA2 == (Q-1)/88
-void decompose_avx(__m256i * restrict a1, __m256i * restrict a0, const __m256i * restrict a)
+void decompose_avx(__m256i *a1, __m256i *a0, const __m256i *a)
 {
   unsigned int i;
   __m256i f,f0,f1,t;
@@ -169,7 +169,7 @@ unsigned int make_hint_avx(uint8_t hint[N], const __m256i * restrict a0, const _
 *              - const __m256i *a: input array of length N/8 with hint bits
 *
 **************************************************/
-void use_hint_avx(__m256i * restrict b, const __m256i * restrict a, const __m256i * restrict hint) {
+void use_hint_avx(__m256i *b, const __m256i *a, const __m256i * restrict hint) {
   unsigned int i;
   __m256i a0[N/8];
   __m256i f,g,h,t;
