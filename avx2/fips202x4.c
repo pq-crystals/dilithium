@@ -5,10 +5,6 @@
 #include "fips202.h"
 #include "fips202x4.h"
 
-/* Use implementation from the Keccak Code Package */
-#define KeccakF1600_StatePermute4x FIPS202X4_NAMESPACE(_KeccakP1600times4_PermuteAll_24rounds)
-extern void KeccakF1600_StatePermute4x(__m256i *s);
-
 static void keccakx4_absorb_once(__m256i s[25],
                                  unsigned int r,
                                  const uint8_t *in0,
@@ -34,7 +30,7 @@ static void keccakx4_absorb_once(__m256i s[25],
     }
     inlen -= r;
 
-    KeccakF1600_StatePermute4x(s);
+    f1600x4(s, KeccakF_RoundConstants);
   }
 
   for(i = 0; i < inlen/8; ++i) {
@@ -69,7 +65,7 @@ static void keccakx4_squeezeblocks(uint8_t *out0,
   __m128d t;
 
   while(nblocks > 0) {
-    KeccakF1600_StatePermute4x(s);
+    f1600x4(s, KeccakF_RoundConstants);
     for(i=0; i < r/8; ++i) {
       t = _mm_castsi128_pd(_mm256_castsi256_si128(s[i]));
       _mm_storel_pd((__attribute__((__may_alias__)) double *)&out0[8*i], t);

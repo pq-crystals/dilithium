@@ -2,7 +2,7 @@
 
 cd ref
 
-for alg in 2 2aes 3 3aes 4 4aes; do
+for alg in 2 2aes 3 3aes 5 5aes; do
   make -B test/test_dilithium$alg CFLAGS="-O0 -g --coverage"
   ./test/test_dilithium$alg
   lcov -c -d . -o dilithium$alg.lcov
@@ -15,8 +15,8 @@ lcov -o dilithium.lcov \
   -a dilithium2aes.lcov \
   -a dilithium3.lcov \
   -a dilithium3aes.lcov \
-  -a dilithium4.lcov \
-  -a dilithium4aes.lcov
+  -a dilithium5.lcov \
+  -a dilithium5aes.lcov
 
 lcov -r dilithium.lcov -o dilithium.lcov \
   '*/test/test_dilithium.c'

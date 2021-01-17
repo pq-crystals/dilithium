@@ -15,6 +15,9 @@
 #endif
 #define REJ_UNIFORM_ETA_BUFLEN (REJ_UNIFORM_ETA_NBLOCKS*STREAM128_BLOCKBYTES)
 
+#define idxlut DILITHIUM_NAMESPACE(_idxlut)
+extern const uint8_t idxlut[256][8];
+
 #define rej_uniform_avx DILITHIUM_NAMESPACE(_rej_uniform_avx)
 unsigned int rej_uniform_avx(int32_t *r, const uint8_t buf[REJ_UNIFORM_BUFLEN+8]);
 

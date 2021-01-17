@@ -26,10 +26,13 @@
 #endif
 
 #ifndef __ASSEMBLER__
+
 #include "align.h"
+
 typedef ALIGNED_INT32(624) qdata_t;
+
 #define qdata DILITHIUM_NAMESPACE(_qdata)
 extern const qdata_t qdata;
-#endif
 
+#endif
 #endif

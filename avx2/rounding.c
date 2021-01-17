@@ -3,14 +3,13 @@
 #include <string.h>
 #include "params.h"
 #include "rounding.h"
+#include "rejsample.h"
 #include "consts.h"
 
 #define _mm256_blendv_epi32(a,b,mask) \
   _mm256_castps_si256(_mm256_blendv_ps(_mm256_castsi256_ps(a), \
                                        _mm256_castsi256_ps(b), \
                                        _mm256_castsi256_ps(mask)))
-
-extern const uint8_t idxlut[256][8];
 
 /*************************************************
 * Name:        power2round

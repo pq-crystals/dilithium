@@ -16,6 +16,9 @@ typedef struct {
   unsigned int pos;
 } keccak_state;
 
+#define KeccakF_RoundConstants FIPS202_NAMESPACE(_KeccakF_RoundConstants)
+extern const uint64_t KeccakF_RoundConstants[];
+
 #define shake128_init FIPS202_NAMESPACE(_shake128_init)
 void shake128_init(keccak_state *state);
 #define shake128_absorb FIPS202_NAMESPACE(_shake128_absorb)
