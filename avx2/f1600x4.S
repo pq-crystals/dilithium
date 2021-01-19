@@ -1,10 +1,20 @@
-/* Taken from Bas Westerbaan's new 4-way SHAKE implementation for Sphincs+ (https://github.com/sphincs/sphincsplus/pull/14/) */
+/* Taken from Bas Westerbaan's new 4-way SHAKE implementation
+ * for Sphincs+ (https://github.com/sphincs/sphincsplus/pull/14/),
+ * but uses vpshufb for byte-granular rotations as in the Keccak Code Package. */
 
 #include "fips202x4.h"
+
+.data
+.p2align 5
+rho8:
+.byte 7,0,1,2,3,4,5,6,15,8,9,10,11,12,13,14,7,0,1,2,3,4,5,6,15,8,9,10,11,12,13,14
+rho56:
+.byte 1,2,3,4,5,6,7,0,9,10,11,12,13,14,15,8,1,2,3,4,5,6,7,0,9,10,11,12,13,14,15,8
 
 .text
 .global cdecl(f1600x4)
 cdecl(f1600x4):
+vmovdqa		rho8(%rip), %ymm0
 movq		$6, %rax
 looptop:
 vmovdqa		0(%rdi), %ymm8
@@ -129,17 +139,18 @@ vpxor		640(%rdi), %ymm5, %ymm12
 vpsllq		$1, %ymm8, %ymm13
 vpsllq		$6, %ymm9, %ymm14
 vpsllq		$25, %ymm10, %ymm15
-vpsllq		$8, %ymm11, %ymm7
+#vpsllq		$8, %ymm11, %ymm7
 vpsllq		$18, %ymm12, %ymm6
 vpsrlq		$63, %ymm8, %ymm8
 vpsrlq		$58, %ymm9, %ymm9
 vpsrlq		$39, %ymm10, %ymm10
-vpsrlq		$56, %ymm11, %ymm11
+#vpsrlq		$56, %ymm11, %ymm11
 vpsrlq		$46, %ymm12, %ymm12
 vpor		%ymm13, %ymm8, %ymm8
 vpor		%ymm14, %ymm9, %ymm9
 vpor		%ymm15, %ymm10, %ymm10
-vpor		%ymm7, %ymm11, %ymm11
+#vpor		%ymm7, %ymm11, %ymm11
+vpshufb		%ymm0, %ymm11, %ymm11
 vpor		%ymm6, %ymm12, %ymm12
 vpandn		%ymm10, %ymm9, %ymm13
 vpandn		%ymm11, %ymm10, %ymm14
@@ -165,17 +176,18 @@ vpsllq		$27, %ymm8, %ymm13
 vpsllq		$36, %ymm9, %ymm14
 vpsllq		$10, %ymm10, %ymm15
 vpsllq		$15, %ymm11, %ymm7
-vpsllq		$56, %ymm12, %ymm6
+#vpsllq		$56, %ymm12, %ymm6
 vpsrlq		$37, %ymm8, %ymm8
 vpsrlq		$28, %ymm9, %ymm9
 vpsrlq		$54, %ymm10, %ymm10
 vpsrlq		$49, %ymm11, %ymm11
-vpsrlq		$8, %ymm12, %ymm12
+#vpsrlq		$8, %ymm12, %ymm12
 vpor		%ymm13, %ymm8, %ymm8
 vpor		%ymm14, %ymm9, %ymm9
 vpor		%ymm15, %ymm10, %ymm10
 vpor		%ymm7, %ymm11, %ymm11
-vpor		%ymm6, %ymm12, %ymm12
+#vpor		%ymm6, %ymm12, %ymm12
+vpshufb		rho56(%rip), %ymm12, %ymm12
 vpandn		%ymm10, %ymm9, %ymm13
 vpandn		%ymm11, %ymm10, %ymm14
 vpandn		%ymm12, %ymm11, %ymm15
@@ -348,17 +360,18 @@ vpxor		480(%rdi), %ymm5, %ymm12
 vpsllq		$1, %ymm8, %ymm13
 vpsllq		$6, %ymm9, %ymm14
 vpsllq		$25, %ymm10, %ymm15
-vpsllq		$8, %ymm11, %ymm7
+#vpsllq		$8, %ymm11, %ymm7
 vpsllq		$18, %ymm12, %ymm6
 vpsrlq		$63, %ymm8, %ymm8
 vpsrlq		$58, %ymm9, %ymm9
 vpsrlq		$39, %ymm10, %ymm10
-vpsrlq		$56, %ymm11, %ymm11
+#vpsrlq		$56, %ymm11, %ymm11
 vpsrlq		$46, %ymm12, %ymm12
 vpor		%ymm13, %ymm8, %ymm8
 vpor		%ymm14, %ymm9, %ymm9
 vpor		%ymm15, %ymm10, %ymm10
-vpor		%ymm7, %ymm11, %ymm11
+#vpor		%ymm7, %ymm11, %ymm11
+vpshufb		%ymm0, %ymm11, %ymm11
 vpor		%ymm6, %ymm12, %ymm12
 vpandn		%ymm10, %ymm9, %ymm13
 vpandn		%ymm11, %ymm10, %ymm14
@@ -384,17 +397,18 @@ vpsllq		$27, %ymm8, %ymm13
 vpsllq		$36, %ymm9, %ymm14
 vpsllq		$10, %ymm10, %ymm15
 vpsllq		$15, %ymm11, %ymm7
-vpsllq		$56, %ymm12, %ymm6
+#vpsllq		$56, %ymm12, %ymm6
 vpsrlq		$37, %ymm8, %ymm8
 vpsrlq		$28, %ymm9, %ymm9
 vpsrlq		$54, %ymm10, %ymm10
 vpsrlq		$49, %ymm11, %ymm11
-vpsrlq		$8, %ymm12, %ymm12
+#vpsrlq		$8, %ymm12, %ymm12
 vpor		%ymm13, %ymm8, %ymm8
 vpor		%ymm14, %ymm9, %ymm9
 vpor		%ymm15, %ymm10, %ymm10
 vpor		%ymm7, %ymm11, %ymm11
-vpor		%ymm6, %ymm12, %ymm12
+#vpor		%ymm6, %ymm12, %ymm12
+vpshufb		rho56(%rip), %ymm12, %ymm12
 vpandn		%ymm10, %ymm9, %ymm13
 vpandn		%ymm11, %ymm10, %ymm14
 vpandn		%ymm12, %ymm11, %ymm15
@@ -567,17 +581,18 @@ vpxor		160(%rdi), %ymm5, %ymm12
 vpsllq		$1, %ymm8, %ymm13
 vpsllq		$6, %ymm9, %ymm14
 vpsllq		$25, %ymm10, %ymm15
-vpsllq		$8, %ymm11, %ymm7
+#vpsllq		$8, %ymm11, %ymm7
 vpsllq		$18, %ymm12, %ymm6
 vpsrlq		$63, %ymm8, %ymm8
 vpsrlq		$58, %ymm9, %ymm9
 vpsrlq		$39, %ymm10, %ymm10
-vpsrlq		$56, %ymm11, %ymm11
+#vpsrlq		$56, %ymm11, %ymm11
 vpsrlq		$46, %ymm12, %ymm12
 vpor		%ymm13, %ymm8, %ymm8
 vpor		%ymm14, %ymm9, %ymm9
 vpor		%ymm15, %ymm10, %ymm10
-vpor		%ymm7, %ymm11, %ymm11
+#vpor		%ymm7, %ymm11, %ymm11
+vpshufb		%ymm0, %ymm11, %ymm11
 vpor		%ymm6, %ymm12, %ymm12
 vpandn		%ymm10, %ymm9, %ymm13
 vpandn		%ymm11, %ymm10, %ymm14
@@ -603,17 +618,18 @@ vpsllq		$27, %ymm8, %ymm13
 vpsllq		$36, %ymm9, %ymm14
 vpsllq		$10, %ymm10, %ymm15
 vpsllq		$15, %ymm11, %ymm7
-vpsllq		$56, %ymm12, %ymm6
+#vpsllq		$56, %ymm12, %ymm6
 vpsrlq		$37, %ymm8, %ymm8
 vpsrlq		$28, %ymm9, %ymm9
 vpsrlq		$54, %ymm10, %ymm10
 vpsrlq		$49, %ymm11, %ymm11
-vpsrlq		$8, %ymm12, %ymm12
+#vpsrlq		$8, %ymm12, %ymm12
 vpor		%ymm13, %ymm8, %ymm8
 vpor		%ymm14, %ymm9, %ymm9
 vpor		%ymm15, %ymm10, %ymm10
 vpor		%ymm7, %ymm11, %ymm11
-vpor		%ymm6, %ymm12, %ymm12
+#vpor		%ymm6, %ymm12, %ymm12
+vpshufb		rho56(%rip), %ymm12, %ymm12
 vpandn		%ymm10, %ymm9, %ymm13
 vpandn		%ymm11, %ymm10, %ymm14
 vpandn		%ymm12, %ymm11, %ymm15
@@ -786,17 +802,18 @@ vpxor		320(%rdi), %ymm5, %ymm12
 vpsllq		$1, %ymm8, %ymm13
 vpsllq		$6, %ymm9, %ymm14
 vpsllq		$25, %ymm10, %ymm15
-vpsllq		$8, %ymm11, %ymm7
+#vpsllq		$8, %ymm11, %ymm7
 vpsllq		$18, %ymm12, %ymm6
 vpsrlq		$63, %ymm8, %ymm8
 vpsrlq		$58, %ymm9, %ymm9
 vpsrlq		$39, %ymm10, %ymm10
-vpsrlq		$56, %ymm11, %ymm11
+#vpsrlq		$56, %ymm11, %ymm11
 vpsrlq		$46, %ymm12, %ymm12
 vpor		%ymm13, %ymm8, %ymm8
 vpor		%ymm14, %ymm9, %ymm9
 vpor		%ymm15, %ymm10, %ymm10
-vpor		%ymm7, %ymm11, %ymm11
+#vpor		%ymm7, %ymm11, %ymm11
+vpshufb		%ymm0, %ymm11, %ymm11
 vpor		%ymm6, %ymm12, %ymm12
 vpandn		%ymm10, %ymm9, %ymm13
 vpandn		%ymm11, %ymm10, %ymm14
@@ -822,17 +839,18 @@ vpsllq		$27, %ymm8, %ymm13
 vpsllq		$36, %ymm9, %ymm14
 vpsllq		$10, %ymm10, %ymm15
 vpsllq		$15, %ymm11, %ymm7
-vpsllq		$56, %ymm12, %ymm6
+#vpsllq		$56, %ymm12, %ymm6
 vpsrlq		$37, %ymm8, %ymm8
 vpsrlq		$28, %ymm9, %ymm9
 vpsrlq		$54, %ymm10, %ymm10
 vpsrlq		$49, %ymm11, %ymm11
-vpsrlq		$8, %ymm12, %ymm12
+#vpsrlq		$8, %ymm12, %ymm12
 vpor		%ymm13, %ymm8, %ymm8
 vpor		%ymm14, %ymm9, %ymm9
 vpor		%ymm15, %ymm10, %ymm10
 vpor		%ymm7, %ymm11, %ymm11
-vpor		%ymm6, %ymm12, %ymm12
+#vpor		%ymm6, %ymm12, %ymm12
+vpshufb		rho56(%rip), %ymm12, %ymm12
 vpandn		%ymm10, %ymm9, %ymm13
 vpandn		%ymm11, %ymm10, %ymm14
 vpandn		%ymm12, %ymm11, %ymm15
