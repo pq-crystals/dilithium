@@ -15,7 +15,7 @@
 int32_t montgomery_reduce(int64_t a) {
   int32_t t;
 
-  t = (int32_t)a*QINV;
+  t = (int64_t)(int32_t)a*QINV;
   t = (a - (int64_t)t*Q) >> 32;
   return t;
 }

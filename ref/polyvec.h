@@ -14,7 +14,7 @@ typedef struct {
 void polyvecl_uniform_eta(polyvecl *v, const uint8_t seed[SEEDBYTES], uint16_t nonce);
 
 #define polyvecl_uniform_gamma1 DILITHIUM_NAMESPACE(polyvecl_uniform_gamma1)
-void polyvecl_uniform_gamma1(polyvecl *v, const uint8_t seed[SEEDBYTES], uint16_t nonce);
+void polyvecl_uniform_gamma1(polyvecl *v, const uint8_t seed[CRHBYTES], uint16_t nonce);
 
 #define polyvecl_reduce DILITHIUM_NAMESPACE(polyvecl_reduce)
 void polyvecl_reduce(polyvecl *v);
