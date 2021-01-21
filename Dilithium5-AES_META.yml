@@ -40,5 +40,4 @@ implementations:
         required_flags:
           - avx2
           - aes
-          - bmi2
           - popcnt
