@@ -82,3 +82,14 @@ libpqcrystals_aes256ctr_ref.so
 libpqcrystals_fips202_ref.so
 ```
 All global symbols in the libraries lie in the namespaces `pqcrystals_dilithium$ALG_ref`, `libpqcrystals_aes256ctr_ref` and `libpqcrystals_fips202_ref`. Hence it is possible to link a program against all libraries simultaneously and obtain access to all implementations for all parameter sets. The corresponding API header file is `ref/api.h`, which contains prototypes for all API functions and preprocessor defines for the key and signature lengths.
+
+## CMake
+
+Also available is a portable [cmake](https://cmake.org) based build system that permits building the reference implementation.
+
+By calling 
+```
+mkdir build && cd build && cmake .. && cmake --build . && ctest
+```
+
+the Dilithium reference implementation gets built and tested.

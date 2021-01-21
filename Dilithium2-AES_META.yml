@@ -1,0 +1,44 @@
+name: Dilithium2-AES
+type: signature
+claimed-nist-level: 2
+length-public-key: 1312
+length-secret-key: 2544
+length-signature: 2420
+nistkat-sha256: 0c1e2e996ba8d7a09b4f3ca1e2d1152c951785845afb572b8a2a027c3daa1bd6
+testvectors-sha256: 691b9541f65fd2dfacad28c360ebd2091cea7eecb7533ffd807a4037eb21772a
+principal-submitters:
+  - Vadim Lyubashevsky
+auxiliary-submitters:
+  - Léo Ducas
+  - Eike Kiltz
+  - Tancrède Lepoint
+  - Peter Schwabe
+  - Gregor Seiler
+  - Damien Stehlé
+implementations:
+  - name: ref
+    version: https://github.com/pq-crystals/dilithium/commit/55a623c444b9f7fd036cab11fb8f2237727fe556
+    folder_name: ref
+    compile_opts: -DDILITHIUM_MODE=2 -DDILITHIUM_USE_AES
+    signature_keypair: pqcrystals_dilithium2aes_ref_keypair
+    signature_signature: pqcrystals_dilithium2aes_ref_signature
+    signature_verify: pqcrystals_dilithium2aes_ref_verify
+    sources: api.h config.h params.h sign.c sign.h packing.c packing.h polyvec.c polyvec.h poly.c poly.h ntt.c ntt.h reduce.c reduce.h rounding.c rounding.h symmetric.h symmetric-aes.c
+
+  - name: avx2
+    version: https://github.com/pq-crystals/dilithium/commit/55a623c444b9f7fd036cab11fb8f2237727fe556
+    compile_opts: -DDILITHIUM_MODE=2 -DDILITHIUM_USE_AES
+    signature_keypair: pqcrystals_dilithium2aes_avx2_keypair
+    signature_signature: pqcrystals_dilithium2aes_avx2_signature
+    signature_verify: pqcrystals_dilithium2aes_avx2_verify
+    sources: api.h config.h params.h align.h sign.c sign.h packing.c packing.h polyvec.c polyvec.h poly.c poly.h ntt.S invntt.S pointwise.S ntt.h shuffle.S shuffle.inc consts.c consts.h reduce.S reduce.h rejsample.c rejsample.h rounding.c rounding.h symmetric.h symmetric-aes.c
+    supported_platforms:
+      - architecture: x86_64
+        operating_systems:
+          - Darwin
+          - Linux
+        required_flags:
+          - avx2
+          - aes
+          - bmi2
+          - popcnt
