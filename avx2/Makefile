@@ -45,11 +45,11 @@ shared: \
   libpqcrystals_dilithium2aes_avx2.so \
   libpqcrystals_dilithium3aes_avx2.so \
   libpqcrystals_dilithium5aes_avx2.so \
-  libpqcrystals_fips202_ref.so \
+  libpqcrystals_fips202_avx2.so \
   libpqcrystals_fips202x4_avx2.so \
   libpqcrystals_aes256ctr_avx2.so
 
-libpqcrystals_fips202_ref.so: fips202.c fips202.h
+libpqcrystals_fips202_avx2.so: fips202.c fips202.h
 	$(CC) -shared -fPIC $(CFLAGS) -o $@ $<
 
 libpqcrystals_fips202x4_avx2.so: fips202x4.c fips202x4.h f1600x4.S
