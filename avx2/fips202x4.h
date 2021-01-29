@@ -1,7 +1,7 @@
 #ifndef FIPS202X4_H
 #define FIPS202X4_H
 
-#define FIPS202X4_NAMESPACE(s) pqcrystals_fips202x4_avx2_##s
+#define FIPS202X4_NAMESPACE(s) pqcrystals_dilithium_fips202x4_avx2_##s
 
 #ifdef __ASSEMBLER__
 /* The C ABI on MacOS exports all symbols with a leading
