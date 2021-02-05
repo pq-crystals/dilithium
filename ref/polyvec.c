@@ -33,7 +33,7 @@ void polyvec_matrix_pointwise_montgomery(polyveck *t, const polyvecl mat[K], con
 /************ Vectors of polynomials of length L **************/
 /**************************************************************/
 
-void polyvecl_uniform_eta(polyvecl *v, const uint8_t seed[SEEDBYTES], uint16_t nonce) {
+void polyvecl_uniform_eta(polyvecl *v, const uint8_t seed[CRHBYTES], uint16_t nonce) {
   unsigned int i;
 
   for(i = 0; i < L; ++i)
@@ -166,7 +166,7 @@ int polyvecl_chknorm(const polyvecl *v, int32_t bound)  {
 /************ Vectors of polynomials of length K **************/
 /**************************************************************/
 
-void polyveck_uniform_eta(polyveck *v, const uint8_t seed[SEEDBYTES], uint16_t nonce) {
+void polyveck_uniform_eta(polyveck *v, const uint8_t seed[CRHBYTES], uint16_t nonce) {
   unsigned int i;
 
   for(i = 0; i < K; ++i)

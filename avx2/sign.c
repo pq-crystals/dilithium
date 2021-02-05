@@ -70,7 +70,7 @@ static inline void polyvec_matrix_expand_row(polyvecl **row, polyvecl buf[2], co
 **************************************************/
 int crypto_sign_keypair(uint8_t *pk, uint8_t *sk) {
   unsigned int i;
-  uint8_t seedbuf[3*SEEDBYTES];
+  uint8_t seedbuf[2*SEEDBYTES + CRHBYTES];
   const uint8_t *rho, *rhoprime, *key;
 #ifdef DILITHIUM_USE_AES
   uint64_t nonce;
@@ -85,10 +85,10 @@ int crypto_sign_keypair(uint8_t *pk, uint8_t *sk) {
 
   /* Get randomness for rho, rhoprime and key */
   randombytes(seedbuf, SEEDBYTES);
-  shake256(seedbuf, 3*SEEDBYTES, seedbuf, SEEDBYTES);
+  shake256(seedbuf, 2*SEEDBYTES + CRHBYTES, seedbuf, SEEDBYTES);
   rho = seedbuf;
   rhoprime = seedbuf + SEEDBYTES;
-  key = seedbuf + 2*SEEDBYTES;
+  key = seedbuf + SEEDBYTES + CRHBYTES;
 
   /* Store rho, key */
   memcpy(pk, rho, SEEDBYTES);

@@ -21,7 +21,7 @@
 * Returns 0 (success)
 **************************************************/
 int crypto_sign_keypair(uint8_t *pk, uint8_t *sk) {
-  uint8_t seedbuf[3*SEEDBYTES];
+  uint8_t seedbuf[2*SEEDBYTES + CRHBYTES];
   uint8_t tr[CRHBYTES];
   const uint8_t *rho, *rhoprime, *key;
   polyvecl mat[K];
@@ -30,10 +30,10 @@ int crypto_sign_keypair(uint8_t *pk, uint8_t *sk) {
 
   /* Get randomness for rho, rhoprime and key */
   randombytes(seedbuf, SEEDBYTES);
-  shake256(seedbuf, 3*SEEDBYTES, seedbuf, SEEDBYTES);
+  shake256(seedbuf, 2*SEEDBYTES + CRHBYTES, seedbuf, SEEDBYTES);
   rho = seedbuf;
   rhoprime = seedbuf + SEEDBYTES;
-  key = seedbuf + 2*SEEDBYTES;
+  key = seedbuf + SEEDBYTES + CRHBYTES;
 
   /* Expand matrix */
   polyvec_matrix_expand(mat, rho);

@@ -11,7 +11,7 @@ typedef struct {
 } polyvecl;
 
 #define polyvecl_uniform_eta DILITHIUM_NAMESPACE(polyvecl_uniform_eta)
-void polyvecl_uniform_eta(polyvecl *v, const uint8_t seed[SEEDBYTES], uint16_t nonce);
+void polyvecl_uniform_eta(polyvecl *v, const uint8_t seed[CRHBYTES], uint16_t nonce);
 
 #define polyvecl_uniform_gamma1 DILITHIUM_NAMESPACE(polyvecl_uniform_gamma1)
 void polyvecl_uniform_gamma1(polyvecl *v, const uint8_t seed[CRHBYTES], uint16_t nonce);
@@ -49,7 +49,7 @@ typedef struct {
 } polyveck;
 
 #define polyveck_uniform_eta DILITHIUM_NAMESPACE(polyveck_uniform_eta)
-void polyveck_uniform_eta(polyveck *v, const uint8_t seed[SEEDBYTES], uint16_t nonce);
+void polyveck_uniform_eta(polyveck *v, const uint8_t seed[CRHBYTES], uint16_t nonce);
 
 #define polyveck_reduce DILITHIUM_NAMESPACE(polyveck_reduce)
 void polyveck_reduce(polyveck *v);
