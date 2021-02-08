@@ -4,8 +4,8 @@ claimed-nist-level: 3
 length-public-key: 1952
 length-secret-key: 4016
 length-signature: 3293
-nistkat-sha256: d0d4bb6945e14206d17b52f8a395d5a750ec8a73f2ea06b9f1cd226d225a9bfb
-testvectors-sha256: c73f18b1b06ef2cb6263c5e6a5b48fb180d187a0778d54a608d9662e19662012
+nistkat-sha256: 8439f580566c46b99449b2cbbd597ce59bcd5d184b90c1108b79a08f6bdbbcb1
+testvectors-sha256: 754226e0a60df21f639b3f9e43c14977aeda724bf9c0a8823e84c158d739a468
 principal-submitters:
   - Vadim Lyubashevsky
 auxiliary-submitters:
@@ -17,7 +17,7 @@ auxiliary-submitters:
   - Damien Stehlé
 implementations:
   - name: ref
-    version: https://github.com/pq-crystals/dilithium/commit/1e63a1e880401166f105ab44ec67464c9714a315
+    version: https://github.com/pq-crystals/dilithium/commit/147acf23dff0b4c487f56a2b11406ce48c52d4d7
     folder_name: ref
     compile_opts: -DDILITHIUM_MODE=3
     signature_keypair: pqcrystals_dilithium3_ref_keypair
@@ -26,7 +26,7 @@ implementations:
     sources: ../LICENSE api.h config.h params.h sign.c sign.h packing.c packing.h polyvec.c polyvec.h poly.c poly.h ntt.c ntt.h reduce.c reduce.h rounding.c rounding.h symmetric.h fips202.h symmetric-shake.c
     common_dep: common_ref
   - name: avx2
-    version: https://github.com/pq-crystals/dilithium/commit/1e63a1e880401166f105ab44ec67464c9714a315
+    version: https://github.com/pq-crystals/dilithium/commit/147acf23dff0b4c487f56a2b11406ce48c52d4d7
     compile_opts: -DDILITHIUM_MODE=3
     signature_keypair: pqcrystals_dilithium3_avx2_keypair
     signature_signature: pqcrystals_dilithium3_avx2_signature
