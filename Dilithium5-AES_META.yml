@@ -1,4 +1,4 @@
-name: Dilithium5
+name: Dilithium5-AES
 type: signature
 claimed-nist-level: 5
 length-public-key: 2592

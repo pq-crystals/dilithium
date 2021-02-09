@@ -1,4 +1,4 @@
-name: Dilithium3
+name: Dilithium3-AES
 type: signature
 claimed-nist-level: 3
 length-public-key: 1952
