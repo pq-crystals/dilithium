@@ -55,21 +55,6 @@ void polyvecl_reduce(polyvecl *v) {
 }
 
 /*************************************************
-* Name:        polyvecl_freeze
-*
-* Description: Reduce coefficients of polynomials in vector of length L
-*              to standard representatives.
-*
-* Arguments:   - polyvecl *v: pointer to input/output vector
-**************************************************/
-void polyvecl_freeze(polyvecl *v) {
-  unsigned int i;
-
-  for(i = 0; i < L; ++i)
-    poly_freeze(&v->vec[i]);
-}
-
-/*************************************************
 * Name:        polyvecl_add
 *
 * Description: Add vectors of polynomials of length L.
@@ -201,21 +186,6 @@ void polyveck_caddq(polyveck *v) {
 
   for(i = 0; i < K; ++i)
     poly_caddq(&v->vec[i]);
-}
-
-/*************************************************
-* Name:        polyveck_freeze
-*
-* Description: Reduce coefficients of polynomials in vector of length K
-*              to standard representatives.
-*
-* Arguments:   - polyveck *v: pointer to input/output vector
-**************************************************/
-void polyveck_freeze(polyveck *v)  {
-  unsigned int i;
-
-  for(i = 0; i < K; ++i)
-    poly_freeze(&v->vec[i]);
 }
 
 /*************************************************

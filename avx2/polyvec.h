@@ -19,9 +19,6 @@ void polyvecl_uniform_gamma1(polyvecl *v, const uint8_t seed[CRHBYTES], uint16_t
 #define polyvecl_reduce DILITHIUM_NAMESPACE(polyvecl_reduce)
 void polyvecl_reduce(polyvecl *v);
 
-#define polyvecl_freeze DILITHIUM_NAMESPACE(polyvecl_freeze)
-void polyvecl_freeze(polyvecl *v);
-
 #define polyvecl_add DILITHIUM_NAMESPACE(polyvecl_add)
 void polyvecl_add(polyvecl *w, const polyvecl *u, const polyvecl *v);
 
@@ -52,8 +49,6 @@ void polyveck_uniform_eta(polyveck *v, const uint8_t seed[CRHBYTES], uint16_t no
 void polyveck_reduce(polyveck *v);
 #define polyveck_caddq DILITHIUM_NAMESPACE(polyveck_caddq)
 void polyveck_caddq(polyveck *v);
-#define polyveck_freeze DILITHIUM_NAMESPACE(polyveck_freeze)
-void polyveck_freeze(polyveck *v);
 
 #define polyveck_add DILITHIUM_NAMESPACE(polyveck_add)
 void polyveck_add(polyveck *w, const polyveck *u, const polyveck *v);

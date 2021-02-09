@@ -83,25 +83,6 @@ void poly_caddq(poly *a) {
 }
 
 /*************************************************
-* Name:        poly_freeze
-*
-* Description: Inplace reduction of all coefficients of polynomial to
-*              positive standard representatives. Assumes input
-*              coefficients to be at most 2^31 - 2^22 + 1 in
-*              absolute value.
-*
-* Arguments:   - poly *a: pointer to input/output polynomial
-**************************************************/
-void poly_freeze(poly *a) {
-  DBENCH_START();
-
-  poly_reduce(a);
-  poly_caddq(a);
-
-  DBENCH_STOP(*tred);
-}
-
-/*************************************************
 * Name:        poly_add
 *
 * Description: Add polynomials. No modular reduction is performed.
@@ -535,7 +516,7 @@ static unsigned int rej_eta(int32_t *a,
 *              - const uint8_t seed[]: byte array with seed of length CRHBYTES
 *              - uint16_t nonce: 2-byte nonce
 **************************************************/
-void poly_uniform_eta_preinit(poly *a, stream128_state *state)
+void poly_uniform_eta_preinit(poly *a, stream256_state *state)
 {
   unsigned int ctr;
   ALIGNED_UINT8(REJ_UNIFORM_ETA_BUFLEN) buf;
