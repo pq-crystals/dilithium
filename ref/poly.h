@@ -12,8 +12,6 @@ typedef struct {
 void poly_reduce(poly *a);
 #define poly_caddq DILITHIUM_NAMESPACE(poly_caddq)
 void poly_caddq(poly *a);
-#define poly_freeze DILITHIUM_NAMESPACE(poly_freeze)
-void poly_freeze(poly *a);
 
 #define poly_add DILITHIUM_NAMESPACE(poly_add)
 void poly_add(poly *c, const poly *a, const poly *b);

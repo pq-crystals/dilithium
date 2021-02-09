@@ -83,25 +83,6 @@ void poly_caddq(poly *a) {
 }
 
 /*************************************************
-* Name:        poly_freeze
-*
-* Description: Inplace reduction of all coefficients of polynomial to
-*              positive standard representatives. Assumes input
-*              coefficients to be at most 2^31 - 2^22 + 1 in
-*              absolute value.
-*
-* Arguments:   - poly *a: pointer to input/output polynomial
-**************************************************/
-void poly_freeze(poly *a) {
-  DBENCH_START();
-
-  poly_reduce(a);
-  poly_caddq(a);
-
-  DBENCH_STOP(*tred);
-}
-
-/*************************************************
 * Name:        poly_add
 *
 * Description: Add polynomials. No modular reduction is performed.
