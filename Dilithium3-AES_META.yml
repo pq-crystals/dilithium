@@ -2,7 +2,7 @@ name: Dilithium3
 type: signature
 claimed-nist-level: 3
 length-public-key: 1952
-length-secret-key: 4016
+length-secret-key: 4000
 length-signature: 3293
 nistkat-sha256: 199db029b177b368d71bac8689e16394621b84ddc5517e8476312165288e63d3
 testvectors-sha256: 414165147b58e81b5deada9a9846ab2ecffe7dcd5ec925f7174cded3e14cce91

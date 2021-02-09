@@ -2,7 +2,7 @@ name: Dilithium5
 type: signature
 claimed-nist-level: 5
 length-public-key: 2592
-length-secret-key: 4880
+length-secret-key: 4864
 length-signature: 4595
 nistkat-sha256: 5734f0f32acf7190130448bbc121994a29fa4355deeee167ef65dbed014f6ee0
 testvectors-sha256: 5d58299c62e5a8ce003faaef78d601caa1107a4b83ab6d24767b68d6a0b4153c

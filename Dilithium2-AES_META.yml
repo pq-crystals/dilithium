@@ -2,7 +2,7 @@ name: Dilithium2-AES
 type: signature
 claimed-nist-level: 2
 length-public-key: 1312
-length-secret-key: 2544
+length-secret-key: 2528
 length-signature: 2420
 nistkat-sha256: 62569a8c8cf8781a60c88753dfa8806afac09e39f01df1bb6598ca29bac7f425
 testvectors-sha256: 8b2a525f23e0fc2f3271a26f7fc9b84c3f271fb6bc27119bf749998115d9290a
