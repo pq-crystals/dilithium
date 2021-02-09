@@ -535,7 +535,7 @@ static unsigned int rej_eta(int32_t *a,
 *              - const uint8_t seed[]: byte array with seed of length CRHBYTES
 *              - uint16_t nonce: 2-byte nonce
 **************************************************/
-void poly_uniform_eta_preinit(poly *a, stream128_state *state)
+void poly_uniform_eta_preinit(poly *a, stream256_state *state)
 {
   unsigned int ctr;
   ALIGNED_UINT8(REJ_UNIFORM_ETA_BUFLEN) buf;
