@@ -9,6 +9,7 @@ testvectors-sha256: b56155479f5643a3cb3d73260ba2b1fd7e772a49b6f4cebcf742cd860fbf
 principal-submitters:
   - Vadim Lyubashevsky
 auxiliary-submitters:
+  - Shi Bai
   - Léo Ducas
   - Eike Kiltz
   - Tancrède Lepoint
