@@ -23,7 +23,7 @@ import "errors"
 
 //#cgo CFLAGS:  -O3 -Wextra -Wno-unused-parameter  -Wpedantic -fomit-frame-pointer -Wshadow -Wvla -Wpointer-arith -Wredundant-decls
 //#cgo CFLAGS: -DDILITHIUM_MODE=3
-//#cgo LDFLAGS: -lssl -lcrypto -L/usr/local/opt/openssl/lib
+//#cgo CFLAGS: -DNOSSL
 //#include "api.h"
 import "C"
 
@@ -47,35 +47,24 @@ func init() {
 	_ = [privateKeySize]byte(DilPrivateKey{})
 }
 
-// DilithiumKeyPair is the implementation of DilithiumKeyPair for the Dilithium signature scheme.
-type DilithiumKeyPair struct {
-	_struct struct{} `codec:",omitempty,omitemptyarray"`
-
-	SecretKey DilPrivateKey `codec:"sk"`
-	PublicKey DilPublicKey  `codec:"pk"`
-}
-
 // NewKeys Generates a dilithium DilithiumKeyPair.
-func NewKeys() *DilithiumKeyPair {
+func NewKeys() (DilPrivateKey, DilPublicKey) {
 	pk := DilPublicKey{}
 	sk := DilPrivateKey{}
 	C.pqcrystals_dilithium3_ref_keypair((*C.uchar)(&(pk[0])), (*C.uchar)(&(sk[0])))
-	return &DilithiumKeyPair{
-		SecretKey: sk,
-		PublicKey: pk,
-	}
+	return sk, pk
 }
 
 // SignBytes receives bytes and signs over them.
 // the size of the signature should conform with dil2Signature.
-func (s *DilithiumKeyPair) SignBytes(data []byte) []byte {
+func (sk *DilPrivateKey) SignBytes(data []byte) []byte {
 	cdata := (*C.uchar)(C.NULL)
 	if len(data) != 0 {
 		cdata = (*C.uchar)(&data[0])
 	}
 	var sig DilSignature
 	var smlen uint64
-	C.pqcrystals_dilithium3_ref_signature((*C.uchar)(&sig[0]), (*C.size_t)(&smlen), (*C.uchar)(cdata), (C.size_t)(len(data)), (*C.uchar)(&(s.SecretKey[0])))
+	C.pqcrystals_dilithium3_ref_signature((*C.uchar)(&sig[0]), (*C.size_t)(&smlen), (*C.uchar)(cdata), (C.size_t)(len(data)), (*C.uchar)(&(sk[0])))
 	if smlen != uint64(sigSize) {
 		panic("const value of dilithium signature had changed.")
 	}

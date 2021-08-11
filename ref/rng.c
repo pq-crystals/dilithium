@@ -4,6 +4,7 @@
 //  Created by Bassham, Lawrence E (Fed) on 8/29/17.
 //  Copyright © 2017 Bassham, Lawrence E (Fed). All rights reserved.
 //
+#ifndef NOSSL
 
 #include <string.h>
 #include "rng.h"
@@ -211,12 +212,6 @@ AES256_CTR_DRBG_Update(unsigned char *provided_data,
     memcpy(Key, temp, 32);
     memcpy(V, temp+32, 16);
 }
+#endif
 
-
-
-
-
-
-
-
-
+int rng_nothing(void);

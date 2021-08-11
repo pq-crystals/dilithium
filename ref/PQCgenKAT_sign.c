@@ -4,6 +4,7 @@
 //  Created by Bassham, Lawrence E (Fed) on 8/29/17.
 //  Copyright © 2017 Bassham, Lawrence E (Fed). All rights reserved.
 //
+#ifndef NOSSL
 #include <stddef.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -257,5 +258,5 @@ fprintBstr(FILE *fp, char *s, unsigned char *a, unsigned long long l)
 
 	fprintf(fp, "\n");
 }
-
-
+#endif
+int nothing(void);

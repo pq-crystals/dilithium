@@ -27,56 +27,56 @@ import (
 func TestDilSigning(t *testing.T) {
 	a := require.New(t)
 	for i := 0; i < 100; i++ {
-		dsigner := NewKeys()
+		sk, pk := NewKeys()
 		b := make([]byte, 8)
 		binary.BigEndian.PutUint64(b, uint64(i))
 		bs := sha256.Sum256(b)
-		sig := dsigner.SignBytes(bs[:])
-		a.NoError(dsigner.PublicKey.VerifyBytes(bs[:], sig))
+		sig := sk.SignBytes(bs[:])
+		a.NoError(pk.VerifyBytes(bs[:], sig))
 		var sig2 DilSignature
 		copy(sig2[:], sig)
 
 		sig2[0]++
-		a.Error(dsigner.PublicKey.VerifyBytes(bs[:], sig2[:]))
+		a.Error(pk.VerifyBytes(bs[:], sig2[:]))
 
 		var bs2 [32]byte
 		copy(bs2[:], bs[:])
 
 		bs2[0]++
-		a.Error(dsigner.PublicKey.VerifyBytes(bs2[:], sig[:]))
+		a.Error(pk.VerifyBytes(bs2[:], sig[:]))
 	}
 }
 
 func TestWrongSizedBytes(t *testing.T) {
 	a := require.New(t)
-	dsigner := NewKeys()
+	sk, pk := NewKeys()
 	bs := sha256.Sum256(make([]byte, 8))
-	sig := dsigner.SignBytes(bs[:])
+	sig := sk.SignBytes(bs[:])
 
 	sig = append(sig, 0)
-	a.Error(dsigner.PublicKey.VerifyBytes(bs[:], sig))
+	a.Error(pk.VerifyBytes(bs[:], sig))
 
 	sig = sig[:len(sig)-1]
-	a.NoError(dsigner.PublicKey.VerifyBytes(bs[:], sig))
+	a.NoError(pk.VerifyBytes(bs[:], sig))
 
 	sig = sig[:len(sig)-1]
-	a.Error(dsigner.PublicKey.VerifyBytes(bs[:], sig))
+	a.Error(pk.VerifyBytes(bs[:], sig))
 }
 
 func TestEmpty(t *testing.T) {
 	a := require.New(t)
-	dsigner := NewKeys()
+	sk, pk := NewKeys()
 	bs := make([]byte, 0)
-	sig := dsigner.SignBytes(bs)
+	sig := sk.SignBytes(bs)
 
 	sig = append(sig, 0)
-	a.Error(dsigner.PublicKey.VerifyBytes(bs[:], sig))
+	a.Error(pk.VerifyBytes(bs[:], sig))
 
 	sig = sig[:len(sig)-1]
-	a.NoError(dsigner.PublicKey.VerifyBytes(bs[:], sig))
+	a.NoError(pk.VerifyBytes(bs[:], sig))
 
 	sig = sig[:len(sig)-1]
-	a.Error(dsigner.PublicKey.VerifyBytes(bs[:], sig))
+	a.Error(pk.VerifyBytes(bs[:], sig))
 
-	a.Error(dsigner.PublicKey.VerifyBytes(bs[:], nil))
+	a.Error(pk.VerifyBytes(bs[:], nil))
 }
