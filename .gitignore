@@ -1,3 +1,22 @@
+# Exclude GoLand files
+.idea/
+
+# Exclude VSCode files
+.vscode/
+
+# Ignore vim backup and swap files
+*~
+*.swp
+*.swo
+
+# Mac
+.DS_Store
+
+# doc intermediates
+data/transactions/logic/*.md
+
+*.pem
+
 PQCsignKAT_Dilithium2-AES.req
 PQCsignKAT_Dilithium2-AES.rsp
 PQCsignKAT_Dilithium2.req
