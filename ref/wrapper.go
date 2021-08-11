@@ -36,15 +36,21 @@ type (
 	DilPrivateKey [4000]byte
 )
 
-const sigSize = C.pqcrystals_dilithium3_BYTES
-const publickeySize = C.pqcrystals_dilithium3_PUBLICKEYBYTES
-const privateKeySize = C.pqcrystals_dilithium3_SECRETKEYBYTES
+// Exporting to be used when attempting to wrap and use this package.
+const (
+	// SigSize is the size of a dilithium signature
+	SigSize = C.pqcrystals_dilithium3_BYTES
+	// PublicKeySize is the size of a dilithium public key
+	PublicKeySize = C.pqcrystals_dilithium3_PUBLICKEYBYTES
+	// PrivateKeySize is the size of a dilithium private key
+	PrivateKeySize = C.pqcrystals_dilithium3_SECRETKEYBYTES
+)
 
 func init() {
 	// Check sizes of structs
-	_ = [sigSize]byte(DilSignature{})
-	_ = [publickeySize]byte(DilPublicKey{})
-	_ = [privateKeySize]byte(DilPrivateKey{})
+	_ = [SigSize]byte(DilSignature{})
+	_ = [PublicKeySize]byte(DilPublicKey{})
+	_ = [PrivateKeySize]byte(DilPrivateKey{})
 }
 
 // NewKeys Generates a dilithium DilithiumKeyPair.
@@ -65,7 +71,7 @@ func (sk *DilPrivateKey) SignBytes(data []byte) []byte {
 	var sig DilSignature
 	var smlen uint64
 	C.pqcrystals_dilithium3_ref_signature((*C.uchar)(&sig[0]), (*C.size_t)(&smlen), (*C.uchar)(cdata), (C.size_t)(len(data)), (*C.uchar)(&(sk[0])))
-	if smlen != uint64(sigSize) {
+	if smlen != uint64(SigSize) {
 		panic("const value of dilithium signature had changed.")
 	}
 	return sig[:]
