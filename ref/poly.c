@@ -748,7 +748,6 @@ void polyt0_unpack(poly *r, const uint8_t *a) {
 
     r->coeffs[8*i+7]  = a[13*i+11] >> 3;
     r->coeffs[8*i+7] |= (uint32_t)a[13*i+12] << 5;
-    r->coeffs[8*i+7] &= 0x1FFF;
 
     r->coeffs[8*i+0] = (1 << (D-1)) - r->coeffs[8*i+0];
     r->coeffs[8*i+1] = (1 << (D-1)) - r->coeffs[8*i+1];
@@ -848,7 +847,6 @@ void polyz_unpack(poly *r, const uint8_t *a) {
     r->coeffs[4*i+3]  = a[9*i+6] >> 6;
     r->coeffs[4*i+3] |= (uint32_t)a[9*i+7] << 2;
     r->coeffs[4*i+3] |= (uint32_t)a[9*i+8] << 10;
-    r->coeffs[4*i+3] &= 0x3FFFF;
 
     r->coeffs[4*i+0] = GAMMA1 - r->coeffs[4*i+0];
     r->coeffs[4*i+1] = GAMMA1 - r->coeffs[4*i+1];
@@ -865,7 +863,6 @@ void polyz_unpack(poly *r, const uint8_t *a) {
     r->coeffs[2*i+1]  = a[5*i+2] >> 4;
     r->coeffs[2*i+1] |= (uint32_t)a[5*i+3] << 4;
     r->coeffs[2*i+1] |= (uint32_t)a[5*i+4] << 12;
-    r->coeffs[2*i+0] &= 0xFFFFF;
 
     r->coeffs[2*i+0] = GAMMA1 - r->coeffs[2*i+0];
     r->coeffs[2*i+1] = GAMMA1 - r->coeffs[2*i+1];
