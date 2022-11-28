@@ -9,6 +9,49 @@
 #include "fips202.h"
 
 /*************************************************
+* Name:        crypto_sign_keypair_public_from_private
+*
+* Description: Returns the public for a provided private key.
+*
+* Arguments:   - uint8_t *pk: pointer to output public key (allocated
+*                             array of CRYPTO_PUBLICKEYBYTES bytes)
+*              - uint8_t *sk: pointer to existing private key
+*
+* Returns 0 (success)
+**************************************************/
+int crypto_sign_keypair_public_from_private(uint8_t *pk, const uint8_t *sk) {
+  uint8_t seedbuf[3*SEEDBYTES + 2*CRHBYTES];
+  uint8_t *rho, *tr, *key;
+  polyvecl mat[K], s1, s1hat;
+  polyveck t0, t1, s2;
+
+  rho = seedbuf;
+  tr = rho + SEEDBYTES;
+  key = tr + SEEDBYTES;
+  unpack_sk(rho, tr, key, &t0, &s1, &s2, sk);
+
+  /* Expand matrix */
+  polyvec_matrix_expand(mat, rho);
+
+  /* Matrix-vector multiplication */
+  s1hat = s1;
+  polyvecl_ntt(&s1hat);
+  polyvec_matrix_pointwise_montgomery(&t1, mat, &s1hat);
+  polyveck_reduce(&t1);
+  polyveck_invntt_tomont(&t1);
+
+  /* Add error vector s2 */
+  polyveck_add(&t1, &t1, &s2);
+
+  /* Extract t1 and write public key */
+  polyveck_caddq(&t1);
+  polyveck_power2round(&t1, &t0, &t1);
+  pack_pk(pk, rho, &t1);
+
+  return 0;
+}
+
+/*************************************************
 * Name:        crypto_sign_keypair
 *
 * Description: Generates public and private key.
