@@ -129,5 +129,9 @@ if(BUILD_TESTING)
   endif()
 
   add_test(NAME hashes COMMAND sha256sum -c ../../SHA256SUMS)
+  set_tests_properties(
+    vectors2_ref vectors2aes_ref vectors3_ref vectors3aes_ref vectors5_ref
+    vectors5aes_ref PROPERTIES FIXTURES_SETUP createVectorFiles)
+  set_tests_properties(hashes PROPERTIES FIXTURES_REQUIRED createVectorFiles)
 endif()
 
