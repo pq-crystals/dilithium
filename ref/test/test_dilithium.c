@@ -17,12 +17,21 @@ int main(void)
   uint8_t m2[MLEN + CRYPTO_BYTES];
   uint8_t sm[MLEN + CRYPTO_BYTES];
   uint8_t pk[CRYPTO_PUBLICKEYBYTES];
+  uint8_t pk2[CRYPTO_PUBLICKEYBYTES];
   uint8_t sk[CRYPTO_SECRETKEYBYTES];
 
   for(i = 0; i < NTESTS; ++i) {
     randombytes(m, MLEN);
 
     crypto_sign_keypair(pk, sk);
+    crypto_sign_keypair_public_from_private(pk2, sk);
+    for (int k = 0; k < CRYPTO_PUBLICKEYBYTES; ++k) {
+      if (pk[k] != pk2[k]) {
+        fprintf(stderr, "Derived public key differs from generated one\n");
+        fprintf(stderr, "pos: %i, orig/derived: 0x%x/0x%x", k, pk[k], pk2[k]);
+        return -1;
+      }
+    }
     crypto_sign(sm, &smlen, m, MLEN, sk);
     ret = crypto_sign_open(m2, &mlen, sm, smlen, pk);
 
