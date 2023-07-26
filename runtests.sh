@@ -1,4 +1,5 @@
 #!/bin/sh -e
+nproc="${nproc:-2}"
 
 ARCH="${ARCH:-amd64}"
 ARCH="${TRAVIS_CPU_ARCH:-$ARCH}"
@@ -10,15 +11,18 @@ else
 fi
 
 if [ "$ARCH" = "amd64" -o "$ARCH" = "arm64" ]; then
-  export CFLAGS="-fsanitize=address,undefined ${CFLAGS}"
+  export CC=/usr/bin/clang
+  export CFLAGS="-fsanitize=undefined,address ${CFLAGS}"
 fi
 
 for dir in $DIRS; do
+  make -j$(nproc) -C $dir clean
   make -j$(nproc) -C $dir
-  for alg in 2 2aes 3 3aes 5 5aes; do
+  for alg in 2 3 5; do
     #valgrind --vex-guest-max-insns=25 ./$dir/test/test_dilithium$alg
     ./$dir/test/test_dilithium$alg &
     PID1=$!
+    echo testvec$alg
     ./$dir/test/test_vectors$alg > tvecs$alg &
     PID2=$!
     wait $PID1 $PID2

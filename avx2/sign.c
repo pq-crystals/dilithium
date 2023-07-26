@@ -149,8 +149,8 @@ int crypto_sign_keypair(uint8_t *pk, uint8_t *sk) {
 **************************************************/
 int crypto_sign_signature(uint8_t *sig, size_t *siglen, const uint8_t *m, size_t mlen, const uint8_t *sk) {
   unsigned int i, n, pos;
-  uint8_t seedbuf[2*SEEDBYTES + TRBYTES + 2*CRHBYTES];
-  uint8_t *rho, *tr, *key, *mu, *rhoprime;
+  uint8_t seedbuf[2*SEEDBYTES + TRBYTES + RNDBYTES + 2*CRHBYTES];
+  uint8_t *rho, *tr, *key, *rnd, *mu, *rhoprime;
   uint8_t hintbuf[N];
   uint8_t *hint = sig + SEEDBYTES + L*POLYZ_PACKEDBYTES;
   uint64_t nonce = 0;
@@ -166,7 +166,8 @@ int crypto_sign_signature(uint8_t *sig, size_t *siglen, const uint8_t *m, size_t
   rho = seedbuf;
   tr = rho + SEEDBYTES;
   key = tr + TRBYTES;
-  mu = key + SEEDBYTES;
+  rnd = key + SEEDBYTES;
+  mu = rnd + RNDBYTES;
   rhoprime = mu + CRHBYTES;
   unpack_sk(rho, tr, key, &t0, &s1, &s2, sk);
 
@@ -178,10 +179,11 @@ int crypto_sign_signature(uint8_t *sig, size_t *siglen, const uint8_t *m, size_t
   shake256_squeeze(mu, CRHBYTES, &state);
 
 #ifdef DILITHIUM_RANDOMIZED_SIGNING
-  randombytes(rhoprime, CRHBYTES);
+  randombytes(rnd, RNDBYTES);
 #else
-  shake256(rhoprime, CRHBYTES, key, SEEDBYTES + CRHBYTES);
+  memset(rnd, 0, RNDBYTES);
 #endif
+  shake256(rhoprime, CRHBYTES, key, SEEDBYTES + RNDBYTES + CRHBYTES);
 
   /* Expand matrix and transform vectors */
   polyvec_matrix_expand(mat, rho);
