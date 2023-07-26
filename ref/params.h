@@ -6,6 +6,7 @@
 #define SEEDBYTES 32
 #define CRHBYTES 64
 #define TRBYTES 64
+#define RNDBYTES 32
 #define N 256
 #define Q 8380417
 #define D 13
