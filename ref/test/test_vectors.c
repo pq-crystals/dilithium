@@ -13,17 +13,15 @@
 #define MLEN 32
 #define NVECTORS 10000
 
-void randombytes(uint8_t *out, size_t outlen) {
-  unsigned int i;
-  uint8_t buf[8];
-  static uint64_t ctr = 0;
+/* Initital state after absorbing empty string 
+ * Permute before squeeze is achieved by setting pos to SHAKE128_RATE */
+static keccak_state rngstate = {{0x1F, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, (1ULL << 63), 0, 0, 0, 0}, SHAKE128_RATE};
 
-  for(i = 0; i < 8; ++i)
-    buf[i] = ctr >> 8*i;
-
-  ctr++;
-  shake128(out, outlen, buf, 8);
+void randombytes(uint8_t *x,size_t xlen)
+{
+  shake128_squeeze(x, xlen, &rngstate);
 }
+
 
 int main(void) {
   unsigned int i, j, k, l;
