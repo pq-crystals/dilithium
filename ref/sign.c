@@ -22,7 +22,7 @@
 **************************************************/
 int crypto_sign_keypair(uint8_t *pk, uint8_t *sk) {
   uint8_t seedbuf[2*SEEDBYTES + CRHBYTES];
-  uint8_t tr[SEEDBYTES];
+  uint8_t tr[TRBYTES];
   const uint8_t *rho, *rhoprime, *key;
   polyvecl mat[K];
   polyvecl s1, s1hat;
@@ -58,7 +58,7 @@ int crypto_sign_keypair(uint8_t *pk, uint8_t *sk) {
   pack_pk(pk, rho, &t1);
 
   /* Compute H(rho, t1) and write secret key */
-  shake256(tr, SEEDBYTES, pk, CRYPTO_PUBLICKEYBYTES);
+  shake256(tr, TRBYTES, pk, CRYPTO_PUBLICKEYBYTES);
   pack_sk(sk, rho, tr, key, &t0, &s1, &s2);
 
   return 0;
@@ -84,7 +84,7 @@ int crypto_sign_signature(uint8_t *sig,
                           const uint8_t *sk)
 {
   unsigned int n;
-  uint8_t seedbuf[3*SEEDBYTES + 2*CRHBYTES];
+  uint8_t seedbuf[2*SEEDBYTES + TRBYTES + 2*CRHBYTES];
   uint8_t *rho, *tr, *key, *mu, *rhoprime;
   uint16_t nonce = 0;
   polyvecl mat[K], s1, y, z;
@@ -94,14 +94,16 @@ int crypto_sign_signature(uint8_t *sig,
 
   rho = seedbuf;
   tr = rho + SEEDBYTES;
-  key = tr + SEEDBYTES;
+  key = tr + TRBYTES;
   mu = key + SEEDBYTES;
   rhoprime = mu + CRHBYTES;
   unpack_sk(rho, tr, key, &t0, &s1, &s2, sk);
 
+
+
   /* Compute CRH(tr, msg) */
   shake256_init(&state);
-  shake256_absorb(&state, tr, SEEDBYTES);
+  shake256_absorb(&state, tr, TRBYTES);
   shake256_absorb(&state, m, mlen);
   shake256_finalize(&state);
   shake256_squeeze(mu, CRHBYTES, &state);
@@ -248,9 +250,9 @@ int crypto_sign_verify(const uint8_t *sig,
     return -1;
 
   /* Compute CRH(H(rho, t1), msg) */
-  shake256(mu, SEEDBYTES, pk, CRYPTO_PUBLICKEYBYTES);
+  shake256(mu, TRBYTES, pk, CRYPTO_PUBLICKEYBYTES);
   shake256_init(&state);
-  shake256_absorb(&state, mu, SEEDBYTES);
+  shake256_absorb(&state, mu, TRBYTES);
   shake256_absorb(&state, m, mlen);
   shake256_finalize(&state);
   shake256_squeeze(mu, CRHBYTES, &state);

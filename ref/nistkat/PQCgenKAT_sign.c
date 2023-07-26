@@ -10,7 +10,7 @@
 #include <string.h>
 #include <ctype.h>
 #include "rng.h"
-#include "sign.h"
+#include "../sign.h"
 
 #define	MAX_MARKER_LEN      50
 
