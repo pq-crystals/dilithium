@@ -9,9 +9,7 @@
 #include "rejsample.h"
 #include "consts.h"
 #include "symmetric.h"
-#ifndef DILITHIUM_USE_AES
 #include "fips202x4.h"
-#endif
 
 #ifdef DBENCH
 #include "test/cpucycles.h"
@@ -376,7 +374,7 @@ static unsigned int rej_uniform(int32_t *a,
 *
 * Description: Sample polynomial with uniformly random coefficients
 *              in [0,Q-1] by performing rejection sampling on the
-*              output stream of SHAKE256(seed|nonce) or AES256CTR(seed,nonce).
+*              output stream of SHAKE256(seed|nonce)
 *
 * Arguments:   - poly *a: pointer to output polynomial
 *              - const uint8_t seed[]: byte array with seed of length SEEDBYTES
@@ -405,7 +403,6 @@ void poly_uniform(poly *a, const uint8_t seed[SEEDBYTES], uint16_t nonce)
   poly_uniform_preinit(a, &state);
 }
 
-#ifndef DILITHIUM_USE_AES
 void poly_uniform_4x(poly *a0,
                      poly *a1,
                      poly *a2,
@@ -453,7 +450,6 @@ void poly_uniform_4x(poly *a0,
     ctr3 += rej_uniform(a3->coeffs + ctr3, N - ctr3, buf[3].coeffs, SHAKE128_RATE);
   }
 }
-#endif
 
 /*************************************************
 * Name:        rej_eta
@@ -510,7 +506,6 @@ static unsigned int rej_eta(int32_t *a,
 * Description: Sample polynomial with uniformly random coefficients
 *              in [-ETA,ETA] by performing rejection sampling using the
 *              output stream of SHAKE256(seed|nonce)
-*              or AES256CTR(seed,nonce).
 *
 * Arguments:   - poly *a: pointer to output polynomial
 *              - const uint8_t seed[]: byte array with seed of length CRHBYTES
@@ -537,7 +532,6 @@ void poly_uniform_eta(poly *a, const uint8_t seed[CRHBYTES], uint16_t nonce)
   poly_uniform_eta_preinit(a, &state);
 }
 
-#ifndef DILITHIUM_USE_AES
 void poly_uniform_eta_4x(poly *a0,
                          poly *a1,
                          poly *a2,
@@ -591,14 +585,13 @@ void poly_uniform_eta_4x(poly *a0,
     ctr3 += rej_eta(a3->coeffs + ctr3, N - ctr3, buf[3].coeffs, SHAKE256_RATE);
   }
 }
-#endif
 
 /*************************************************
 * Name:        poly_uniform_gamma1
 *
 * Description: Sample polynomial with uniformly random coefficients
 *              in [-(GAMMA1 - 1), GAMMA1] by unpacking output stream
-*              of SHAKE256(seed|nonce) or AES256CTR(seed,nonce).
+*              of SHAKE256(seed|nonce)
 *
 * Arguments:   - poly *a: pointer to output polynomial
 *              - const uint8_t seed[]: byte array with seed of length CRHBYTES
@@ -620,7 +613,6 @@ void poly_uniform_gamma1(poly *a, const uint8_t seed[CRHBYTES], uint16_t nonce)
   poly_uniform_gamma1_preinit(a, &state);
 }
 
-#ifndef DILITHIUM_USE_AES
 void poly_uniform_gamma1_4x(poly *a0,
                             poly *a1,
                             poly *a2,
@@ -663,7 +655,6 @@ void poly_uniform_gamma1_4x(poly *a0,
   polyz_unpack(a2, buf[2].coeffs);
   polyz_unpack(a3, buf[3].coeffs);
 }
-#endif
 
 /*************************************************
 * Name:        challenge
