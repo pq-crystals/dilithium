@@ -96,16 +96,8 @@ int main(void) {
       }
     }
 
-#ifdef DILITHIUM_USE_AES
-    uint64_t nonce = 0;
-    aes256ctr_ctx state;
-    aes256ctr_init(&state, seed, nonce++);
-    for(j = 0; j < L; ++j) {
-      poly_uniform_eta_preinit(&s.vec[j], &state);
-      state.n = _mm_loadl_epi64((__m128i *)&nonce);
-      nonce++;
-    }
-#elif L == 4
+
+#if L == 4
     poly_uniform_eta_4x(&s.vec[0], &s.vec[1], &s.vec[2], &s.vec[3], seed, 0, 1, 2, 3);
 #elif L == 5
     poly_uniform_eta_4x(&s.vec[0], &s.vec[1], &s.vec[2], &s.vec[3], seed, 0, 1, 2, 3);
@@ -136,15 +128,7 @@ int main(void) {
       }
     }
 
-#ifdef DILITHIUM_USE_AES
-    nonce = 0;
-    aes256ctr_init(&state, seed, nonce++);
-    for(j = 0; j < L; ++j) {
-      poly_uniform_gamma1_preinit(&y.vec[j], &state);
-      state.n = _mm_loadl_epi64((__m128i *)&nonce);
-      nonce++;
-    }
-#elif L == 4
+#if L == 4
     poly_uniform_gamma1_4x(&y.vec[0], &y.vec[1], &y.vec[2], &y.vec[3], seed, 0, 1, 2, 3);
 #elif L == 5
     poly_uniform_gamma1_4x(&y.vec[0], &y.vec[1], &y.vec[2], &y.vec[3], seed, 0, 1, 2, 3);
