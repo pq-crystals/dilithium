@@ -21,6 +21,7 @@
 #define GAMMA1 (1 << 17)
 #define GAMMA2 ((Q-1)/88)
 #define OMEGA 80
+#define CTILDEBYTES 32
 
 #elif DILITHIUM_MODE == 3
 #define K 6
@@ -31,6 +32,7 @@
 #define GAMMA1 (1 << 19)
 #define GAMMA2 ((Q-1)/32)
 #define OMEGA 55
+#define CTILDEBYTES 48
 
 #elif DILITHIUM_MODE == 5
 #define K 8
@@ -41,6 +43,7 @@
 #define GAMMA1 (1 << 19)
 #define GAMMA2 ((Q-1)/32)
 #define OMEGA 75
+#define CTILDEBYTES 64
 
 #endif
 
@@ -72,6 +75,6 @@
                                + L*POLYETA_PACKEDBYTES \
                                + K*POLYETA_PACKEDBYTES \
                                + K*POLYT0_PACKEDBYTES)
-#define CRYPTO_BYTES (SEEDBYTES + L*POLYZ_PACKEDBYTES + POLYVECH_PACKEDBYTES)
+#define CRYPTO_BYTES (CTILDEBYTES + L*POLYZ_PACKEDBYTES + POLYVECH_PACKEDBYTES)
 
 #endif

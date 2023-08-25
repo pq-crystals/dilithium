@@ -142,8 +142,8 @@ rej:
   shake256_absorb(&state, mu, CRHBYTES);
   shake256_absorb(&state, sig, K*POLYW1_PACKEDBYTES);
   shake256_finalize(&state);
-  shake256_squeeze(sig, SEEDBYTES, &state);
-  poly_challenge(&cp, sig);
+  shake256_squeeze(sig, CTILDEBYTES, &state);
+  poly_challenge(&cp, sig); /* uses only the first SEEDBYTES bytes of sig */
   poly_ntt(&cp);
 
   /* Compute z, reject if it reveals secret */
@@ -235,8 +235,8 @@ int crypto_sign_verify(const uint8_t *sig,
   uint8_t buf[K*POLYW1_PACKEDBYTES];
   uint8_t rho[SEEDBYTES];
   uint8_t mu[CRHBYTES];
-  uint8_t c[SEEDBYTES];
-  uint8_t c2[SEEDBYTES];
+  uint8_t c[CTILDEBYTES];
+  uint8_t c2[CTILDEBYTES];
   poly cp;
   polyvecl mat[K], z;
   polyveck t1, w1, h;
@@ -260,7 +260,7 @@ int crypto_sign_verify(const uint8_t *sig,
   shake256_squeeze(mu, CRHBYTES, &state);
 
   /* Matrix-vector multiplication; compute Az - c2^dt1 */
-  poly_challenge(&cp, c);
+  poly_challenge(&cp, c); /* uses only the first SEEDBYTES bytes of c */
   polyvec_matrix_expand(mat, rho);
 
   polyvecl_ntt(&z);
@@ -285,8 +285,8 @@ int crypto_sign_verify(const uint8_t *sig,
   shake256_absorb(&state, mu, CRHBYTES);
   shake256_absorb(&state, buf, K*POLYW1_PACKEDBYTES);
   shake256_finalize(&state);
-  shake256_squeeze(c2, SEEDBYTES, &state);
-  for(i = 0; i < SEEDBYTES; ++i)
+  shake256_squeeze(c2, CTILDEBYTES, &state);
+  for(i = 0; i < CTILDEBYTES; ++i)
     if(c[i] != c2[i])
       return -1;
 

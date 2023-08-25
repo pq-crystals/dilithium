@@ -154,15 +154,15 @@ void unpack_sk(uint8_t rho[SEEDBYTES],
 *              - const polyveck *h: pointer to hint vector h
 **************************************************/
 void pack_sig(uint8_t sig[CRYPTO_BYTES],
-              const uint8_t c[SEEDBYTES],
+              const uint8_t c[CTILDEBYTES],
               const polyvecl *z,
               const polyveck *h)
 {
   unsigned int i, j, k;
 
-  for(i=0; i < SEEDBYTES; ++i)
+  for(i=0; i < CTILDEBYTES; ++i)
     sig[i] = c[i];
-  sig += SEEDBYTES;
+  sig += CTILDEBYTES;
 
   for(i = 0; i < L; ++i)
     polyz_pack(sig + i*POLYZ_PACKEDBYTES, &z->vec[i]);
@@ -195,16 +195,16 @@ void pack_sig(uint8_t sig[CRYPTO_BYTES],
 *
 * Returns 1 in case of malformed signature; otherwise 0.
 **************************************************/
-int unpack_sig(uint8_t c[SEEDBYTES],
+int unpack_sig(uint8_t c[CTILDEBYTES],
                polyvecl *z,
                polyveck *h,
                const uint8_t sig[CRYPTO_BYTES])
 {
   unsigned int i, j, k;
 
-  for(i = 0; i < SEEDBYTES; ++i)
+  for(i = 0; i < CTILDEBYTES; ++i)
     c[i] = sig[i];
-  sig += SEEDBYTES;
+  sig += CTILDEBYTES;
 
   for(i = 0; i < L; ++i)
     polyz_unpack(&z->vec[i], sig + i*POLYZ_PACKEDBYTES);
