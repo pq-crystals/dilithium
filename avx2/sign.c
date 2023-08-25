@@ -152,7 +152,7 @@ int crypto_sign_signature(uint8_t *sig, size_t *siglen, const uint8_t *m, size_t
   uint8_t seedbuf[2*SEEDBYTES + TRBYTES + RNDBYTES + 2*CRHBYTES];
   uint8_t *rho, *tr, *key, *rnd, *mu, *rhoprime;
   uint8_t hintbuf[N];
-  uint8_t *hint = sig + SEEDBYTES + L*POLYZ_PACKEDBYTES;
+  uint8_t *hint = sig + CTILDEBYTES + L*POLYZ_PACKEDBYTES;
   uint64_t nonce = 0;
   polyvecl mat[K], s1, z;
   polyveck t0, s2, w1;
@@ -227,7 +227,7 @@ rej:
   shake256_absorb(&state, mu, CRHBYTES);
   shake256_absorb(&state, sig, K*POLYW1_PACKEDBYTES);
   shake256_finalize(&state);
-  shake256_squeeze(sig, SEEDBYTES, &state);
+  shake256_squeeze(sig, CTILDEBYTES, &state);
   poly_challenge(&c, sig);
   poly_ntt(&c);
 
@@ -274,7 +274,7 @@ rej:
 
   /* Pack z into signature */
   for(i = 0; i < L; i++)
-    polyz_pack(sig + SEEDBYTES + i*POLYZ_PACKEDBYTES, &z.vec[i]);
+    polyz_pack(sig + CTILDEBYTES + i*POLYZ_PACKEDBYTES, &z.vec[i]);
 
   *siglen = CRYPTO_BYTES;
   return 0;
@@ -324,7 +324,7 @@ int crypto_sign_verify(const uint8_t *sig, size_t siglen, const uint8_t *m, size
   /* polyw1_pack writes additional 14 bytes */
   ALIGNED_UINT8(K*POLYW1_PACKEDBYTES+14) buf;
   uint8_t mu[CRHBYTES];
-  const uint8_t *hint = sig + SEEDBYTES + L*POLYZ_PACKEDBYTES;
+  const uint8_t *hint = sig + CTILDEBYTES + L*POLYZ_PACKEDBYTES;
   polyvecl rowbuf[2];
   polyvecl *row = rowbuf;
   polyvecl z;
@@ -348,7 +348,7 @@ int crypto_sign_verify(const uint8_t *sig, size_t siglen, const uint8_t *m, size
 
   /* Unpack z; shortness follows from unpacking */
   for(i = 0; i < L; i++) {
-    polyz_unpack(&z.vec[i], sig + SEEDBYTES + i*POLYZ_PACKEDBYTES);
+    polyz_unpack(&z.vec[i], sig + CTILDEBYTES + i*POLYZ_PACKEDBYTES);
     poly_ntt(&z.vec[i]);
   }
 
@@ -394,8 +394,8 @@ int crypto_sign_verify(const uint8_t *sig, size_t siglen, const uint8_t *m, size
   shake256_absorb(&state, mu, CRHBYTES);
   shake256_absorb(&state, buf.coeffs, K*POLYW1_PACKEDBYTES);
   shake256_finalize(&state);
-  shake256_squeeze(buf.coeffs, SEEDBYTES, &state);
-  for(i = 0; i < SEEDBYTES; ++i)
+  shake256_squeeze(buf.coeffs, CTILDEBYTES, &state);
+  for(i = 0; i < CTILDEBYTES; ++i)
     if(buf.coeffs[i] != sig[i])
       return -1;
 
