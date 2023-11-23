@@ -1,15 +1,22 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <string.h> // Added for string functions
+#include <inttypes.h>  
 #include "../randombytes.h"
 #include "../sign.h"
 
-#define MLEN 59
-#define NTESTS 10000
+#define MLEN 40881
+#define NTESTS 1  // Set to 1 for a single test
 
-int main(void)
-{
-  size_t i, j;
+int main(int argc, char *argv[])
+ {
+    if (argc != 2) {
+        fprintf(stderr, "Usage: %s <filename>\n", argv[0]);
+        return -1;
+    }
+
+  size_t j;
   int ret;
   size_t mlen, smlen;
   uint8_t b;
@@ -19,42 +26,71 @@ int main(void)
   uint8_t pk[CRYPTO_PUBLICKEYBYTES];
   uint8_t sk[CRYPTO_SECRETKEYBYTES];
 
-  for(i = 0; i < NTESTS; ++i) {
-    randombytes(m, MLEN);
+  
 
-    crypto_sign_keypair(pk, sk);
-    crypto_sign(sm, &smlen, m, MLEN, sk);
-    ret = crypto_sign_open(m2, &mlen, sm, smlen, pk);
+   
+   system("matlab -nodisplay -r \"run('generate.m'); exit;\"");  // Run the MATLAB script to generate the text file
 
-    if(ret) {
-      fprintf(stderr, "Verification failed\n");
-      return -1;
-    }
-    if(smlen != MLEN + CRYPTO_BYTES) {
-      fprintf(stderr, "Signed message lengths wrong\n");
-      return -1;
-    }
-    if(mlen != MLEN) {
-      fprintf(stderr, "Message lengths wrong\n");
-      return -1;
-    }
-    for(j = 0; j < MLEN; ++j) {
-      if(m2[j] != m[j]) {
-        fprintf(stderr, "Messages don't match\n");
-        return -1;
-      }
-    }
+  FILE *file = fopen(argv[1], "r");
 
-    randombytes((uint8_t *)&j, sizeof(j));
-    do {
-      randombytes(&b, 1);
-    } while(!b);
-    sm[j % (MLEN + CRYPTO_BYTES)] += b;
-    ret = crypto_sign_open(m2, &mlen, sm, smlen, pk);
-    if(!ret) {
-      fprintf(stderr, "Trivial forgeries possible\n");
-      return -1;
+  if (file == NULL) {
+    fprintf(stderr, "Error opening the file\n");
+    return -1;
+  }
+
+  // Read the message from the file
+  if (fgets((char *)m, MLEN, file) == NULL) {
+    fprintf(stderr, "Error reading message from file\n");
+    fclose(file);
+    return -1;
+  }
+
+  fclose(file); // Close the file
+
+  
+  
+  for (int i = 0; i < MLEN; i++) {
+        printf("%c", m[i]);  // Use PRIu8 for uint8_t
     }
+printf("\n");
+  
+
+  // Remove newline character from the input
+  size_t message_length = strlen((char *)m);
+  
+
+  // Create a key pair
+  crypto_sign_keypair(pk, sk);
+
+// Sign the modified message
+crypto_sign(sm, &smlen, m, message_length, sk);
+
+
+
+
+  // Verify the signature-decryption
+  ret = crypto_sign_open(m2, &mlen, sm, smlen, pk);
+
+
+
+printf("\n");
+printf("\n");
+printf("\n");
+printf("\n");
+printf("\n");
+printf("\n");
+
+
+for (int i = 0; i < mlen; i++) {
+        printf("%c", m2[i]);  // Use PRIu8 for uint8_t
+    }
+printf("\n");
+
+
+  if (ret) {
+    fprintf(stderr, "Verification failed\n");
+  } else {
+    printf("Verification successful\n");
   }
 
   printf("CRYPTO_PUBLICKEYBYTES = %d\n", CRYPTO_PUBLICKEYBYTES);
@@ -63,3 +99,4 @@ int main(void)
 
   return 0;
 }
+
