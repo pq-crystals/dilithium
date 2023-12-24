@@ -5,7 +5,7 @@
 #include <stdint.h>
 
 #define pqcrystals_dilithium2_PUBLICKEYBYTES 1312
-#define pqcrystals_dilithium2_SECRETKEYBYTES 2528
+#define pqcrystals_dilithium2_SECRETKEYBYTES 2560
 #define pqcrystals_dilithium2_BYTES 2420
 
 #define pqcrystals_dilithium2_avx2_PUBLICKEYBYTES pqcrystals_dilithium2_PUBLICKEYBYTES
@@ -32,8 +32,8 @@ int pqcrystals_dilithium2_avx2_open(uint8_t *m, size_t *mlen,
 
 
 #define pqcrystals_dilithium3_PUBLICKEYBYTES 1952
-#define pqcrystals_dilithium3_SECRETKEYBYTES 4000
-#define pqcrystals_dilithium3_BYTES 3293
+#define pqcrystals_dilithium3_SECRETKEYBYTES 4032
+#define pqcrystals_dilithium3_BYTES 3309
 
 #define pqcrystals_dilithium3_avx2_PUBLICKEYBYTES pqcrystals_dilithium3_PUBLICKEYBYTES
 #define pqcrystals_dilithium3_avx2_SECRETKEYBYTES pqcrystals_dilithium3_SECRETKEYBYTES
@@ -59,8 +59,8 @@ int pqcrystals_dilithium3_avx2_open(uint8_t *m, size_t *mlen,
 
 
 #define pqcrystals_dilithium5_PUBLICKEYBYTES 2592
-#define pqcrystals_dilithium5_SECRETKEYBYTES 4864
-#define pqcrystals_dilithium5_BYTES 4595
+#define pqcrystals_dilithium5_SECRETKEYBYTES 4896
+#define pqcrystals_dilithium5_BYTES 4627
 
 #define pqcrystals_dilithium5_avx2_PUBLICKEYBYTES pqcrystals_dilithium5_PUBLICKEYBYTES
 #define pqcrystals_dilithium5_avx2_SECRETKEYBYTES pqcrystals_dilithium5_SECRETKEYBYTES

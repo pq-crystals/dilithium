@@ -18,9 +18,9 @@ brew install openssl
 ```
 Then, run
 ```sh
-export CFLAGS="-I/usr/local/opt/openssl@1.1/include"
-export NISTFLAGS="-I/usr/local/opt/openssl@1.1/include"
-export LDFLAGS="-L/usr/local/opt/openssl@1.1/lib"
+export CFLAGS="-I/opt/homebrew/opt/openssl@1.1/include"
+export NISTFLAGS="-I/opt/homebrew/opt/openssl@1.1/include"
+export LDFLAGS="-L/opt/homebrew/opt/openssl@1.1/lib"
 ```
 before compilation to add the OpenSSL header and library locations to the respective search paths.
 
@@ -60,11 +60,11 @@ Our Dilithium implementations are contained in the [SUPERCOP](https://bench.cr.y
 
 ## Randomized signing
 
-By default our code implements Dilithium's deterministic signing mode. To change this to the randomized signing mode, define the `DILITHIUM_RANDOMIZED_SIGNING` preprocessor macro at compilation by either uncommenting the line
+By default our code implements Dilithium's randomized signing mode. To change this to the deterministic signing mode, undefine the `DILITHIUM_RANDOMIZED_SIGNING` preprocessor macro at compilation by commenting the line
 ```sh
-//#define DILITHIUM_RANDOMIZED_SIGNING
+#define DILITHIUM_RANDOMIZED_SIGNING
 ```
-in config.h, or adding `-DDILITHIUM_RANDOMIZED_SIGNING` to the compiler flags in the environment variable `CFLAGS`.
+in config.h.
 
 ## Shared libraries
 
