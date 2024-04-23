@@ -5,7 +5,7 @@ NISTFLAGS += -Wno-unused-result -O3 -fomit-frame-pointer
 SOURCES = sign.c packing.c polyvec.c poly.c ntt.c reduce.c rounding.c
 HEADERS = config.h params.h api.h sign.h packing.h polyvec.h poly.h ntt.h \
   reduce.h rounding.h symmetric.h randombytes.h
-KECCAK_SOURCES = $(SOURCES) fips202.c symmetric-shake.c
+KECCAK_SOURCES = $(SOURCES) fips202.c symmetric-shake.c test/assert-params.c
 KECCAK_HEADERS = $(HEADERS) fips202.h
 
 .PHONY: all speed shared clean
@@ -37,14 +37,17 @@ libpqcrystals_fips202_ref.so: fips202.c fips202.h
 	$(CC) -shared -fPIC $(CFLAGS) -o $@ $<
 
 libpqcrystals_dilithium2_ref.so: $(SOURCES) $(HEADERS) symmetric-shake.c
+	$(CC) --syntax-only test/assert-params.c -DDILITHIUM_MODE=2
 	$(CC) -shared -fPIC $(CFLAGS) -DDILITHIUM_MODE=2 \
 	  -o $@ $(SOURCES) symmetric-shake.c
 
 libpqcrystals_dilithium3_ref.so: $(SOURCES) $(HEADERS) symmetric-shake.c
+	$(CC) --syntax-only test/assert-params.c -DDILITHIUM_MODE=3
 	$(CC) -shared -fPIC $(CFLAGS) -DDILITHIUM_MODE=3 \
 	  -o $@ $(SOURCES) symmetric-shake.c
 
 libpqcrystals_dilithium5_ref.so: $(SOURCES) $(HEADERS) symmetric-shake.c
+	$(CC) --syntax-only test/assert-params.c -DDILITHIUM_MODE=5
 	$(CC) -shared -fPIC $(CFLAGS) -DDILITHIUM_MODE=5 \
 	  -o $@ $(SOURCES) symmetric-shake.c
 
