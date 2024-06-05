@@ -143,7 +143,7 @@ rej:
   shake256_absorb(&state, sig, K*POLYW1_PACKEDBYTES);
   shake256_finalize(&state);
   shake256_squeeze(sig, CTILDEBYTES, &state);
-  poly_challenge(&cp, sig); /* uses only the first SEEDBYTES bytes of sig */
+  poly_challenge(&cp, sig); /* uses only the first CTILDEBYTES bytes of sig */
   poly_ntt(&cp);
 
   /* Compute z, reject if it reveals secret */
@@ -260,7 +260,7 @@ int crypto_sign_verify(const uint8_t *sig,
   shake256_squeeze(mu, CRHBYTES, &state);
 
   /* Matrix-vector multiplication; compute Az - c2^dt1 */
-  poly_challenge(&cp, c); /* uses only the first SEEDBYTES bytes of c */
+  poly_challenge(&cp, c); /* uses only the first CTILDEBYTES bytes of c */
   polyvec_matrix_expand(mat, rho);
 
   polyvecl_ntt(&z);
