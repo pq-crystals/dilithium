@@ -15,13 +15,13 @@
 * Returns r.
 **************************************************/
 int64_t fqmul(int32_t a, int32_t b) {
-    int64_t s;
-    int32_t t;
+  int64_t s;
+  int32_t t;
 
-    s = (int64_t)a*b;
-    t = (int64_t)(int32_t)s*QINV;
-    t = (s - (int64_t)t*Q) >> 32;
-    return t;
+  s = (int64_t)a*b;
+  t = (int64_t)(int32_t)s*QINV;
+  t = (s - (int64_t)t*Q) >> 32;
+  return t;
 }
 
 /*************************************************
