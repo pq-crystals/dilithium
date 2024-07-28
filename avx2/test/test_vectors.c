@@ -207,7 +207,7 @@ int main(void) {
       fprintf(stderr, "ERROR in polyveck_chknorm(&w1, 16)!\n");
 #elif GAMMA2 == (Q-1)/88
     if(polyveck_chknorm(&w1, 44))
-      fprintf(stderr, "ERROR in polyveck_chknorm(&w1, 4)!\n");
+      fprintf(stderr, "ERROR in polyveck_chknorm(&w1, 44)!\n");
 #endif
     if(polyveck_chknorm(&w0, GAMMA2 + 1))
       fprintf(stderr, "ERROR in polyveck_chknorm(&w0, GAMMA2+1)!\n");
