@@ -15,20 +15,24 @@
 int pqcrystals_dilithium2_avx2_keypair(uint8_t *pk, uint8_t *sk);
 
 int pqcrystals_dilithium2_avx2_signature(uint8_t *sig, size_t *siglen,
-                                        const uint8_t *m, size_t mlen,
-                                        const uint8_t *sk);
+                                         const uint8_t *m, size_t mlen,
+                                         const uint8_t *ctx, size_t ctxlen,
+                                         const uint8_t *sk);
 
 int pqcrystals_dilithium2_avx2(uint8_t *sm, size_t *smlen,
-                              const uint8_t *m, size_t mlen,
-                              const uint8_t *sk);
+                               const uint8_t *m, size_t mlen,
+                               const uint8_t *ctx, size_t ctxlen,
+                               const uint8_t *sk);
 
 int pqcrystals_dilithium2_avx2_verify(const uint8_t *sig, size_t siglen,
-                                     const uint8_t *m, size_t mlen,
-                                     const uint8_t *pk);
+                                      const uint8_t *m, size_t mlen,
+                                      const uint8_t *ctx, size_t ctxlen,
+                                      const uint8_t *pk);
 
 int pqcrystals_dilithium2_avx2_open(uint8_t *m, size_t *mlen,
-                                   const uint8_t *sm, size_t smlen,
-                                   const uint8_t *pk);
+                                    const uint8_t *sm, size_t smlen,
+                                    const uint8_t *ctx, size_t ctxlen,
+                                    const uint8_t *pk);
 
 
 #define pqcrystals_dilithium5_PUBLICKEYBYTES 2592
@@ -42,20 +46,24 @@ int pqcrystals_dilithium2_avx2_open(uint8_t *m, size_t *mlen,
 int pqcrystals_dilithium3_avx2_keypair(uint8_t *pk, uint8_t *sk);
 
 int pqcrystals_dilithium3_avx2_signature(uint8_t *sig, size_t *siglen,
-                                        const uint8_t *m, size_t mlen,
-                                        const uint8_t *sk);
+                                         const uint8_t *m, size_t mlen,
+                                         const uint8_t *ctx, size_t ctxlen,
+                                         const uint8_t *sk);
 
 int pqcrystals_dilithium3_avx2(uint8_t *sm, size_t *smlen,
-                              const uint8_t *m, size_t mlen,
-                              const uint8_t *sk);
+                               const uint8_t *m, size_t mlen,
+                               const uint8_t *ctx, size_t ctxlen,
+                               const uint8_t *sk);
 
 int pqcrystals_dilithium3_avx2_verify(const uint8_t *sig, size_t siglen,
-                                     const uint8_t *m, size_t mlen,
-                                     const uint8_t *pk);
+                                      const uint8_t *m, size_t mlen,
+                                      const uint8_t *ctx, size_t ctxlen,
+                                      const uint8_t *pk);
 
 int pqcrystals_dilithium3_avx2_open(uint8_t *m, size_t *mlen,
-                                   const uint8_t *sm, size_t smlen,
-                                   const uint8_t *pk);
+                                    const uint8_t *sm, size_t smlen,
+                                    const uint8_t *ctx, size_t ctxlen,
+                                    const uint8_t *pk);
 
 
 #define pqcrystals_dilithium5_PUBLICKEYBYTES 2592
@@ -69,20 +77,24 @@ int pqcrystals_dilithium3_avx2_open(uint8_t *m, size_t *mlen,
 int pqcrystals_dilithium5_avx2_keypair(uint8_t *pk, uint8_t *sk);
 
 int pqcrystals_dilithium5_avx2_signature(uint8_t *sig, size_t *siglen,
-                                        const uint8_t *m, size_t mlen,
-                                        const uint8_t *sk);
+                                         const uint8_t *m, size_t mlen,
+                                         const uint8_t *ctx, size_t ctxlen,
+                                         const uint8_t *sk);
 
 int pqcrystals_dilithium5_avx2(uint8_t *sm, size_t *smlen,
-                              const uint8_t *m, size_t mlen,
-                              const uint8_t *sk);
+                               const uint8_t *m, size_t mlen,
+                               const uint8_t *ctx, size_t ctxlen,
+                               const uint8_t *sk);
 
 int pqcrystals_dilithium5_avx2_verify(const uint8_t *sig, size_t siglen,
-                                     const uint8_t *m, size_t mlen,
-                                     const uint8_t *pk);
+                                      const uint8_t *m, size_t mlen,
+                                      const uint8_t *ctx, size_t ctxlen,
+                                      const uint8_t *pk);
 
 int pqcrystals_dilithium5_avx2_open(uint8_t *m, size_t *mlen,
-                                   const uint8_t *sm, size_t smlen,
-                                   const uint8_t *pk);
+                                    const uint8_t *sm, size_t smlen,
+                                    const uint8_t *ctx, size_t ctxlen,
+                                    const uint8_t *pk);
 
 
 #endif
