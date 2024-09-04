@@ -18,9 +18,9 @@ brew install openssl
 ```
 Then, run
 ```sh
-export CFLAGS="-I/usr/local/opt/openssl@1.1/include"
-export NISTFLAGS="-I/usr/local/opt/openssl@1.1/include"
-export LDFLAGS="-L/usr/local/opt/openssl@1.1/lib"
+export CFLAGS="-I/opt/homebrew/opt/openssl@1.1/include"
+export NISTFLAGS="-I/opt/homebrew/opt/openssl@1.1/include"
+export LDFLAGS="-L/opt/homebrew/opt/openssl@1.1/lib"
 ```
 before compilation to add the OpenSSL header and library locations to the respective search paths.
 
@@ -34,13 +34,11 @@ This produces the executables
 ```sh
 test/test_dilithium$ALG
 test/test_vectors$ALG
-nistkat/PQCgenKAT_sign$ALG
 ```
 where `$ALG` ranges over the parameter sets 2, 3, and 5.
 
 * `test_dilithium$ALG` tests 10000 times to generate keys, sign a random message of 59 bytes and verify the produced signature. Also, the program will try to verify wrong signatures where a single random byte of a valid signature was randomly distorted. The program will abort with an error message and return -1 if there was an error. Otherwise it will output the key and signature sizes and return 0.
 * `test_vectors$ALG` performs further tests of internal functions and prints deterministically generated test vectors for several intermediate values that occur in the Dilithium algorithms. Namely, a 48 byte seed, the matrix A corresponding to the first 32 bytes of seed, a short secret vector s corresponding to the first 32 bytes of seed and nonce 0, a masking vector y corresponding to the seed and nonce 0, the high bits w1 and the low bits w0 of the vector w = Ay, the power-of-two rounding t1 of w and the corresponding low part t0, and the challenge c for the seed and w1. This program is meant to help to ensure compatibility of independent implementations.
-* `PQCgenKAT_sign$ALG` is the Known Answer Test (KAT) generation program provided by NIST. It computes the official KATs and writes them to the files `PQCsignKAT_$(CRYPTO_ALGNAME).{req,rsp}`.
 
 ### Benchmarking programs
 
@@ -60,11 +58,11 @@ Our Dilithium implementations are contained in the [SUPERCOP](https://bench.cr.y
 
 ## Randomized signing
 
-By default our code implements Dilithium's deterministic signing mode. To change this to the randomized signing mode, define the `DILITHIUM_RANDOMIZED_SIGNING` preprocessor macro at compilation by either uncommenting the line
+By default our code implements Dilithium's hedged signing mode. To change this to the deterministic signing mode, undefine the `DILITHIUM_RANDOMIZED_SIGNING` preprocessor macro at compilation by either commenting the line
 ```sh
-//#define DILITHIUM_RANDOMIZED_SIGNING
+#define DILITHIUM_RANDOMIZED_SIGNING
 ```
-in config.h, or adding `-DDILITHIUM_RANDOMIZED_SIGNING` to the compiler flags in the environment variable `CFLAGS`.
+in config.h, or adding `-UDILITHIUM_RANDOMIZED_SIGNING` to the compiler flags in the environment variable `CFLAGS`.
 
 ## Shared libraries
 
