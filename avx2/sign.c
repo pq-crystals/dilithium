@@ -74,7 +74,9 @@ int crypto_sign_keypair(uint8_t *pk, uint8_t *sk) {
 
   /* Get randomness for rho, rhoprime and key */
   randombytes(seedbuf, SEEDBYTES);
-  shake256(seedbuf, 2*SEEDBYTES + CRHBYTES, seedbuf, SEEDBYTES);
+  seedbuf[SEEDBYTES+0] = K;
+  seedbuf[SEEDBYTES+1] = L;
+  shake256(seedbuf, 2*SEEDBYTES + CRHBYTES, seedbuf, SEEDBYTES+2);
   rho = seedbuf;
   rhoprime = rho + SEEDBYTES;
   key = rhoprime + CRHBYTES;
@@ -143,11 +145,15 @@ int crypto_sign_keypair(uint8_t *pk, uint8_t *sk) {
 *              - size_t *siglen: pointer to output length of signature
 *              - uint8_t *m: pointer to message to be signed
 *              - size_t mlen: length of message
+*              - uint8_t *ctx: pointer to context string
+*              - size_t ctxlen: length of context string
 *              - uint8_t *sk: pointer to bit-packed secret key
 *
-* Returns 0 (success)
+* Returns 0 (success) or -1 (context string too long)
 **************************************************/
-int crypto_sign_signature(uint8_t *sig, size_t *siglen, const uint8_t *m, size_t mlen, const uint8_t *sk) {
+int crypto_sign_signature(uint8_t *sig, size_t *siglen, const uint8_t *m, size_t mlen,
+                          const uint8_t *ctx, size_t ctxlen, const uint8_t *sk)
+{
   unsigned int i, n, pos;
   uint8_t seedbuf[2*SEEDBYTES + TRBYTES + RNDBYTES + 2*CRHBYTES];
   uint8_t *rho, *tr, *key, *rnd, *mu, *rhoprime;
@@ -163,6 +169,9 @@ int crypto_sign_signature(uint8_t *sig, size_t *siglen, const uint8_t *m, size_t
   } tmpv;
   keccak_state state;
 
+  if(ctxlen > 255)
+    return -1;
+
   rho = seedbuf;
   tr = rho + SEEDBYTES;
   key = tr + TRBYTES;
@@ -171,9 +180,13 @@ int crypto_sign_signature(uint8_t *sig, size_t *siglen, const uint8_t *m, size_t
   rhoprime = mu + CRHBYTES;
   unpack_sk(rho, tr, key, &t0, &s1, &s2, sk);
 
-  /* Compute CRH(tr, msg) */
+  /* Compute CRH(tr, 0, ctxlen, ctx, msg) */
   shake256_init(&state);
   shake256_absorb(&state, tr, TRBYTES);
+  mu[0] = 0;
+  mu[1] = ctxlen;
+  shake256_absorb(&state, mu, 2);
+  shake256_absorb(&state, ctx, ctxlen);
   shake256_absorb(&state, m, mlen);
   shake256_finalize(&state);
   shake256_squeeze(mu, CRHBYTES, &state);
@@ -292,18 +305,23 @@ rej:
 *                               message
 *              - const uint8_t *m: pointer to message to be signed
 *              - size_t mlen: length of message
+*              - const uint8_t *ctx: pointer to context string
+*              - size_t ctxlen: length of context string
 *              - const uint8_t *sk: pointer to bit-packed secret key
 *
 * Returns 0 (success)
 **************************************************/
-int crypto_sign(uint8_t *sm, size_t *smlen, const uint8_t *m, size_t mlen, const uint8_t *sk) {
+int crypto_sign(uint8_t *sm, size_t *smlen, const uint8_t *m, size_t mlen, const uint8_t *ctx, size_t ctxlen,
+                const uint8_t *sk)
+{
   size_t i;
+  int ret;
 
   for(i = 0; i < mlen; ++i)
     sm[CRYPTO_BYTES + mlen - 1 - i] = m[mlen - 1 - i];
-  crypto_sign_signature(sm, smlen, sm + CRYPTO_BYTES, mlen, sk);
+  ret = crypto_sign_signature(sm, smlen, sm + CRYPTO_BYTES, mlen, ctx, ctxlen, sk);
   *smlen += mlen;
-  return 0;
+  return ret;
 }
 
 /*************************************************
@@ -315,11 +333,14 @@ int crypto_sign(uint8_t *sm, size_t *smlen, const uint8_t *m, size_t mlen, const
 *              - size_t siglen: length of signature
 *              - const uint8_t *m: pointer to message
 *              - size_t mlen: length of message
+*              - const uint8_t *ctx: pointer to context string
+*              - size_t ctxlen: length of context string
 *              - const uint8_t *pk: pointer to bit-packed public key
 *
 * Returns 0 if signature could be verified correctly and -1 otherwise
 **************************************************/
-int crypto_sign_verify(const uint8_t *sig, size_t siglen, const uint8_t *m, size_t mlen, const uint8_t *pk) {
+int crypto_sign_verify(const uint8_t *sig, size_t siglen, const uint8_t *m, size_t mlen, 
+                       const uint8_t *ctx, size_t ctxlen, const uint8_t *pk) {
   unsigned int i, j, pos = 0;
   /* polyw1_pack writes additional 14 bytes */
   ALIGNED_UINT8(K*POLYW1_PACKEDBYTES+14) buf;
@@ -331,13 +352,17 @@ int crypto_sign_verify(const uint8_t *sig, size_t siglen, const uint8_t *m, size
   poly c, w1, h;
   keccak_state state;
 
-  if(siglen != CRYPTO_BYTES)
+  if(ctxlen > 255 || siglen != CRYPTO_BYTES)
     return -1;
 
   /* Compute CRH(H(rho, t1), msg) */
-  shake256(mu, CRHBYTES, pk, CRYPTO_PUBLICKEYBYTES);
+  shake256(mu, TRBYTES, pk, CRYPTO_PUBLICKEYBYTES);
   shake256_init(&state);
   shake256_absorb(&state, mu, CRHBYTES);
+  mu[0] = 0;
+  mu[1] = ctxlen;
+  shake256_absorb(&state, mu, 2);
+  shake256_absorb(&state, ctx, ctxlen);
   shake256_absorb(&state, m, mlen);
   shake256_finalize(&state);
   shake256_squeeze(mu, CRHBYTES, &state);
@@ -412,18 +437,21 @@ int crypto_sign_verify(const uint8_t *sig, size_t siglen, const uint8_t *m, size
 *              - size_t *mlen: pointer to output length of message
 *              - const uint8_t *sm: pointer to signed message
 *              - size_t smlen: length of signed message
+*              - const uint8_t *ctx: pointer to context string
+*              - size_t ctxlen: length of context string
 *              - const uint8_t *pk: pointer to bit-packed public key
 *
 * Returns 0 if signed message could be verified correctly and -1 otherwise
 **************************************************/
-int crypto_sign_open(uint8_t *m, size_t *mlen, const uint8_t *sm, size_t smlen, const uint8_t *pk) {
+int crypto_sign_open(uint8_t *m, size_t *mlen, const uint8_t *sm, size_t smlen,
+                     const uint8_t *ctx, size_t ctxlen, const uint8_t *pk) {
   size_t i;
 
   if(smlen < CRYPTO_BYTES)
     goto badsig;
 
   *mlen = smlen - CRYPTO_BYTES;
-  if(crypto_sign_verify(sm, CRYPTO_BYTES, sm + CRYPTO_BYTES, *mlen, pk))
+  if(crypto_sign_verify(sm, CRYPTO_BYTES, sm + CRYPTO_BYTES, *mlen, ctx, ctxlen, pk))
     goto badsig;
   else {
     /* All good, copy msg, return 0 */

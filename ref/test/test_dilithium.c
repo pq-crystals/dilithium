@@ -5,6 +5,7 @@
 #include "../sign.h"
 
 #define MLEN 59
+#define CTXLEN 14
 #define NTESTS 10000
 
 int main(void)
@@ -13,18 +14,21 @@ int main(void)
   int ret;
   size_t mlen, smlen;
   uint8_t b;
+  uint8_t ctx[CTXLEN] = {0};
   uint8_t m[MLEN + CRYPTO_BYTES];
   uint8_t m2[MLEN + CRYPTO_BYTES];
   uint8_t sm[MLEN + CRYPTO_BYTES];
   uint8_t pk[CRYPTO_PUBLICKEYBYTES];
   uint8_t sk[CRYPTO_SECRETKEYBYTES];
 
+  snprintf((char*)ctx,CTXLEN,"test_dilitium");
+
   for(i = 0; i < NTESTS; ++i) {
     randombytes(m, MLEN);
 
     crypto_sign_keypair(pk, sk);
-    crypto_sign(sm, &smlen, m, MLEN, sk);
-    ret = crypto_sign_open(m2, &mlen, sm, smlen, pk);
+    crypto_sign(sm, &smlen, m, MLEN, ctx, CTXLEN, sk);
+    ret = crypto_sign_open(m2, &mlen, sm, smlen, ctx, CTXLEN, pk);
 
     if(ret) {
       fprintf(stderr, "Verification failed\n");
@@ -50,7 +54,7 @@ int main(void)
       randombytes(&b, 1);
     } while(!b);
     sm[j % (MLEN + CRYPTO_BYTES)] += b;
-    ret = crypto_sign_open(m2, &mlen, sm, smlen, pk);
+    ret = crypto_sign_open(m2, &mlen, sm, smlen, ctx, CTXLEN, pk);
     if(!ret) {
       fprintf(stderr, "Trivial forgeries possible\n");
       return -1;

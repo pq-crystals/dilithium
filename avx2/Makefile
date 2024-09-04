@@ -104,7 +104,6 @@ test/test_mul: test/test_mul.c randombytes.c $(KECCAK_SOURCES) \
   $(KECCAK_HEADERS)
 	$(CC) $(CFLAGS) -UDBENCH -o $@ $< randombytes.c $(KECCAK_SOURCES)
 
-
 clean:
 	rm -f *.o *.a *.so
 	rm -f test/test_dilithium2

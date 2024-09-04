@@ -53,7 +53,7 @@ void poly_uniform_gamma1_preinit(poly *a, stream256_state *state);
 #define poly_uniform_gamma1 DILITHIUM_NAMESPACE(poly_uniform_gamma1)
 void poly_uniform_gamma1(poly *a, const uint8_t seed[CRHBYTES], uint16_t nonce);
 #define poly_challenge DILITHIUM_NAMESPACE(poly_challenge)
-void poly_challenge(poly *c, const uint8_t seed[SEEDBYTES]);
+void poly_challenge(poly *c, const uint8_t seed[CTILDEBYTES]);
 
 #define poly_uniform_4x DILITHIUM_NAMESPACE(poly_uniform_4x)
 void poly_uniform_4x(poly *a0,

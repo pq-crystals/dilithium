@@ -16,10 +16,12 @@ all: \
   test/test_dilithium5 \
   test/test_vectors2 \
   test/test_vectors3 \
-  test/test_vectors5 \
+  test/test_vectors5
+
+nistkat: \
   nistkat/PQCgenKAT_sign2 \
   nistkat/PQCgenKAT_sign3 \
-  nistkat/PQCgenKAT_sign5 \
+  nistkat/PQCgenKAT_sign5
 
 speed: \
   test/test_mul \
@@ -132,6 +134,6 @@ clean:
 	rm -f test/test_speed3
 	rm -f test/test_speed5
 	rm -f test/test_mul
-	rm -f PQCgenKAT_sign2
-	rm -f PQCgenKAT_sign3
-	rm -f PQCgenKAT_sign5
+	rm -f nistkat/PQCgenKAT_sign2
+	rm -f nistkat/PQCgenKAT_sign3
+	rm -f nistkat/PQCgenKAT_sign5

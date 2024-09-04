@@ -73,13 +73,13 @@ int main(void)
 
   for(i = 0; i < NTESTS; ++i) {
     t[i] = cpucycles();
-    crypto_sign_signature(sig, &siglen, sig, CRHBYTES, sk);
+    crypto_sign_signature(sig, &siglen, sig, CRHBYTES, NULL, 0, sk);
   }
   print_results("Sign:", t, NTESTS);
 
   for(i = 0; i < NTESTS; ++i) {
     t[i] = cpucycles();
-    crypto_sign_verify(sig, CRYPTO_BYTES, sig, CRHBYTES, pk);
+    crypto_sign_verify(sig, CRYPTO_BYTES, sig, CRHBYTES, NULL, 0, pk);
   }
   print_results("Verify:", t, NTESTS);
 

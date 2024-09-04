@@ -195,3 +195,4 @@ levels2t7	3
 
 ret
 
+.section .note.GNU-stack,"",@progbits
