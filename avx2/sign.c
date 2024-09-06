@@ -462,7 +462,7 @@ int crypto_sign_open(uint8_t *m, size_t *mlen, const uint8_t *sm, size_t smlen,
 
 badsig:
   /* Signature verification failed */
-  *mlen = -1;
+  *mlen = 0;
   for(i = 0; i < smlen; ++i)
     m[i] = 0;
 
