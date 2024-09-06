@@ -21,7 +21,7 @@ extern uint64_t *tred, *tadd, *tmul, *tround, *tsample, *tpack;
 * Name:        poly_reduce
 *
 * Description: Inplace reduction of all coefficients of polynomial to
-*              representative in [-6283009,6283007].
+*              representative in [-6283008,6283008].
 *
 * Arguments:   - poly *a: pointer to input/output polynomial
 **************************************************/
@@ -335,7 +335,7 @@ static unsigned int rej_uniform(int32_t *a,
 *
 * Description: Sample polynomial with uniformly random coefficients
 *              in [0,Q-1] by performing rejection sampling on the
-*              output stream of SHAKE256(seed|nonce)
+*              output stream of SHAKE128(seed|nonce)
 *
 * Arguments:   - poly *a: pointer to output polynomial
 *              - const uint8_t seed[]: byte array with seed of length SEEDBYTES
