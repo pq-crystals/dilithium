@@ -272,7 +272,7 @@ int crypto_sign_verify(const uint8_t *sig,
   if(polyvecl_chknorm(&z, GAMMA1 - BETA))
     return -1;
 
-  /* Compute CRH(H(rho, t1), msg) */
+  /* Compute mu = CRH(H(rho, t1), 0, ctxlen, ctx, msg) */
   shake256(mu, TRBYTES, pk, CRYPTO_PUBLICKEYBYTES);
   shake256_init(&state);
   shake256_absorb(&state, mu, TRBYTES);
@@ -328,7 +328,7 @@ int crypto_sign_verify(const uint8_t *sig,
 *              - size_t *mlen: pointer to output length of message
 *              - const uint8_t *sm: pointer to signed message
 *              - size_t smlen: length of signed message
-*              - const uint8_t *ctx: pointer to context tring
+*              - const uint8_t *ctx: pointer to context string
 *              - size_t ctxlen: length of context string
 *              - const uint8_t *pk: pointer to bit-packed public key
 *

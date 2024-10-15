@@ -355,7 +355,7 @@ int crypto_sign_verify(const uint8_t *sig, size_t siglen, const uint8_t *m, size
   if(ctxlen > 255 || siglen != CRYPTO_BYTES)
     return -1;
 
-  /* Compute CRH(H(rho, t1), msg) */
+  /* Compute mu = CRH(H(rho, t1), 0, ctxlen, ctx, msg) */
   shake256(mu, TRBYTES, pk, CRYPTO_PUBLICKEYBYTES);
   shake256_init(&state);
   shake256_absorb(&state, mu, CRHBYTES);
