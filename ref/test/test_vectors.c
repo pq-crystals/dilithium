@@ -59,14 +59,14 @@ int main(void) {
       printf("%02x", buf[j]);
     printf("\n");
 
-    crypto_sign_signature(sig, &siglen, m, MLEN, ctx, CTXLEN, sk);
+    crypto_sign_signature_ctx(sig, &siglen, m, MLEN, ctx, CTXLEN, sk);
     shake256(buf, 32, sig, CRYPTO_BYTES);
     printf("sig = ");
     for(j = 0; j < 32; ++j)
       printf("%02x", buf[j]);
     printf("\n");
 
-    if(crypto_sign_verify(sig, siglen, m, MLEN, ctx, CTXLEN, pk))
+    if(crypto_sign_verify_ctx(sig, siglen, m, MLEN, ctx, CTXLEN, pk))
       fprintf(stderr,"Signature verification failed!\n");
 
     randombytes(seed, sizeof(seed));

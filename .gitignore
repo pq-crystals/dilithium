@@ -1,9 +1,9 @@
-PQCsignKAT_Dilithium2.req
-PQCsignKAT_Dilithium2.rsp
-PQCsignKAT_Dilithium3.req
-PQCsignKAT_Dilithium3.rsp
-PQCsignKAT_Dilithium5.req
-PQCsignKAT_Dilithium5.rsp
+PQCsignKAT_ML-DSA-44.req
+PQCsignKAT_ML-DSA-44.rsp
+PQCsignKAT_ML-DSA-65.req
+PQCsignKAT_ML-DSA-65.rsp
+PQCsignKAT_ML-DSA-87.req
+PQCsignKAT_ML-DSA-87.rsp
 tvecs2
 tvecs3
 tvecs5

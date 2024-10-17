@@ -27,8 +27,8 @@ int main(void)
     randombytes(m, MLEN);
 
     crypto_sign_keypair(pk, sk);
-    crypto_sign(sm, &smlen, m, MLEN, ctx, CTXLEN, sk);
-    ret = crypto_sign_open(m2, &mlen, sm, smlen, ctx, CTXLEN, pk);
+    crypto_sign_ctx(sm, &smlen, m, MLEN, ctx, CTXLEN, sk);
+    ret = crypto_sign_open_ctx(m2, &mlen, sm, smlen, ctx, CTXLEN, pk);
 
     if(ret) {
       fprintf(stderr, "Verification failed\n");
@@ -54,7 +54,7 @@ int main(void)
       randombytes(&b, 1);
     } while(!b);
     sm[j % (MLEN + CRYPTO_BYTES)] += b;
-    ret = crypto_sign_open(m2, &mlen, sm, smlen, ctx, CTXLEN, pk);
+    ret = crypto_sign_open_ctx(m2, &mlen, sm, smlen, ctx, CTXLEN, pk);
     if(!ret) {
       fprintf(stderr, "Trivial forgeries possible\n");
       return -1;
