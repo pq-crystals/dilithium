@@ -44,14 +44,12 @@ void poly_small_basemul_invntt(poly *r, const smallpoly *a, const smallpoly *b)
 
   small_invntt_tomont(tmp->coeffs);
 
-#ifdef SMALL_POLY_16_BIT
   int j;
   // buffer is the same, so we neeed to be careful
   for (j = N - 1; j >= 0; j--)
   {
     r->coeffs[j] = tmp->coeffs[j];
   }
-#endif
 }
 
 void polyvecl_small_basemul_invntt(polyvecl *r, const smallpoly *a, const smallpoly b[L])

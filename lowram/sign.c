@@ -393,7 +393,7 @@ int crypto_sign_verify(const uint8_t *sig,
   if(ctxlen > 255 || siglen != CRYPTO_BYTES)
     return -1;
 
-  /* Compute CRH(h(rho, t1), msg) */
+  /* Compute mu = CRH(H(rho, t1), 0, ctxlen, ctx, msg) */
   shake256_init(&s256);
   shake256_absorb(&s256, pk, CRYPTO_PUBLICKEYBYTES);
   shake256_finalize(&s256);
@@ -478,7 +478,7 @@ int crypto_sign_verify(const uint8_t *sig,
 *              - size_t *mlen: pointer to output length of message
 *              - const uint8_t *sm: pointer to signed message
 *              - size_t smlen: length of signed message
-*              - const uint8_t *ctx: pointer to context tring
+*              - const uint8_t *ctx: pointer to context string
 *              - size_t ctxlen: length of context string
 *              - const uint8_t *pk: pointer to bit-packed public key
 *

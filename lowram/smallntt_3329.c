@@ -7,6 +7,8 @@
 /* Code to generate zetas and zetas_inv used in the number-theoretic transform:
 
 #define KYBER_ROOT_OF_UNITY 17
+#define KYBER_Q 3329
+#define MONT -1044
 
 static const uint8_t tree[128] = {
   0, 64, 32, 96, 16, 80, 48, 112, 8, 72, 40, 104, 24, 88, 56, 120,

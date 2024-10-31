@@ -4,7 +4,6 @@
 #include "poly.h"
 #include "polyvec.h"
 
-#define SMALL_POLY_16_BIT
 typedef struct
 {
     int16_t coeffs[N];
