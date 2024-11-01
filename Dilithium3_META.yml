@@ -4,6 +4,7 @@ claimed-nist-level: 3
 length-public-key: 1952
 length-secret-key: 4032
 length-signature: 3309
+nistkat-sha256: 7cb96242eac9907a55b5c84c202f0ebd552419c50b2e986dc2e28f07ecebf072
 testvectors-sha256: 14bf84918ee90e7afbd580191d3eb890d4557e0900b1145e39a8399ef7dd3fba
 principal-submitters:
   - Vadim Lyubashevsky
