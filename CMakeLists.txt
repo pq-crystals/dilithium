@@ -15,3 +15,4 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 
 find_package(OpenSSL REQUIRED)
 add_subdirectory(ref)
+add_subdirectory(avx2)
