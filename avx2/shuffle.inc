@@ -1,3 +1,7 @@
+/* SPDX-License-Identifier: Apache-2.0 OR CC0-1.0
+ * Copyright: Léo Ducas, Eike Kiltz, Tancrède Lepoint, Vadim Lyubashevsky, Gregor Seiler, Peter Schwabe, Damien Stehlé
+ * */
+
 .macro shuffle8 r0,r1,r2,r3
 vperm2i128	$0x20,%ymm\r1,%ymm\r0,%ymm\r2
 vperm2i128	$0x31,%ymm\r1,%ymm\r0,%ymm\r3

@@ -1,3 +1,7 @@
+/* SPDX-License-Identifier: Apache-2.0 OR CC0-1.0
+ * Copyright: Léo Ducas, Eike Kiltz, Tancrède Lepoint, Vadim Lyubashevsky, Gregor Seiler, Peter Schwabe, Damien Stehlé
+ * */
+
 #include "params.h"
 #include "packing.h"
 #include "polyvec.h"
