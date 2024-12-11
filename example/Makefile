@@ -13,20 +13,20 @@ ifeq ($(USE_AVX2),1)
 endif
 LDFLAGS += -lpqcrystals_dilithium$(DILITHIUM_MODE)_ref -lpqcrystals_fips202_ref -lcrypto
 
-all: generate_secretkey secretkey_to_publickey create_signature validate_signature
+all: generate_secretkey create_signature validate_signature test_dilithium
 
 
-generate_secretkey: generate_secretkey.c
-	$(CC) $(CFLAGS) -o $@ $< ../$(IMPLEMENTATION)/randombytes.c $(LDFLAGS)
+generate_secretkey: generate_secretkey.c base64.c
+	$(CC) $(CFLAGS) -o $@ $< ../$(IMPLEMENTATION)/randombytes.c base64.c $(LDFLAGS)
 
-secretkey_to_publickey: secretkey_to_publickey.c
-	$(CC) $(CFLAGS) -o $@ $< ../$(IMPLEMENTATION)/randombytes.c $(LDFLAGS)
+create_signature: create_signature.c base64.c
+	$(CC) $(CFLAGS) -o $@ $< ../$(IMPLEMENTATION)/randombytes.c base64.c $(LDFLAGS)
 
-create_signature: create_signature.c
-	$(CC) $(CFLAGS) -o $@ $< ../$(IMPLEMENTATION)/randombytes.c $(LDFLAGS)
+validate_signature: validate_signature.c base64.c
+	$(CC) $(CFLAGS) -o $@ $< ../$(IMPLEMENTATION)/randombytes.c base64.c $(LDFLAGS)
 
-validate_signature: validate_signature.c
+test_dilithium: test_dilithium.c
 	$(CC) $(CFLAGS) -o $@ $< ../$(IMPLEMENTATION)/randombytes.c $(LDFLAGS)
 
 clean:
-	rm -f generate_secretkey secretkey_to_public create_signature validate_signature 
+	rm -f generate_secretkey create_signature validate_signature test_dilithium message.txt public.key secret.key signature.bin

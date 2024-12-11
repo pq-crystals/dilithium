@@ -4,18 +4,24 @@
 #include <unistd.h>
 #include <dilithium/api.h>
 #include "size.h"
+#include <openssl/bio.h>
+#include <openssl/evp.h>
+#include <openssl/buffer.h>
+#include "base64.h"
 
-#define CONTEXT_LEN 13
+#define MAX_LINE_LENGTH 1024
 
 int main(int argc, char *argv[]) {
     unsigned char pk[PQCLEAN_DILITHIUM5_CRYPTO_PUBLICKEYBYTES];
     unsigned char sig[PQCLEAN_DILITHIUM5_CRYPTO_BYTES];
-    unsigned char ctx[CONTEXT_LEN] = { 0 };
     FILE *pk_file, *sig_file, *msg_file;
     unsigned char *msg;
     size_t msg_len;
     int opt;
     char *pk_path = NULL, *sig_path = NULL, *msg_path = NULL;
+    char line[MAX_LINE_LENGTH];
+    int in_key = 0;
+    BIO *bio, *b64;
 
     while ((opt = getopt(argc, argv, "p:s:i:")) != -1) {
         switch (opt) {
@@ -33,21 +39,25 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    // Read public key
-    pk_file = fopen(pk_path, "rb");
-    if (!pk_file || fread(pk, 1, PQCLEAN_DILITHIUM5_CRYPTO_PUBLICKEYBYTES, pk_file) != PQCLEAN_DILITHIUM5_CRYPTO_PUBLICKEYBYTES) {
+    // Read and decode base64 public key
+    if (read_from_base64_file(pk_path,
+                             "-----BEGIN DILITHIUM PUBLIC KEY-----",
+                             "-----END DILITHIUM PUBLIC KEY-----",
+                             pk,
+                             PQCLEAN_DILITHIUM5_CRYPTO_PUBLICKEYBYTES) != 0) {
         fprintf(stderr, "Error reading public key\n");
         return 1;
     }
-    fclose(pk_file);
 
-    // Read signature
-    sig_file = fopen(sig_path, "rb");
-    if (!sig_file || fread(sig, 1, PQCLEAN_DILITHIUM5_CRYPTO_BYTES, sig_file) != PQCLEAN_DILITHIUM5_CRYPTO_BYTES) {
+    // Read and decode base64 signature
+    if (read_from_base64_file(sig_path,
+                             "-----BEGIN DILITHIUM SIGNATURE-----",
+                             "-----END DILITHIUM SIGNATURE-----",
+                             sig,
+                             PQCLEAN_DILITHIUM5_CRYPTO_BYTES) != 0) {
         fprintf(stderr, "Error reading signature\n");
         return 1;
     }
-    fclose(sig_file);
 
     // Read message
     msg_file = fopen(msg_path, "rb");
@@ -66,12 +76,15 @@ int main(int argc, char *argv[]) {
     fclose(msg_file);
 
     // Verify signature
-    int result = pqcrystals_dilithium5_ref_verify(
-        sig, PQCLEAN_DILITHIUM5_CRYPTO_BYTES,
-        msg, msg_len,
-        ctx, CONTEXT_LEN,
-        pk
-    );
+    int result = pqcrystals_dilithium5_ref_verify(sig, PQCLEAN_DILITHIUM5_CRYPTO_BYTES,
+                                                 msg, msg_len, NULL, 0, pk);
+    
+    if (result != 0) {
+        fprintf(stderr, "Signature verification failed\n");
+    } else {
+        fprintf(stderr, "Signature verified successfully!\n");
+    }
+    
     free(msg);
     return result;
 }

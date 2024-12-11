@@ -1,15 +1,22 @@
 #! /usr/bin/env bash
 
-# Generate a secret key
-./generate_secretkey > secret.key
+echo "🔑 Generating keys..."
+# Generate both secret and public keys at once
+./generate_secretkey -p public.key -s secret.key
+echo "✅ Keys generated"
 
-# Generate the corresponding public key
-cat secret.key | ./secretkey_to_publickey > public.key
-
-# Create a signature for a message
+echo -e "\n📝 Creating test message..."
 echo "Hello, World!" > message.txt
-./create_signature -k secret.key -i message.txt > signature.bin
+echo "✅ Message created"
 
-# Verify the signature
-./validate_signature -p public.key -i message.txt -s signature.bin
-echo $?  # Should print 0 if signature is valid
+echo -e "\n🖋️  Signing message..."
+./create_signature -s secret.key -p public.key -i message.txt > signature.bin
+echo "✅ Signature created"
+
+echo -e "\n🔍 Verifying signature..."
+./validate_signature -p public.key -i message.txt -s signature.bin 2> /dev/null
+if [ $? -eq 0 ]; then
+    echo "✅ Signature is valid!"
+else
+    echo "❌ Signature verification failed!"
+fi

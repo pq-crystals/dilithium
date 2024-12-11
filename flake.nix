@@ -106,12 +106,11 @@
               
               # Install example binaries
               cp generate_secretkey $out/bin/
-              cp secretkey_to_publickey $out/bin/
               cp create_signature $out/bin/
               cp validate_signature $out/bin/
 
               # Create wrapper scripts that set LD_LIBRARY_PATH
-              for bin in generate_secretkey secretkey_to_publickey create_signature validate_signature; do
+              for bin in generate_secretkey create_signature validate_signature; do
                 mv $out/bin/$bin $out/bin/$bin.real
                 cat > $out/bin/$bin <<EOF
 #!${pkgs.bash}/bin/bash
@@ -130,6 +129,12 @@ EOF
             openssl
             dilithium
           ];
+          
+          shellHook = ''
+            export CFLAGS="-I${pkgs.openssl.dev}/include -I${dilithium}/include"
+            export NISTFLAGS="-I${pkgs.openssl.dev}/include"
+            export LDFLAGS="-L${pkgs.openssl.out}/lib -L${dilithium}/lib"
+          '';
         };
       }
     );

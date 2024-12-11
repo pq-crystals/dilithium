@@ -8,3 +8,12 @@ tvecs2
 tvecs3
 tvecs5
 result
+example/generate_secretkey
+example/create_signature
+example/validate_signature
+example/test_dilithium
+example/message.txt
+example/public.key
+example/secret.key
+example/signature.bin
+example/example_base64
