@@ -10,9 +10,16 @@
     flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = nixpkgs.legacyPackages.${system};
-        dilithium = pkgs.stdenv.mkDerivation {
-            name = "dilithium";
-            src = ./.;
+        dilithium-lib = pkgs.stdenv.mkDerivation {
+            name = "dilithium-lib";
+            src = pkgs.lib.cleanSourceWith {
+              src = ./.;
+              filter = path: type:
+                let baseName = baseNameOf path;
+                in !(baseName == "example" ||
+                     baseName == "flake.nix" ||
+                     baseName == "flake.lock");
+            };
 
             nativeBuildInputs = with pkgs; [
               clang
@@ -56,6 +63,8 @@
               
               # Install AVX2 implementation libraries if built
               if [ "$(uname -m)" = "x86_64" ]; then
+                mkdir $out/include/dilithium/avx2
+                cp -r $src/avx2/*.h $out/include/dilithium/avx2/
                 cp -r $buildDir/avx2/libpqcrystals_*_avx2.so $out/lib/
               fi
             '';
@@ -74,66 +83,75 @@
               sha256sum -c $src/SHA256SUMS
             '';
 
-            doCheck = false;
+            doCheck = true;
+          };
+          dilithium = pkgs.stdenv.mkDerivation {
+            name = "dilithium";
+            src = ./.;
+            propagatedBuildInputs = [ dilithium-lib ];
+
+            nativeBuildInputs = with pkgs; [
+              gcc
+              openssl
+            ];
+            checkInputs = with pkgs; [
+              bash
+            ];
+
+            buildPhase = ''
+              export DILITHIUM_INCLUDE_DIR="${dilithium-lib}/include"
+              export DILITHIUM_LIB_DIR="${dilithium-lib}/lib"
+              export LD_LIBRARY_PATH="${dilithium-lib}/lib:$LD_LIBRARY_PATH"
+
+              cd example
+              if [ "$(uname -m)" = "x86_64" ]; then
+                make -j$NIX_BUILD_CORES USE_AVX2=1
+              else
+                make -j$NIX_BUILD_CORES
+              fi
+            '';
+
+            installPhase = ''
+              mkdir -p $out/bin $out/lib
+              
+              # Install example binaries for all Dilithium variants
+              for variant in 2 3 5; do
+                cp dilithium$variant-keygen $out/bin/
+                cp dilithium$variant-sign $out/bin/
+                cp dilithium$variant-verify $out/bin/
+              done
+
+              # Install the main wrapper script
+              cp $src/example/dilithium $out/bin/
+              chmod +x $out/bin/dilithium
+
+              # Set up library path in the wrapper script
+              substituteInPlace $out/bin/dilithium \
+                --replace '#!/usr/bin/env bash' '#!${pkgs.bash}/bin/bash' \
+                --replace 'BINARY_DIR="$(dirname "$0")"' "BINARY_DIR=$out/bin" \
+                --replace 'export LD_LIBRARY_PATH=LD_LIBRARY_PATH' 'export LD_LIBRARY_PATH="${dilithium-lib}/lib:$LD_LIBRARY_PATH"'
+            '';
           };
       in
       {
         packages = {
           inherit dilithium;
           default = dilithium;
-
-          examples = pkgs.stdenv.mkDerivation {
-            name = "dilithium-examples";
-            src = ./.;
-            propagatedBuildInputs = [ dilithium ];
-
-            nativeBuildInputs = with pkgs; [
-              gcc
-              openssl
-            ];
-
-            buildPhase = ''
-              export DILITHIUM_INCLUDE_DIR="${dilithium}/include"
-              export DILITHIUM_LIB_DIR="${dilithium}/lib"
-              export LD_LIBRARY_PATH="${dilithium}/lib:$LD_LIBRARY_PATH"
-
-              cd example
-              make -j$NIX_BUILD_CORES
-            '';
-
-            installPhase = ''
-              mkdir -p $out/bin $out/lib
-              
-              # Install example binaries
-              cp generate_secretkey $out/bin/
-              cp create_signature $out/bin/
-              cp validate_signature $out/bin/
-
-              # Create wrapper scripts that set LD_LIBRARY_PATH
-              for bin in generate_secretkey create_signature validate_signature; do
-                mv $out/bin/$bin $out/bin/$bin.real
-                cat > $out/bin/$bin <<EOF
-#!${pkgs.bash}/bin/bash
-export LD_LIBRARY_PATH=$out/lib:\$LD_LIBRARY_PATH
-exec $out/bin/$bin.real "\$@"
-EOF
-                chmod +x $out/bin/$bin
-              done
-            '';
-          };
+          lib = dilithium-lib;
         };
 
         devShells.default = pkgs.mkShell {
           buildInputs = with pkgs; [
             clang
             openssl
+            dilithium-lib
             dilithium
           ];
           
           shellHook = ''
-            export CFLAGS="-I${pkgs.openssl.dev}/include -I${dilithium}/include"
+            export CFLAGS="-I${pkgs.openssl.dev}/include -I${dilithium-lib}/include"
             export NISTFLAGS="-I${pkgs.openssl.dev}/include"
-            export LDFLAGS="-L${pkgs.openssl.out}/lib -L${dilithium}/lib"
+            export LDFLAGS="-L${pkgs.openssl.out}/lib -L${dilithium-lib}/lib"
           '';
         };
       }

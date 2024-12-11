@@ -1,22 +1,51 @@
-#! /usr/bin/env bash
+#!/usr/bin/env bash
 
-echo "🔑 Generating keys..."
-# Generate both secret and public keys at once
-./generate_secretkey -p public.key -s secret.key
-echo "✅ Keys generated"
+# Test each Dilithium version
+for VERSION in 2 3 5; do
+    echo -e "\n🔰 Testing Dilithium${VERSION}"
+    echo "================================"
 
-echo -e "\n📝 Creating test message..."
-echo "Hello, World!" > message.txt
-echo "✅ Message created"
+    echo "🔑 Generating keys..."
+    ./dilithium --keygen -v ${VERSION} -p public${VERSION}.key -s secret${VERSION}.key
+    if [ $? -ne 0 ]; then
+        echo "❌ Key generation failed for version ${VERSION}"
+        exit 1
+    fi
+    echo "✅ Keys generated"
 
-echo -e "\n🖋️  Signing message..."
-./create_signature -s secret.key -p public.key -i message.txt > signature.bin
-echo "✅ Signature created"
+    echo -e "\n📝 Creating test message..."
+    echo "Hello, World! Testing Dilithium${VERSION}" > message${VERSION}.txt
+    echo "✅ Message created"
 
-echo -e "\n🔍 Verifying signature..."
-./validate_signature -p public.key -i message.txt -s signature.bin 2> /dev/null
-if [ $? -eq 0 ]; then
-    echo "✅ Signature is valid!"
-else
-    echo "❌ Signature verification failed!"
-fi
+    echo -e "\n🖋️  Signing message..."
+    ./dilithium --sign -v ${VERSION} -s secret${VERSION}.key -i message${VERSION}.txt -o signature${VERSION}.bin
+    if [ $? -ne 0 ]; then
+        echo "❌ Signing failed for version ${VERSION}"
+        exit 1
+    fi
+    echo "✅ Signature created"
+
+    echo -e "\n🔍 Verifying signature..."
+    ./dilithium --verify -v ${VERSION} -p public${VERSION}.key -i message${VERSION}.txt -S signature${VERSION}.bin
+    if [ $? -eq 0 ]; then
+        echo "✅ Signature is valid!"
+    else
+        echo "❌ Signature verification failed!"
+        exit 1
+    fi
+
+    echo -e "\n🧪 Testing negative case (modified message)..."
+    echo "Modified message" > message${VERSION}_modified.txt
+    ./dilithium --verify -v ${VERSION} -p public${VERSION}.key -i message${VERSION}_modified.txt -S signature${VERSION}.bin
+    if [ $? -ne 0 ]; then
+        echo "✅ Verification correctly failed for modified message"
+    else
+        echo "❌ Verification unexpectedly succeeded for modified message"
+        exit 1
+    fi
+
+    echo -e "\n🧹 Cleaning up version ${VERSION} test files..."
+    rm -f public${VERSION}.key secret${VERSION}.key message${VERSION}.txt message${VERSION}_modified.txt signature${VERSION}.bin
+done
+
+echo -e "\n🎉 All tests completed successfully!"

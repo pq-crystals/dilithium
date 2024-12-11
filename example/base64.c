@@ -18,12 +18,17 @@ int read_from_base64_file(const char* filepath, const char* header, const char* 
         return -1;
     }
 
-    // Skip header
     char line[MAX_LINE_LENGTH];
     if (!fgets(line, sizeof(line), file)) {
         fprintf(stderr, "Failed to read header\n");
         fclose(file);
         return -3;
+    }
+    // Verify header matches expected
+    if (strncmp(line, header, strlen(header)) != 0) {
+        fprintf(stderr, "Invalid header\n");
+        fclose(file);
+        return -2;
     }
 
     // Read base64 content into a temporary buffer
