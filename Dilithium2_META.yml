@@ -1,6 +1,7 @@
 name: Dilithium2
 type: signature
 claimed-nist-level: 2
+claimed-security: SUF-CMA
 length-public-key: 1312
 length-secret-key: 2560
 length-signature: 2420
