@@ -124,6 +124,8 @@ int crypto_sign_signature_internal(uint8_t *sig,
   poly cp;
   keccak_state state;
 
+  // Step 1: Unpack secret key
+  printf("[Sign Step 1] Unpack secret key (unpack_sk)\n");
   rho = seedbuf;
   tr = rho + SEEDBYTES;
   key = tr + TRBYTES;
@@ -131,7 +133,8 @@ int crypto_sign_signature_internal(uint8_t *sig,
   rhoprime = mu + CRHBYTES;
   unpack_sk(rho, tr, key, &t0, &s1, &s2, sk);
 
-  /* Compute mu = CRH(tr, pre, msg) */
+  // Step 2: Hash tr, pre, m to get mu
+  printf("[Sign Step 2] Hash tr, pre, m to get mu (SHAKE256)\n");
   shake256_init(&state);
   shake256_absorb(&state, tr, TRBYTES);
   shake256_absorb(&state, pre, prelen);
@@ -139,7 +142,8 @@ int crypto_sign_signature_internal(uint8_t *sig,
   shake256_finalize(&state);
   shake256_squeeze(mu, CRHBYTES, &state);
 
-  /* Compute rhoprime = CRH(key, rnd, mu) */
+  // Step 3: Hash key, rnd, mu to get rhoprime
+  printf("[Sign Step 3] Hash key, rnd, mu to get rhoprime (SHAKE256)\n");
   shake256_init(&state);
   shake256_absorb(&state, key, SEEDBYTES);
   shake256_absorb(&state, rnd, RNDBYTES);
@@ -147,24 +151,28 @@ int crypto_sign_signature_internal(uint8_t *sig,
   shake256_finalize(&state);
   shake256_squeeze(rhoprime, CRHBYTES, &state);
 
-  /* Expand matrix and transform vectors */
+  // Step 4: Expand matrix and transform vectors
+  printf("[Sign Step 4] Expand matrix A and NTT transform vectors\n");
   polyvec_matrix_expand(mat, rho);
   polyvecl_ntt(&s1);
   polyveck_ntt(&s2);
   polyveck_ntt(&t0);
 
 rej:
-  /* Sample intermediate vector y */
+  // Step 5: Sample vector y (rejection sampling loop)
+  printf("[Sign Step 5] Sample vector y (rejection sampling)\n");
   polyvecl_uniform_gamma1(&y, rhoprime, nonce++);
 
-  /* Matrix-vector multiplication */
+  // Step 6: Matrix-vector multiplication
+  printf("[Sign Step 6] Matrix-vector multiplication (z = y, NTT, matmul)\n");
   z = y;
   polyvecl_ntt(&z);
   polyvec_matrix_pointwise_montgomery(&w1, mat, &z);
   polyveck_reduce(&w1);
   polyveck_invntt_tomont(&w1);
 
-  /* Decompose w and call the random oracle */
+  // Step 7: Decompose w and call the random oracle
+  printf("[Sign Step 7] Decompose w and call random oracle\n");
   polyveck_caddq(&w1);
   polyveck_decompose(&w1, &w0, &w1);
   polyveck_pack_w1(sig, &w1);
@@ -177,38 +185,50 @@ rej:
   poly_challenge(&cp, sig);
   poly_ntt(&cp);
 
-  /* Compute z, reject if it reveals secret */
+  // Step 8: Compute z = y + c*s1
+  printf("[Sign Step 8] Compute z = y + c*s1\n");
   polyvecl_pointwise_poly_montgomery(&z, &cp, &s1);
   polyvecl_invntt_tomont(&z);
   polyvecl_add(&z, &z, &y);
   polyvecl_reduce(&z);
-  if(polyvecl_chknorm(&z, GAMMA1 - BETA))
+  if(polyvecl_chknorm(&z, GAMMA1 - BETA)) {
+    printf("[Sign Step 8] z rejected, retrying...\n");
     goto rej;
+  }
 
-  /* Check that subtracting cs2 does not change high bits of w and low bits
-   * do not reveal secret information */
+  // Step 9: Check w0' = w0 - c*s2
+  printf("[Sign Step 9] Check w0' = w0 - c*s2\n");
   polyveck_pointwise_poly_montgomery(&h, &cp, &s2);
   polyveck_invntt_tomont(&h);
   polyveck_sub(&w0, &w0, &h);
   polyveck_reduce(&w0);
-  if(polyveck_chknorm(&w0, GAMMA2 - BETA))
+  if(polyveck_chknorm(&w0, GAMMA2 - BETA)) {
+    printf("[Sign Step 9] w0' rejected, retrying...\n");
     goto rej;
+  }
 
-  /* Compute hints for w1 */
+  // Step 10: Compute hints for w1
+  printf("[Sign Step 10] Compute hints for w1\n");
   polyveck_pointwise_poly_montgomery(&h, &cp, &t0);
   polyveck_invntt_tomont(&h);
   polyveck_reduce(&h);
-  if(polyveck_chknorm(&h, GAMMA2))
+  if(polyveck_chknorm(&h, GAMMA2)) {
+    printf("[Sign Step 10] hint rejected, retrying...\n");
     goto rej;
+  }
 
   polyveck_add(&w0, &w0, &h);
   n = polyveck_make_hint(&h, &w0, &w1);
-  if(n > OMEGA)
+  if(n > OMEGA) {
+    printf("[Sign Step 11] Too many hints, retrying...\n");
     goto rej;
+  }
 
-  /* Write signature */
+  // Step 12: Pack signature
+  printf("[Sign Step 12] Pack signature (pack_sig)\n");
   pack_sig(sig, sig, &z, &h);
   *siglen = CRYPTO_BYTES;
+  printf("[Sign Done] Signature generated successfully.\n");
   return 0;
 }
 
