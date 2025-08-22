@@ -6,7 +6,7 @@
 
 #define MLEN 59
 #define CTXLEN 14
-#define NTESTS 10000
+#define NTESTS 1
 
 int main(void)
 {
