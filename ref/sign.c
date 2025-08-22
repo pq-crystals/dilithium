@@ -6,6 +6,7 @@
 #include "poly.h"
 #include "randombytes.h"
 #include "symmetric.h"
+#include <stdio.h>
 #include "fips202.h"
 
 /*************************************************
@@ -27,22 +28,29 @@ int crypto_sign_keypair(uint8_t *pk, uint8_t *sk) {
   polyvecl mat[K];
   polyvecl s1, s1hat;
   polyveck s2, t1, t0;
+  printf("[Step 1] Start key generation!\n");
 
   /* Get randomness for rho, rhoprime and key */
   randombytes(seedbuf, SEEDBYTES);
+  printf("[Step 2] Seed generated. First 8 bytes: ");
+  for(int i=0;i<8;i++) printf("%02x", seedbuf[i]);
+  printf("...\n");
   seedbuf[SEEDBYTES+0] = K;
   seedbuf[SEEDBYTES+1] = L;
   shake256(seedbuf, 2*SEEDBYTES + CRHBYTES, seedbuf, SEEDBYTES+2);
   rho = seedbuf;
   rhoprime = rho + SEEDBYTES;
   key = rhoprime + CRHBYTES;
+  printf("[Step 3] Derived rho, rhoprime, key.\n");
 
   /* Expand matrix */
   polyvec_matrix_expand(mat, rho);
+  printf("[Step 4] Matrix A expanded from rho.\n");
 
   /* Sample short vectors s1 and s2 */
   polyvecl_uniform_eta(&s1, rhoprime, 0);
   polyveck_uniform_eta(&s2, rhoprime, L);
+  printf("[Step 5] Secret vectors s1, s2 generated.\n");
 
   /* Matrix-vector multiplication */
   s1hat = s1;
@@ -50,18 +58,34 @@ int crypto_sign_keypair(uint8_t *pk, uint8_t *sk) {
   polyvec_matrix_pointwise_montgomery(&t1, mat, &s1hat);
   polyveck_reduce(&t1);
   polyveck_invntt_tomont(&t1);
+  printf("[Step 6] Computed t = As1.\n");
+  // In giá trị đầu của t1 (sau khi cộng s2 sẽ là t = As1 + s2)
+  printf("[Step 6] t (first 8 coeffs of t1): ");
+  for(int i=0;i<8;i++) printf("%08x ", t1.vec[0].coeffs[i]);
+  printf("...\n");
 
   /* Add error vector s2 */
   polyveck_add(&t1, &t1, &s2);
+  printf("[Step 7] Added s2 to t.\n");
 
   /* Extract t1 and write public key */
   polyveck_caddq(&t1);
   polyveck_power2round(&t1, &t0, &t1);
+  printf("[Step 8] Split t into t1, t0.\n");
+  printf("[Step 8] t1 (first 8 coeffs): ");
+  for(int i=0;i<8;i++) printf("%08x ", t1.vec[0].coeffs[i]);
+  printf("...\n");
+  printf("[Step 8] t0 (first 8 coeffs): ");
+  for(int i=0;i<8;i++) printf("%08x ", t0.vec[0].coeffs[i]);
+  printf("...\n");
   pack_pk(pk, rho, &t1);
+  printf("[Step 9] Packed public key pk.\n");
 
   /* Compute H(rho, t1) and write secret key */
   shake256(tr, TRBYTES, pk, CRYPTO_PUBLICKEYBYTES);
+  printf("[Step 10] Hashed pk to tr.\n");
   pack_sk(sk, rho, tr, key, &t0, &s1, &s2);
+  printf("[Step 11] Packed secret key sk.\n");
 
   return 0;
 }
