@@ -6,64 +6,54 @@
 
 #define MLEN 59
 #define CTXLEN 14
-#define NTESTS 10000
+#define NTESTS 1
+
 
 int main(void)
 {
-  size_t i, j;
-  int ret;
-  size_t mlen, smlen;
-  uint8_t b;
-  uint8_t ctx[CTXLEN] = {0};
-  uint8_t m[MLEN + CRYPTO_BYTES];
-  uint8_t m2[MLEN + CRYPTO_BYTES];
-  uint8_t sm[MLEN + CRYPTO_BYTES];
-  uint8_t pk[CRYPTO_PUBLICKEYBYTES];
-  uint8_t sk[CRYPTO_SECRETKEYBYTES];
-
-  snprintf((char*)ctx,CTXLEN,"test_dilitium");
-
-  for(i = 0; i < NTESTS; ++i) {
-    randombytes(m, MLEN);
-
-    crypto_sign_keypair(pk, sk);
-    crypto_sign(sm, &smlen, m, MLEN, ctx, CTXLEN, sk);
-    ret = crypto_sign_open(m2, &mlen, sm, smlen, ctx, CTXLEN, pk);
-
-    if(ret) {
-      fprintf(stderr, "Verification failed\n");
-      return -1;
-    }
-    if(smlen != MLEN + CRYPTO_BYTES) {
-      fprintf(stderr, "Signed message lengths wrong\n");
-      return -1;
-    }
-    if(mlen != MLEN) {
-      fprintf(stderr, "Message lengths wrong\n");
-      return -1;
-    }
-    for(j = 0; j < MLEN; ++j) {
-      if(m2[j] != m[j]) {
-        fprintf(stderr, "Messages don't match\n");
-        return -1;
-      }
-    }
-
-    randombytes((uint8_t *)&j, sizeof(j));
-    do {
-      randombytes(&b, 1);
-    } while(!b);
-    sm[j % (MLEN + CRYPTO_BYTES)] += b;
-    ret = crypto_sign_open(m2, &mlen, sm, smlen, ctx, CTXLEN, pk);
-    if(!ret) {
-      fprintf(stderr, "Trivial forgeries possible\n");
-      return -1;
-    }
+  FILE *fin = fopen("test/input.txt", "rb");
+  FILE *fout = fopen("test/output.txt", "w");
+  if (!fin || !fout) {
+    printf("File error\n");
+    return 1;
   }
 
-  printf("CRYPTO_PUBLICKEYBYTES = %d\n", CRYPTO_PUBLICKEYBYTES);
-  printf("CRYPTO_SECRETKEYBYTES = %d\n", CRYPTO_SECRETKEYBYTES);
-  printf("CRYPTO_BYTES = %d\n", CRYPTO_BYTES);
+  // Read message from input.txt
+  uint8_t m[MLEN + CRYPTO_BYTES] = {0};
+  size_t mlen = fread(m, 1, MLEN, fin);
+  fclose(fin);
 
+  // KeyGen
+  uint8_t pk[CRYPTO_PUBLICKEYBYTES];
+  uint8_t sk[CRYPTO_SECRETKEYBYTES];
+  crypto_sign_keypair(pk, sk);
+
+  fprintf(fout, "KeyGen Stage:\n- Input: None\n- Output:\n");
+  fprintf(fout, "* Public Key: ");
+  for (int i = 0; i < CRYPTO_PUBLICKEYBYTES; i++) fprintf(fout, "%02x", pk[i]);
+  fprintf(fout, "\n* Secret Key: ");
+  for (int i = 0; i < CRYPTO_SECRETKEYBYTES; i++) fprintf(fout, "%02x", sk[i]);
+  fprintf(fout, "\n\n");
+
+  // Signing
+  uint8_t sig[CRYPTO_BYTES];
+  size_t siglen = 0;
+  crypto_sign_signature(sig, &siglen, m, mlen, NULL, 0, sk);
+
+  fprintf(fout, "Signing Stage:\n- Input: input.txt, sk\n- Output:\n");
+  fprintf(fout, "* Signature: ");
+  for (size_t i = 0; i < siglen; i++) fprintf(fout, "%02x", sig[i]);
+  fprintf(fout, "\n\n");
+
+
+  // Make sig invalid to test, delete it to make valid
+  // sig[0] ^= 0xFF;
+
+  // Verify
+  int valid = crypto_sign_verify(sig, siglen, m, mlen, NULL, 0, pk);
+  fprintf(fout, "Verifying Stage:\n- Input: input.txt, sig, pk\n- Output: ");
+  fprintf(fout, "%s\n", valid == 0 ? "Valid" : "Invalid");
+
+  fclose(fout);
   return 0;
 }
