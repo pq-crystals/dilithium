@@ -157,32 +157,32 @@ int crypto_sign_signature_internal(uint8_t *sig,
   shake256_finalize(&state);
   shake256_squeeze(rhoprime, CRHBYTES, &state);
 
-  // Step 4: Expand matrix and transform vectors
-  printf("[Step 4] Expand matrix A and NTT transform vectors\n");
+  // Auxiliary: Expand matrix and transform vectors
+  printf("[Auxiliary] Expand matrix A and NTT transform vectors\n");
   polyvec_matrix_expand(mat, rho);
   polyvecl_ntt(&s1);
   polyveck_ntt(&s2);
   polyveck_ntt(&t0);
 
 rej:
-  // Step 5: Sample vector y (rejection sampling loop)
-  printf("[Step 5] Sample vector y (rejection sampling)\n");
+  // Step 4: Sample vector y (rejection sampling loop)
+  printf("[Step 4] Sample vector y (rejection sampling)\n");
   polyvecl_uniform_gamma1(&y, rhoprime, nonce++);
 
-  // Step 6: Matrix-vector multiplication
-  printf("[Step 6] Matrix-vector multiplication (z = y, NTT, matmul)\n");
+  // Step 5: Compute w1 and w0 from matrix A and vector y
+  printf("[Step 5] Compute w1 and w0 from matrix A and vector y\n");
   z = y;
   polyvecl_ntt(&z);
   polyvec_matrix_pointwise_montgomery(&w1, mat, &z);
   polyveck_reduce(&w1);
   polyveck_invntt_tomont(&w1);
 
-  // Step 7: Decompose w and call the random oracle
-  printf("[Step 7] Decompose w and call random oracle\n");
-  polyveck_caddq(&w1);
+  polyveck_caddq(&w1); 
   polyveck_decompose(&w1, &w0, &w1);
   polyveck_pack_w1(sig, &w1);
 
+  // Step 6: Create challenge c from cp (c_tilde)
+  printf("[Step 6] Create challenge c from cp (c')\n");
   shake256_init(&state);
   shake256_absorb(&state, mu, CRHBYTES);
   shake256_absorb(&state, sig, K*POLYW1_PACKEDBYTES);
@@ -191,19 +191,21 @@ rej:
   poly_challenge(&cp, sig);
   poly_ntt(&cp);
 
-  // Step 8: Compute z = y + c*s1
-  printf("[Step 8] Compute z = y + c*s1\n");
+  // Step 7: Compute z = y + c*s1
+  printf("[Step 7] Compute z = y + c*s1\n");
   polyvecl_pointwise_poly_montgomery(&z, &cp, &s1);
   polyvecl_invntt_tomont(&z);
   polyvecl_add(&z, &z, &y);
   polyvecl_reduce(&z);
+
+  printf("[Step 8] Check norm(z)\n");
   if(polyvecl_chknorm(&z, GAMMA1 - BETA)) {
     printf("[Step 8] z rejected, retrying...\n");
     goto rej;
   }
 
-  // Step 9: Check w0' = w0 - c*s2
-  printf("[Step 9] Check w0' = w0 - c*s2\n");
+  // Step 9: Compute and check w0' = w0 - c*s2
+  printf("[Step 9] Compute and check w0' = w0 - c*s2\n");
   polyveck_pointwise_poly_montgomery(&h, &cp, &s2);
   polyveck_invntt_tomont(&h);
   polyveck_sub(&w0, &w0, &h);
@@ -223,6 +225,7 @@ rej:
     goto rej;
   }
 
+  printf("[Step 11] Check hints for w0 and w1\n");
   polyveck_add(&w0, &w0, &h);
   n = polyveck_make_hint(&h, &w0, &w1);
   if(n > OMEGA) {
@@ -357,30 +360,35 @@ int crypto_sign_verify_internal(const uint8_t *sig,
 
   printf("\n====== VERIFYING STAGE ======\n\n");
 
-  // Step 1: Check signature length 
-  printf("[Step 1] Check signature length\n");
+  // Auxiliary: Check signature length
+  printf("[Auxiliary] Check signature length\n");
   if(siglen != CRYPTO_BYTES) {
-    printf("[Step 1] Invalid signature length!\n");
+    printf("[Auxiliary] Invalid signature length!\n");
     return -1;
   }
 
-  // Step 2: Unpack pk and sig 
-  printf("[Step 2] Unpack pk and sig (unpack_pk, unpack_sig)\n");
+  // Step 1: Unpack pk and sig 
+  printf("[Step 1] Unpack pk and sig (unpack_pk, unpack_sig)\n");
   unpack_pk(rho, &t1, pk);
   if(unpack_sig(c, &z, &h, sig)) {
-    printf("[Step 2] unpack_sig failed!\n");
+    printf("[Step 1] unpack_sig failed!\n");
     return -1;
   }
 
-  // Step 3: Check z 
-  printf("[Step 3] Check z (polyvecl_chknorm)\n");
+  // Step 2: Check z 
+  printf("[Step 2] Check z (polyvecl_chknorm)\n");
   if(polyvecl_chknorm(&z, GAMMA1 - BETA)) {
-    printf("[Step 3] z out of bounds!\n");
+    printf("[Step 2] z out of bounds!\n");
     return -1;
   }
 
-  // Step 4: Compute mu = CRH(H(rho, t1), pre, msg)
-  printf("[Step 4] Compute mu = CRH(H(rho, t1), pre, msg)\n");
+  // Step 3: Reconstruct matrix A
+  printf("[Step 3] Reconstruct matrix A\n");
+  poly_challenge(&cp, c);
+  polyvec_matrix_expand(mat, rho);
+
+  // Step 4: Reconstruct mu = CRH(H(rho, t1), pre, msg)
+  printf("[Step 4] Reconstruct mu = CRH(H(rho, t1), pre, msg)\n");
   shake256(mu, TRBYTES, pk, CRYPTO_PUBLICKEYBYTES);
   shake256_init(&state);
   shake256_absorb(&state, mu, TRBYTES);
@@ -389,11 +397,8 @@ int crypto_sign_verify_internal(const uint8_t *sig,
   shake256_finalize(&state);
   shake256_squeeze(mu, CRHBYTES, &state);
 
-  // Step 5: Recreate matrix A and compute A*z - c*t1
-  printf("[Step 5] Recreate matrix A and compute A*z - c*t1\n");
-  poly_challenge(&cp, c);
-  polyvec_matrix_expand(mat, rho);
-
+  // Step 5: Compute w1' = A*z - c*t1
+  printf("[Step 5] Compute w1' = A*z - c*t1 to reconstruct w1\n");
   polyvecl_ntt(&z);
   polyvec_matrix_pointwise_montgomery(&w1, mat, &z);
 
@@ -407,26 +412,29 @@ int crypto_sign_verify_internal(const uint8_t *sig,
   polyveck_invntt_tomont(&w1);
 
   // Step 6: Use hint to reconstruct w1 
-  printf("[Step 6] Use hint to reconstruct w1\n");
+  printf("[Step 6] Use hint to reconstruct w1 without knowing secret vectors\n");
   polyveck_caddq(&w1);
   polyveck_use_hint(&w1, &w1, &h);
   polyveck_pack_w1(buf, &w1);
 
-  // Step 7: Recompute challenge c' and compare with c
-  printf("[Step 7] Recompute challenge c' and compare with c\n");
+  // Step 7: Recompute challenge c'' (c_tilde_prime)
+  printf("[Step 7] Recompute challenge c''\n");
   shake256_init(&state);
   shake256_absorb(&state, mu, CRHBYTES);
   shake256_absorb(&state, buf, K*POLYW1_PACKEDBYTES);
   shake256_finalize(&state);
   shake256_squeeze(c2, CTILDEBYTES, &state);
+
+  // Step 8: Compare challenges
+  printf("[Step 8] Compare c' (from sig) and c'' (recomputed) \n");
   for(i = 0; i < CTILDEBYTES; ++i) {
     if(c[i] != c2[i]) {
-      printf("[Step 7] Challenge mismatch, verification failed!\n");
+      printf("[Done] Challenge mismatch, verification failed!\n");
       return -1;
     }
   }
 
-  printf("[Done] Signature verification successful.\n");
+  printf("[Done] Signature verification successful!\n");
   return 0;
 }
 

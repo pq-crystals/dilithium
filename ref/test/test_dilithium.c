@@ -47,7 +47,7 @@ int main(void)
 
 
   // Make sig invalid to test, delete it to make valid
-  sig[0] ^= 0xFF;
+  // sig[0] ^= 0xFF;
 
   // Verify
   int valid = crypto_sign_verify(sig, siglen, m, mlen, NULL, 0, pk);
