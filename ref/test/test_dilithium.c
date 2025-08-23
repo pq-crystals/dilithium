@@ -4,10 +4,7 @@
 #include "../randombytes.h"
 #include "../sign.h"
 
-#define MLEN 59
-#define CTXLEN 14
-#define NTESTS 1
-
+#define MLEN 1200 // limit input for testing
 
 int main(void)
 {
