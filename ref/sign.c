@@ -29,10 +29,8 @@ int crypto_sign_keypair(uint8_t *pk, uint8_t *sk) {
   polyvecl s1, s1hat;
   polyveck s2, t1, t0;
 
-  printf("==============================\n");
-  printf("        KEY GENERATION STAGE        \n");
-  printf("==============================\n\n");
-
+  printf("\n====== KEY GENERATION STAGE ======\n\n");
+ 
   /* Get randomness for rho, rhoprime and key */
   randombytes(seedbuf, SEEDBYTES);
   printf("[Step 1] Seed generated. First 8 bytes: ");
@@ -92,13 +90,6 @@ int crypto_sign_keypair(uint8_t *pk, uint8_t *sk) {
   printf("[Step 9] Packed secret key sk.\n");
   printf("[Done] Key generation completed successfully.\n");
 
-  /* Print pk and sk value: */
-  printf("Public key (pk): ");
-  for(int i=0;i<CRYPTO_PUBLICKEYBYTES;i++) printf("%02x", pk[i]);
-  printf("...\n");
-  printf("Secret key (sk): ");
-  for(int i=0;i<CRYPTO_SECRETKEYBYTES;i++) printf("%02x", sk[i]);
-  printf("...\n");
   return 0;
 }
 
@@ -137,9 +128,7 @@ int crypto_sign_signature_internal(uint8_t *sig,
   poly cp;
   keccak_state state;
 
-  printf("\n==============================\n");
-  printf("        SIGNING STAGE         \n");
-  printf("==============================\n\n");
+  printf("\n====== SIGNING STAGE ======\n\n");
 
   // Step 1: Unpack secret key
   printf("[Step 1] Unpack secret key (unpack_sk)\n");
@@ -366,9 +355,7 @@ int crypto_sign_verify_internal(const uint8_t *sig,
   polyveck t1, w1, h;
   keccak_state state;
 
-  printf("\n==============================\n");
-  printf("        VERIFY STAGE         \n");
-  printf("==============================\n\n");
+  printf("\n====== VERIFYING STAGE ======\n\n");
 
   // Step 1: Check signature length 
   printf("[Step 1] Check signature length\n");
