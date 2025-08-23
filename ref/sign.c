@@ -91,6 +91,14 @@ int crypto_sign_keypair(uint8_t *pk, uint8_t *sk) {
   pack_sk(sk, rho, tr, key, &t0, &s1, &s2);
   printf("[Step 9] Packed secret key sk.\n");
   printf("[Done] Key generation completed successfully.\n");
+
+  /* Print pk and sk value: */
+  printf("Public key (pk): ");
+  for(int i=0;i<CRYPTO_PUBLICKEYBYTES;i++) printf("%02x", pk[i]);
+  printf("...\n");
+  printf("Secret key (sk): ");
+  for(int i=0;i<CRYPTO_SECRETKEYBYTES;i++) printf("%02x", sk[i]);
+  printf("...\n");
   return 0;
 }
 
