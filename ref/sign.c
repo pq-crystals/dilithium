@@ -44,7 +44,7 @@ int crypto_sign_keypair(uint8_t *pk, uint8_t *sk) {
   rho = seedbuf;
   rhoprime = rho + SEEDBYTES;
   key = rhoprime + CRHBYTES;
-  printf("[Step 2] Derived rho, rhoprime, key.\n");
+  printf("[Step 2] Derived rho, rhoprime, key from SHAKE256(seedbuf).\n");
 
   /* Expand matrix */
   polyvec_matrix_expand(mat, rho);
@@ -56,39 +56,40 @@ int crypto_sign_keypair(uint8_t *pk, uint8_t *sk) {
   printf("[Step 4] Secret vectors s1, s2 generated.\n");
 
   /* Matrix-vector multiplication */
+  printf("[Step 5] Compute t = A*s1 + s2\n");
   s1hat = s1;
   polyvecl_ntt(&s1hat);
   polyvec_matrix_pointwise_montgomery(&t1, mat, &s1hat);
   polyveck_reduce(&t1);
   polyveck_invntt_tomont(&t1);
-  printf("[Step 5] Computed t = As1.\n");
-  // In giá trị đầu của t1 (sau khi cộng s2 sẽ là t = As1 + s2)
+  printf("[Step 5] Computed t = A*s1.\n");
+  /* Print the initial values of t1 (after adding s2, t = A*s1 + s2) */
   printf("[Step 5] t (first 8 coeffs of t1): ");
   for(int i=0;i<8;i++) printf("%08x ", t1.vec[0].coeffs[i]);
   printf("...\n");
 
   /* Add error vector s2 */
   polyveck_add(&t1, &t1, &s2);
-  printf("[Step 6] Added s2 to t.\n");
+  printf("[Step 5] Added s2 to t.\n");
 
   /* Extract t1 and write public key */
   polyveck_caddq(&t1);
   polyveck_power2round(&t1, &t0, &t1);
-  printf("[Step 7] Split t into t1, t0.\n");
-  printf("[Step 7] t1 (first 8 coeffs): ");
+  printf("[Step 6] Split t into t1, t0.\n");
+  printf("[Step 6] t1 (first 8 coeffs): ");
   for(int i=0;i<8;i++) printf("%08x ", t1.vec[0].coeffs[i]);
   printf("...\n");
-  printf("[Step 7] t0 (first 8 coeffs): ");
+  printf("[Step 6] t0 (first 8 coeffs): ");
   for(int i=0;i<8;i++) printf("%08x ", t0.vec[0].coeffs[i]);
   printf("...\n");
   pack_pk(pk, rho, &t1);
-  printf("[Step 8] Packed public key pk.\n");
+  printf("[Step 7] Packed public key pk.\n");
 
   /* Compute H(rho, t1) and write secret key */
   shake256(tr, TRBYTES, pk, CRYPTO_PUBLICKEYBYTES);
-  printf("[Step 9] Hashed pk to tr.\n");
+  printf("[Step 8] Hashed pk to tr.\n");
   pack_sk(sk, rho, tr, key, &t0, &s1, &s2);
-  printf("[Step 10] Packed secret key sk.\n");
+  printf("[Step 9] Packed secret key sk.\n");
   printf("[Done] Key generation completed successfully.\n");
   return 0;
 }
@@ -393,8 +394,8 @@ int crypto_sign_verify_internal(const uint8_t *sig,
   shake256_finalize(&state);
   shake256_squeeze(mu, CRHBYTES, &state);
 
-  // Step 5: Recreate matrix A and compute Az - c.t1
-  printf("[Step 5] Recreate matrix A and compute Az - c.t1\n");
+  // Step 5: Recreate matrix A and compute A*z - c*t1
+  printf("[Step 5] Recreate matrix A and compute A*z - c*t1\n");
   poly_challenge(&cp, c);
   polyvec_matrix_expand(mat, rho);
 
