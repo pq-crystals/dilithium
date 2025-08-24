@@ -161,7 +161,6 @@ int crypto_sign_signature_internal(uint8_t *sig,
   shake256_squeeze(rhoprime, CRHBYTES, &state);
 
   // Auxiliary: Expand matrix and transform vectors
-  printf("[Auxiliary] Expand matrix A and NTT transform vectors\n");
   polyvec_matrix_expand(mat, rho);
   polyvecl_ntt(&s1);
   polyveck_ntt(&s2);
@@ -169,7 +168,7 @@ int crypto_sign_signature_internal(uint8_t *sig,
 
 rej:
   // Step 4: Sample vector y (rejection sampling loop)
-  printf("[Step 4] Sample vector y (rejection sampling)\n");
+  printf("[Step 4] Create sample vector y (start rejection sampling loop)\n");
   polyvecl_uniform_gamma1(&y, rhoprime, nonce++);
 
   // Step 5: Compute w1 and w0 from matrix A and vector y
@@ -364,9 +363,9 @@ int crypto_sign_verify_internal(const uint8_t *sig,
   printf("\n====== VERIFYING STAGE ======\n\n");
 
   // Auxiliary: Check signature length
-  printf("[Auxiliary] Check signature length\n");
+  printf("Check signature length\n");
   if(siglen != CRYPTO_BYTES) {
-    printf("[Auxiliary] Invalid signature length!\n");
+    printf("Invalid signature length!\n");
     return -1;
   }
 
