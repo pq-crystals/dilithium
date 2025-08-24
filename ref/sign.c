@@ -61,7 +61,7 @@ int crypto_sign_keypair(uint8_t *pk, uint8_t *sk) {
   polyveck_reduce(&t1);
   polyveck_invntt_tomont(&t1);
   printf("[Step 5] Computed t = A*s1.\n");
-  /* Print the initial values of t1 (after adding s2, t = A*s1 + s2) */
+  /* Print the initial values of t1 */
   printf("[Step 5] t (first 8 coeffs of t1): ");
   for(int i=0;i<8;i++) printf("%08x ", t1.vec[0].coeffs[i]);
   printf("...\n");
@@ -69,6 +69,9 @@ int crypto_sign_keypair(uint8_t *pk, uint8_t *sk) {
   /* Add error vector s2 */
   polyveck_add(&t1, &t1, &s2);
   printf("[Step 5] Added s2 to t.\n");
+  printf("[Step 5] t (first 8 coeffs of t1 after adding s2): ");
+  for(int i=0;i<8;i++) printf("%08x ", t1.vec[0].coeffs[i]);
+  printf("...\n");
 
   /* Extract t1 and write public key */
   polyveck_caddq(&t1);
