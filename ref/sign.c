@@ -91,7 +91,7 @@ int crypto_sign_keypair(uint8_t *pk, uint8_t *sk) {
   printf("[Step 8] Hashed pk to tr.\n");
   pack_sk(sk, rho, tr, key, &t0, &s1, &s2);
   printf("[Step 9] Packed secret key sk.\n");
-  printf("[Done] Key generation completed successfully.\n");
+  printf("[Done] Key generation completed successfully!\n");
 
   return 0;
 }
@@ -239,7 +239,7 @@ rej:
   printf("[Step 12] Pack signature (pack_sig)\n");
   pack_sig(sig, sig, &z, &h);
   *siglen = CRYPTO_BYTES;
-  printf("[Done] Signature generated successfully.\n");
+  printf("[Done] Signature generated successfully!\n");
   return 0;
 }
 
