@@ -61,7 +61,7 @@ int crypto_sign_keypair(uint8_t *pk, uint8_t *sk) {
   polyveck_reduce(&t1);
   polyveck_invntt_tomont(&t1);
   printf("[Step 5] Computed t = A*s1.\n");
-  /* Print the initial values of t1 (after adding s2, t = A*s1 + s2) */
+  /* Print the initial values of t1 */
   printf("[Step 5] t (first 8 coeffs of t1): ");
   for(int i=0;i<8;i++) printf("%08x ", t1.vec[0].coeffs[i]);
   printf("...\n");
@@ -69,6 +69,9 @@ int crypto_sign_keypair(uint8_t *pk, uint8_t *sk) {
   /* Add error vector s2 */
   polyveck_add(&t1, &t1, &s2);
   printf("[Step 5] Added s2 to t.\n");
+  printf("[Step 5] t (first 8 coeffs of t1 after adding s2): ");
+  for(int i=0;i<8;i++) printf("%08x ", t1.vec[0].coeffs[i]);
+  printf("...\n");
 
   /* Extract t1 and write public key */
   polyveck_caddq(&t1);
@@ -88,7 +91,7 @@ int crypto_sign_keypair(uint8_t *pk, uint8_t *sk) {
   printf("[Step 8] Hashed pk to tr.\n");
   pack_sk(sk, rho, tr, key, &t0, &s1, &s2);
   printf("[Step 9] Packed secret key sk.\n");
-  printf("[Done] Key generation completed successfully.\n");
+  printf("[Done] Key generation completed successfully!\n");
 
   return 0;
 }
@@ -158,7 +161,6 @@ int crypto_sign_signature_internal(uint8_t *sig,
   shake256_squeeze(rhoprime, CRHBYTES, &state);
 
   // Auxiliary: Expand matrix and transform vectors
-  printf("[Auxiliary] Expand matrix A and NTT transform vectors\n");
   polyvec_matrix_expand(mat, rho);
   polyvecl_ntt(&s1);
   polyveck_ntt(&s2);
@@ -166,7 +168,7 @@ int crypto_sign_signature_internal(uint8_t *sig,
 
 rej:
   // Step 4: Sample vector y (rejection sampling loop)
-  printf("[Step 4] Sample vector y (rejection sampling)\n");
+  printf("[Step 4] Create sample vector y (start rejection sampling loop)\n");
   polyvecl_uniform_gamma1(&y, rhoprime, nonce++);
 
   // Step 5: Compute w1 and w0 from matrix A and vector y
@@ -237,7 +239,7 @@ rej:
   printf("[Step 12] Pack signature (pack_sig)\n");
   pack_sig(sig, sig, &z, &h);
   *siglen = CRYPTO_BYTES;
-  printf("[Done] Signature generated successfully.\n");
+  printf("[Done] Signature generated successfully!\n");
   return 0;
 }
 
@@ -361,9 +363,9 @@ int crypto_sign_verify_internal(const uint8_t *sig,
   printf("\n====== VERIFYING STAGE ======\n\n");
 
   // Auxiliary: Check signature length
-  printf("[Auxiliary] Check signature length\n");
+  printf("Check signature length\n");
   if(siglen != CRYPTO_BYTES) {
-    printf("[Auxiliary] Invalid signature length!\n");
+    printf("Invalid signature length!\n");
     return -1;
   }
 
