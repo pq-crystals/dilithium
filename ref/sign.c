@@ -1,4 +1,7 @@
+#define _POSIX_C_SOURCE 199309L // POSIX compliance
 #include <stdint.h>
+#include <stdio.h>
+#include <time.h>
 #include "params.h"
 #include "sign.h"
 #include "packing.h"
@@ -6,7 +9,6 @@
 #include "poly.h"
 #include "randombytes.h"
 #include "symmetric.h"
-#include <stdio.h>
 #include "fips202.h"
 
 /*************************************************
@@ -29,8 +31,10 @@ int crypto_sign_keypair(uint8_t *pk, uint8_t *sk) {
   polyvecl s1, s1hat;
   polyveck s2, t1, t0;
 
+  struct timespec start, end;
+  clock_gettime(CLOCK_MONOTONIC, &start);
+
   printf("\n====== KEY GENERATION STAGE ======\n\n");
- 
   /* Get randomness for rho, rhoprime and key */
   randombytes(seedbuf, SEEDBYTES);
   printf("[Step 1] Seed generated. First 8 bytes: ");
@@ -93,6 +97,9 @@ int crypto_sign_keypair(uint8_t *pk, uint8_t *sk) {
   printf("[Step 9] Packed secret key sk.\n");
   printf("[Done] Key generation completed successfully!\n");
 
+  clock_gettime(CLOCK_MONOTONIC, &end);
+  double elapsed = (end.tv_sec - start.tv_sec) + (end.tv_nsec - start.tv_nsec) / 1e9;
+  printf("[Timing] Key generation time: %.6f seconds\n", elapsed);
   return 0;
 }
 
@@ -131,8 +138,10 @@ int crypto_sign_signature_internal(uint8_t *sig,
   poly cp;
   keccak_state state;
 
-  printf("\n====== SIGNING STAGE ======\n\n");
+  struct timespec start, end;
+  clock_gettime(CLOCK_MONOTONIC, &start);
 
+  printf("\n====== SIGNING STAGE ======\n\n");
   // Step 1: Unpack secret key
   printf("[Step 1] Unpack secret key (unpack_sk)\n");
   rho = seedbuf;
@@ -240,6 +249,10 @@ rej:
   pack_sig(sig, sig, &z, &h);
   *siglen = CRYPTO_BYTES;
   printf("[Done] Signature generated successfully!\n");
+
+  clock_gettime(CLOCK_MONOTONIC, &end);
+  double elapsed = (end.tv_sec - start.tv_sec) + (end.tv_nsec - start.tv_nsec) / 1e9;
+  printf("[Timing] Signing time: %.6f seconds\n", elapsed);
   return 0;
 }
 
@@ -360,8 +373,10 @@ int crypto_sign_verify_internal(const uint8_t *sig,
   polyveck t1, w1, h;
   keccak_state state;
 
-  printf("\n====== VERIFYING STAGE ======\n\n");
+  struct timespec start, end;
+  clock_gettime(CLOCK_MONOTONIC, &start);
 
+  printf("\n====== VERIFYING STAGE ======\n\n");
   // Auxiliary: Check signature length
   printf("Check signature length\n");
   if(siglen != CRYPTO_BYTES) {
@@ -437,6 +452,10 @@ int crypto_sign_verify_internal(const uint8_t *sig,
   }
 
   printf("[Done] Signature verification successful!\n");
+  clock_gettime(CLOCK_MONOTONIC, &end);
+  double elapsed = (end.tv_sec - start.tv_sec) + (end.tv_nsec - start.tv_nsec) / 1e9;
+  printf("[Timing] Verification time: %.6f seconds\n", elapsed);
+  printf("\n"); 
   return 0;
 }
 
