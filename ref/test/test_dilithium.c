@@ -57,6 +57,9 @@ int main(void)
   // Print testing information
   printf("\nTesting Information:\n");
   print_timing_info();
+  printf("Public key bytes = %d\n", CRYPTO_PUBLICKEYBYTES);
+  printf("Secret key bytes = %d\n", CRYPTO_SECRETKEYBYTES);
+  printf("Signature bytes = %d\n", CRYPTO_BYTES);
 
   return 0;
 }
