@@ -52,7 +52,11 @@ int main(void)
   int valid = crypto_sign_verify(sig, siglen, m, mlen, NULL, 0, pk);
   fprintf(fout, "Verifying Stage:\n- Input: input.txt, sig, pk\n- Output: ");
   fprintf(fout, "%s\n", valid == 0 ? "Valid" : "Invalid");
-
   fclose(fout);
+
+  // Print testing information
+  printf("\nTesting Information:\n");
+  print_timing_info();
+
   return 0;
 }
