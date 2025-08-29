@@ -35,23 +35,29 @@ int main(void)
   // Make secret key sk invalid to test
   // sk[0] ^= 0xFF;
 
-  // Signing
-  uint8_t sig[CRYPTO_BYTES];
-  size_t siglen = 0;
-  crypto_sign_signature(sig, &siglen, m, mlen, NULL, 0, sk);
+  // Signing (NIST API)
+  uint8_t sm[MLEN + CRYPTO_BYTES];
+  size_t smlen = 0;
+  crypto_sign(sm, &smlen, m, mlen, NULL, 0, sk);
 
-  fprintf(fout, "Signing Stage:\n- Input: input.txt, sk\n- Output:\n");
-  fprintf(fout, "* Signature: ");
-  for (size_t i = 0; i < siglen; i++) fprintf(fout, "%02x", sig[i]);
+  fprintf(fout, "Signing Stage (NIST API):\n- Input: input.txt, sk\n- Output:\n");
+  fprintf(fout, "* Signed Message: ");
+  for (size_t i = 0; i < smlen; i++) fprintf(fout, "%02x", sm[i]);
   fprintf(fout, "\n\n");
 
-  // Make signature sig invalid to test
-  // sig[0] ^= 0xFF;
+  // Make signed message sm invalid to test
+  // sm[0] ^= 0xFF;
 
-  // Verify
-  int valid = crypto_sign_verify(sig, siglen, m, mlen, NULL, 0, pk);
-  fprintf(fout, "Verifying Stage:\n- Input: input.txt, sig, pk\n- Output: ");
-  fprintf(fout, "%s\n", valid == 0 ? "Valid" : "Invalid");
+  // Open/Verify (NIST API)
+  uint8_t m2[MLEN + CRYPTO_BYTES] = {0};
+  size_t m2len = 0;
+  int valid = crypto_sign_open(m2, &m2len, sm, smlen, NULL, 0, pk);
+  fprintf(fout, "Verifying Stage (NIST API):\n- Input: signed message, pk\n- Output: %s\n", valid == 0 ? "Valid" : "Invalid");
+  if (valid == 0) {
+    fprintf(fout, "* Opened Message: ");
+    for (size_t i = 0; i < m2len; i++) fprintf(fout, "%02x", m2[i]);
+    fprintf(fout, "\n");
+  }
   fclose(fout);
 
   // Print testing information

@@ -12,9 +12,11 @@
 #include "fips202.h"
 
 // global timing variables
+double g_time_temp;
 double g_time_keygen = 0.0;
 double g_time_sign = 0.0;
 double g_time_verify = 0.0;
+double g_time_all = 0.0; // all time include packing and unpacking stage
 
 /*************************************************
 * Name:        crypto_sign_keypair
@@ -493,6 +495,9 @@ int crypto_sign(uint8_t *sm,
                 size_t ctxlen,
                 const uint8_t *sk)
 {
+  struct timespec start, end;
+  clock_gettime(CLOCK_MONOTONIC, &start);
+
   int ret;
   size_t i;
 
@@ -500,6 +505,9 @@ int crypto_sign(uint8_t *sm,
     sm[CRYPTO_BYTES + mlen - 1 - i] = m[mlen - 1 - i];
   ret = crypto_sign_signature(sm, smlen, sm + CRYPTO_BYTES, mlen, ctx, ctxlen, sk);
   *smlen += mlen;
+
+  clock_gettime(CLOCK_MONOTONIC, &end);
+  g_time_all += (end.tv_sec - start.tv_sec) + (end.tv_nsec - start.tv_nsec) / 1e9;
 
   return ret;
 }
@@ -528,6 +536,9 @@ int crypto_sign_open(uint8_t *m,
                      size_t ctxlen,
                      const uint8_t *pk)
 {
+  struct timespec start, end;
+  clock_gettime(CLOCK_MONOTONIC, &start);
+
   size_t i;
 
   if(smlen < CRYPTO_BYTES)
@@ -540,6 +551,8 @@ int crypto_sign_open(uint8_t *m,
     /* All good, copy msg, return 0 */
     for(i = 0; i < *mlen; ++i)
       m[i] = sm[CRYPTO_BYTES + i];
+    clock_gettime(CLOCK_MONOTONIC, &end);
+    g_time_all += (end.tv_sec - start.tv_sec) + (end.tv_nsec - start.tv_nsec) / 1e9;
     return 0;
   }
 
@@ -549,14 +562,20 @@ badsig:
   for(i = 0; i < smlen; ++i)
     m[i] = 0;
 
+  clock_gettime(CLOCK_MONOTONIC, &end);
+  g_time_all += (end.tv_sec - start.tv_sec) + (end.tv_nsec - start.tv_nsec) / 1e9;
+
   return -1;
 }
 
 // For testing: print timing information
 void print_timing_info(void)
 {
+  g_time_temp = g_time_keygen + g_time_sign + g_time_verify;
   printf("Total KeyGen time: %.6f seconds (%.2f ms)\n", g_time_keygen, g_time_keygen * 1000);
   printf("Total Signing time: %.6f seconds (%.2f ms)\n", g_time_sign, g_time_sign * 1000);
   printf("Total Verification time: %.6f seconds (%.2f ms)\n", g_time_verify, g_time_verify * 1000);
+  printf("Total time (not include packing and unpacking): %.20f seconds (%.2f ms)\n", g_time_temp, g_time_temp * 1000);
+  printf("Total time (NIST compliance): %.20f seconds (%.2f ms)\n", g_time_all, g_time_all * 1000);
 }
 
