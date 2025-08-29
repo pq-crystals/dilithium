@@ -11,6 +11,11 @@
 #include "symmetric.h"
 #include "fips202.h"
 
+// global timing variables
+double g_time_keygen = 0.0;
+double g_time_sign = 0.0;
+double g_time_verify = 0.0;
+
 /*************************************************
 * Name:        crypto_sign_keypair
 *
@@ -23,16 +28,17 @@
 *
 * Returns 0 (success)
 **************************************************/
-int crypto_sign_keypair(uint8_t *pk, uint8_t *sk) {
+int crypto_sign_keypair(uint8_t *pk, uint8_t *sk) 
+{
+  struct timespec start, end;
+  clock_gettime(CLOCK_MONOTONIC, &start);
+
   uint8_t seedbuf[2*SEEDBYTES + CRHBYTES];
   uint8_t tr[TRBYTES];
   const uint8_t *rho, *rhoprime, *key;
   polyvecl mat[K];
   polyvecl s1, s1hat;
   polyveck s2, t1, t0;
-
-  struct timespec start, end;
-  clock_gettime(CLOCK_MONOTONIC, &start);
 
   printf("\n====== KEY GENERATION STAGE ======\n\n");
   /* Get randomness for rho, rhoprime and key */
@@ -65,8 +71,7 @@ int crypto_sign_keypair(uint8_t *pk, uint8_t *sk) {
   polyveck_reduce(&t1);
   polyveck_invntt_tomont(&t1);
   printf("[Step 5] Computed t = A*s1.\n");
-  /* Print the initial values of t1 */
-  printf("[Step 5] t (first 8 coeffs of t1): ");
+  printf("[Step 5] t (first 8 coeffs of t1): "); // Print the initial values of t1
   for(int i=0;i<8;i++) printf("%08x ", t1.vec[0].coeffs[i]);
   printf("...\n");
 
@@ -98,8 +103,8 @@ int crypto_sign_keypair(uint8_t *pk, uint8_t *sk) {
   printf("[Done] Key generation completed successfully!\n");
 
   clock_gettime(CLOCK_MONOTONIC, &end);
-  double elapsed = (end.tv_sec - start.tv_sec) + (end.tv_nsec - start.tv_nsec) / 1e9;
-  printf("[Timing] Key generation time: %.6f seconds\n", elapsed);
+  g_time_keygen += (end.tv_sec - start.tv_sec) + (end.tv_nsec - start.tv_nsec) / 1e9;
+
   return 0;
 }
 
@@ -127,7 +132,7 @@ int crypto_sign_signature_internal(uint8_t *sig,
                                    const uint8_t *pre,
                                    size_t prelen,
                                    const uint8_t rnd[RNDBYTES],
-                                   const uint8_t *sk)
+                                   const uint8_t *sk) 
 {
   unsigned int n;
   uint8_t seedbuf[2*SEEDBYTES + TRBYTES + 2*CRHBYTES];
@@ -137,9 +142,6 @@ int crypto_sign_signature_internal(uint8_t *sig,
   polyveck t0, s2, w1, w0, h;
   poly cp;
   keccak_state state;
-
-  struct timespec start, end;
-  clock_gettime(CLOCK_MONOTONIC, &start);
 
   printf("\n====== SIGNING STAGE ======\n\n");
   // Step 1: Unpack secret key
@@ -176,6 +178,7 @@ int crypto_sign_signature_internal(uint8_t *sig,
   polyveck_ntt(&t0);
 
 rej:
+
   // Step 4: Sample vector y (rejection sampling loop)
   printf("[Step 4] Create sample vector y (start rejection sampling loop)\n");
   polyvecl_uniform_gamma1(&y, rhoprime, nonce++);
@@ -248,11 +251,7 @@ rej:
   printf("[Step 12] Pack signature (pack_sig)\n");
   pack_sig(sig, sig, &z, &h);
   *siglen = CRYPTO_BYTES;
-  printf("[Done] Signature generated successfully!\n");
 
-  clock_gettime(CLOCK_MONOTONIC, &end);
-  double elapsed = (end.tv_sec - start.tv_sec) + (end.tv_nsec - start.tv_nsec) / 1e9;
-  printf("[Timing] Signing time: %.6f seconds\n", elapsed);
   return 0;
 }
 
@@ -277,8 +276,11 @@ int crypto_sign_signature(uint8_t *sig,
                           size_t mlen,
                           const uint8_t *ctx,
                           size_t ctxlen,
-                          const uint8_t *sk)
+                          const uint8_t *sk) 
 {
+  struct timespec start, end;
+  clock_gettime(CLOCK_MONOTONIC, &start);
+
   size_t i;
   uint8_t pre[257];
   uint8_t rnd[RNDBYTES];
@@ -292,51 +294,20 @@ int crypto_sign_signature(uint8_t *sig,
   for(i = 0; i < ctxlen; i++)
     pre[2 + i] = ctx[i];
 
-#ifdef DILITHIUM_RANDOMIZED_SIGNING
-  randombytes(rnd, RNDBYTES);
-#else
-  for(i=0;i<RNDBYTES;i++)
-    rnd[i] = 0;
-#endif
+  #ifdef DILITHIUM_RANDOMIZED_SIGNING
+    randombytes(rnd, RNDBYTES);
+  #else
+    for(i=0;i<RNDBYTES;i++)
+      rnd[i] = 0;
+  #endif
 
   crypto_sign_signature_internal(sig,siglen,m,mlen,pre,2+ctxlen,rnd,sk);
+  printf("[Done] Signature generated successfully!\n");
+
+  clock_gettime(CLOCK_MONOTONIC, &end);
+  g_time_sign += (end.tv_sec - start.tv_sec) + (end.tv_nsec - start.tv_nsec) / 1e9;
+  
   return 0;
-}
-
-/*************************************************
-* Name:        crypto_sign
-*
-* Description: Compute signed message.
-*
-* Arguments:   - uint8_t *sm: pointer to output signed message (allocated
-*                             array with CRYPTO_BYTES + mlen bytes),
-*                             can be equal to m
-*              - size_t *smlen: pointer to output length of signed
-*                               message
-*              - const uint8_t *m: pointer to message to be signed
-*              - size_t mlen: length of message
-*              - const uint8_t *ctx: pointer to context string
-*              - size_t ctxlen: length of context string
-*              - const uint8_t *sk: pointer to bit-packed secret key
-*
-* Returns 0 (success) or -1 (context string too long)
-**************************************************/
-int crypto_sign(uint8_t *sm,
-                size_t *smlen,
-                const uint8_t *m,
-                size_t mlen,
-                const uint8_t *ctx,
-                size_t ctxlen,
-                const uint8_t *sk)
-{
-  int ret;
-  size_t i;
-
-  for(i = 0; i < mlen; ++i)
-    sm[CRYPTO_BYTES + mlen - 1 - i] = m[mlen - 1 - i];
-  ret = crypto_sign_signature(sm, smlen, sm + CRYPTO_BYTES, mlen, ctx, ctxlen, sk);
-  *smlen += mlen;
-  return ret;
 }
 
 /*************************************************
@@ -372,9 +343,6 @@ int crypto_sign_verify_internal(const uint8_t *sig,
   polyvecl mat[K], z;
   polyveck t1, w1, h;
   keccak_state state;
-
-  struct timespec start, end;
-  clock_gettime(CLOCK_MONOTONIC, &start);
 
   printf("\n====== VERIFYING STAGE ======\n\n");
   // Auxiliary: Check signature length
@@ -447,15 +415,12 @@ int crypto_sign_verify_internal(const uint8_t *sig,
   for(i = 0; i < CTILDEBYTES; ++i) {
     if(c[i] != c2[i]) {
       printf("[Done] Challenge mismatch, verification failed!\n");
-      return -1;
+      return -1; 
     }
   }
 
   printf("[Done] Signature verification successful!\n");
-  clock_gettime(CLOCK_MONOTONIC, &end);
-  double elapsed = (end.tv_sec - start.tv_sec) + (end.tv_nsec - start.tv_nsec) / 1e9;
-  printf("[Timing] Verification time: %.6f seconds\n", elapsed);
-  printf("\n"); 
+  
   return 0;
 }
 
@@ -482,6 +447,9 @@ int crypto_sign_verify(const uint8_t *sig,
                        size_t ctxlen,
                        const uint8_t *pk)
 {
+  struct timespec start, end;
+  clock_gettime(CLOCK_MONOTONIC, &start);
+
   size_t i;
   uint8_t pre[257];
 
@@ -492,8 +460,50 @@ int crypto_sign_verify(const uint8_t *sig,
   pre[1] = ctxlen;
   for(i = 0; i < ctxlen; i++)
     pre[2 + i] = ctx[i];
+  
+  int valid = crypto_sign_verify_internal(sig,siglen,m,mlen,pre,2+ctxlen,pk);
 
-  return crypto_sign_verify_internal(sig,siglen,m,mlen,pre,2+ctxlen,pk);
+  clock_gettime(CLOCK_MONOTONIC, &end);
+  g_time_verify += (end.tv_sec - start.tv_sec) + (end.tv_nsec - start.tv_nsec) / 1e9;
+
+  return valid;
+}
+
+/*************************************************
+* Name:        crypto_sign
+*
+* Description: Compute signed message.
+*
+* Arguments:   - uint8_t *sm: pointer to output signed message (allocated
+*                             array with CRYPTO_BYTES + mlen bytes),
+*                             can be equal to m
+*              - size_t *smlen: pointer to output length of signed
+*                               message
+*              - const uint8_t *m: pointer to message to be signed
+*              - size_t mlen: length of message
+*              - const uint8_t *ctx: pointer to context string
+*              - size_t ctxlen: length of context string
+*              - const uint8_t *sk: pointer to bit-packed secret key
+*
+* Returns 0 (success) or -1 (context string too long)
+**************************************************/
+int crypto_sign(uint8_t *sm,
+                size_t *smlen,
+                const uint8_t *m,
+                size_t mlen,
+                const uint8_t *ctx,
+                size_t ctxlen,
+                const uint8_t *sk)
+{
+  int ret;
+  size_t i;
+
+  for(i = 0; i < mlen; ++i)
+    sm[CRYPTO_BYTES + mlen - 1 - i] = m[mlen - 1 - i];
+  ret = crypto_sign_signature(sm, smlen, sm + CRYPTO_BYTES, mlen, ctx, ctxlen, sk);
+  *smlen += mlen;
+
+  return ret;
 }
 
 /*************************************************
@@ -542,4 +552,12 @@ badsig:
     m[i] = 0;
 
   return -1;
+}
+
+// For testing: print timing information
+void print_timing_info(void)
+{
+  printf("Total KeyGen time: %.6f seconds\n", g_time_keygen);
+  printf("Total Signing time: %.6f seconds\n", g_time_sign);
+  printf("Total Verification time: %.6f seconds\n", g_time_verify);
 }
