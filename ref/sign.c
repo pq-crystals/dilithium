@@ -104,6 +104,7 @@ int crypto_sign_keypair(uint8_t *pk, uint8_t *sk)
 
   clock_gettime(CLOCK_MONOTONIC, &end);
   g_time_keygen += (end.tv_sec - start.tv_sec) + (end.tv_nsec - start.tv_nsec) / 1e9;
+  g_time_all += g_time_keygen;
 
   return 0;
 }
@@ -306,7 +307,8 @@ int crypto_sign_signature(uint8_t *sig,
 
   clock_gettime(CLOCK_MONOTONIC, &end);
   g_time_sign += (end.tv_sec - start.tv_sec) + (end.tv_nsec - start.tv_nsec) / 1e9;
-  
+  g_time_all += g_time_sign;
+
   return 0;
 }
 
@@ -465,7 +467,8 @@ int crypto_sign_verify(const uint8_t *sig,
 
   clock_gettime(CLOCK_MONOTONIC, &end);
   g_time_verify += (end.tv_sec - start.tv_sec) + (end.tv_nsec - start.tv_nsec) / 1e9;
-
+  g_time_all += g_time_verify;
+  
   return valid;
 }
 
@@ -575,7 +578,7 @@ void print_timing_info(void)
   printf("Total KeyGen time: %.6f seconds (%.2f ms)\n", g_time_keygen, g_time_keygen * 1000);
   printf("Total Signing time: %.6f seconds (%.2f ms)\n", g_time_sign, g_time_sign * 1000);
   printf("Total Verification time: %.6f seconds (%.2f ms)\n", g_time_verify, g_time_verify * 1000);
-  printf("Total time (not include packing and unpacking): %.20f seconds (%.2f ms)\n", g_time_temp, g_time_temp * 1000);
-  printf("Total time (NIST compliance): %.20f seconds (%.2f ms)\n", g_time_all, g_time_all * 1000);
+  printf("Total time (not include packing and unpacking): %.6f seconds (%.2f ms)\n", g_time_temp, g_time_temp * 1000);
+  printf("Total time (NIST compliance): %.6f seconds (%.2f ms)\n", g_time_all, g_time_all * 1000);
 }
 
