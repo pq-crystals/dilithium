@@ -555,8 +555,8 @@ badsig:
 // For testing: print timing information
 void print_timing_info(void)
 {
-  printf("Total KeyGen time: %.6f seconds\n", g_time_keygen);
-  printf("Total Signing time: %.6f seconds\n", g_time_sign);
-  printf("Total Verification time: %.6f seconds\n", g_time_verify);
+  printf("Total KeyGen time: %.6f seconds (%.2f ms)\n", g_time_keygen, g_time_keygen * 1000);
+  printf("Total Signing time: %.6f seconds (%.2f ms)\n", g_time_sign, g_time_sign * 1000);
+  printf("Total Verification time: %.6f seconds (%.2f ms)\n", g_time_verify, g_time_verify * 1000);
 }
 
