@@ -91,9 +91,10 @@ int crypto_sign_keypair(uint8_t *pk, uint8_t *sk)
   printf("...\n");
   printf("[Step 6] t0 (first 8 coeffs): ");
   for(int i=0;i<8;i++) printf("%08x ", t0.vec[0].coeffs[i]);
-  printf("...\n");
+  printf("...\n"); */
+
   pack_pk(pk, rho, &t1);
-  printf("[Step 7] Packed public key pk.\n"); */
+  //printf("[Step 7] Packed public key pk.\n"); 
 
   /* Compute H(rho, t1) and write secret key */
   shake256(tr, TRBYTES, pk, CRYPTO_PUBLICKEYBYTES);
@@ -468,7 +469,7 @@ int crypto_sign_verify(const uint8_t *sig,
   clock_gettime(CLOCK_MONOTONIC, &end);
   g_time_verify += (end.tv_sec - start.tv_sec) + (end.tv_nsec - start.tv_nsec) / 1e9;
   g_time_all += g_time_verify;
-  
+
   return valid;
 }
 
