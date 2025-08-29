@@ -53,4 +53,7 @@ int crypto_sign_open(uint8_t *m, size_t *mlen,
                      const uint8_t *ctx, size_t ctxlen,
                      const uint8_t *pk);
 
+// Print timing information (defined in sign.c)
+void print_timing_info(void);
+
 #endif
