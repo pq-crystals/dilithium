@@ -7,7 +7,8 @@
 #define MLEN 1200 // limit input for testing
 #define NTESTS 1 // test count
 
-void run_test(FILE *fout, const uint8_t *m, size_t mlen, int test_idx) {
+void run_test(FILE *fout, const uint8_t *m, size_t mlen, int test_idx) 
+{
   // KeyGen
   uint8_t pk[CRYPTO_PUBLICKEYBYTES];
   uint8_t sk[CRYPTO_SECRETKEYBYTES];
@@ -36,14 +37,12 @@ void run_test(FILE *fout, const uint8_t *m, size_t mlen, int test_idx) {
   size_t m2len = 0;
   int valid = crypto_sign_open(m2, &m2len, sm, smlen, NULL, 0, pk);
   fprintf(fout, "Verifying Stage (NIST API):\n- Input: signed message, pk\n- Output: %s\n", valid == 0 ? "Valid" : "Invalid");
-  if (valid == 0) {
+  if (!valid) {
     fprintf(fout, "* Opened Message: ");
     for (size_t i = 0; i < m2len; i++) fprintf(fout, "%02x", m2[i]);
     fprintf(fout, "\n");
   }
   fprintf(fout, "\n");
-
-  
 }
 
 int main(void)

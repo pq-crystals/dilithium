@@ -555,9 +555,11 @@ int crypto_sign_open(uint8_t *m,
     /* All good, copy msg, return 0 */
     for(i = 0; i < *mlen; ++i)
       m[i] = sm[CRYPTO_BYTES + i];
+    
     clock_gettime(CLOCK_MONOTONIC, &end);
     double t = (end.tv_sec - start.tv_sec) + (end.tv_nsec - start.tv_nsec) / 1e9;
     g_time.all += t;
+
     return 0;
   }
 
