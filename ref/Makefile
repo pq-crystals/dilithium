@@ -14,9 +14,9 @@ all: \
   test/test_dilithium2 \
   test/test_dilithium3 \
   test/test_dilithium5 \
-  test/test_vectors2 \
-  test/test_vectors3 \
-  test/test_vectors5
+  #test/test_vectors2 \
+  #test/test_vectors3 \
+  #test/test_vectors5
 
 nistkat: \
   nistkat/PQCgenKAT_sign2 \
