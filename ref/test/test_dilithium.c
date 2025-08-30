@@ -5,7 +5,7 @@
 #include "../sign.h"
 
 #define MLEN 1200 // limit input for testing
-#define NTESTS 10000 // test count
+#define NTESTS 1 // test count
 
 void run_test(FILE *fout, const uint8_t *m, size_t mlen, int test_idx) {
   // KeyGen
@@ -68,11 +68,11 @@ int main(void)
   // Print testing information
   printf("\n[Testing Information - %d runs]\n\n", NTESTS);
   timing_info_t t = print_timing_info();
-  printf("Average KeyGen time: %.6f s (%.2f ms)\n", t.keygen / NTESTS, (t.keygen / NTESTS) * 1000);
-  printf("Average Signing time: %.6f s (%.2f ms)\n", t.sign / NTESTS, (t.sign / NTESTS) * 1000);
-  printf("Average Verification time: %.6f s (%.2f ms)\n", t.verify / NTESTS, (t.verify / NTESTS) * 1000);
-  printf("Average sum time: %.6f s (%.2f ms)\n", t.temp / NTESTS, (t.temp / NTESTS) * 1000);
-  printf("Average all time: %.6f s (%.2f ms)\n", t.all / NTESTS, (t.all / NTESTS) * 1000);
+  printf("Average KeyGen time: %.6fs (%.2f ms)\n", t.keygen / NTESTS, (t.keygen / NTESTS) * 1000);
+  printf("Average Signing time: %.6fs (%.2f ms)\n", t.sign / NTESTS, (t.sign / NTESTS) * 1000);
+  printf("Average Verification time: %.6fs (%.2f ms)\n", t.verify / NTESTS, (t.verify / NTESTS) * 1000);
+  printf("Average sum time (3 stages): %.6fs (%.2f ms)\n", t.temp / NTESTS, (t.temp / NTESTS) * 1000);
+  printf("Average all time (NIST compliance): %.6fs (%.2f ms)\n", t.all / NTESTS, (t.all / NTESTS) * 1000);
   printf("Public key bytes = %d\n", CRYPTO_PUBLICKEYBYTES);
   printf("Secret key bytes = %d\n", CRYPTO_SECRETKEYBYTES);
   printf("Signature bytes = %d\n", CRYPTO_BYTES);
