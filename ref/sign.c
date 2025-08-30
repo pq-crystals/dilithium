@@ -11,16 +11,8 @@
 #include "symmetric.h"
 #include "fips202.h"
 
-// global timing struct
-typedef struct {
-  double keygen;
-  double sign;
-  double verify;
-  double all; // all time include packing and unpacking stage
-  double temp; // sum of keygen+sign+verify
-} timing_info_t;
-
-static timing_info_t g_time = {0};
+// global timing struct now defined in sign.h
+timing_info_t g_time = {0};
 
 /*************************************************
 * Name:        crypto_sign_keypair
