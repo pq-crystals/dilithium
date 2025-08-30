@@ -66,7 +66,7 @@ int main(void)
   fclose(fout);
 
   // Print testing information
-  printf("\n[Testing Information (average over %d runs)]\n\n", NTESTS);
+  printf("\n[Testing Information - %d runs]\n\n", NTESTS);
   timing_info_t t = print_timing_info();
   printf("Average KeyGen time: %.6f s (%.2f ms)\n", t.keygen / NTESTS, (t.keygen / NTESTS) * 1000);
   printf("Average Signing time: %.6f s (%.2f ms)\n", t.sign / NTESTS, (t.sign / NTESTS) * 1000);
