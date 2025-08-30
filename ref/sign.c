@@ -11,12 +11,16 @@
 #include "symmetric.h"
 #include "fips202.h"
 
-// global timing variables
-double g_time_temp;
-double g_time_keygen = 0.0;
-double g_time_sign = 0.0;
-double g_time_verify = 0.0;
-double g_time_all = 0.0; // all time include packing and unpacking stage
+// global timing struct
+typedef struct {
+  double keygen;
+  double sign;
+  double verify;
+  double all; // all time include packing and unpacking stage
+  double temp; // sum of keygen+sign+verify
+} timing_info_t;
+
+static timing_info_t g_time = {0};
 
 /*************************************************
 * Name:        crypto_sign_keypair
@@ -104,8 +108,9 @@ int crypto_sign_keypair(uint8_t *pk, uint8_t *sk)
   //printf("[Done] Key generation completed successfully!\n");
 
   clock_gettime(CLOCK_MONOTONIC, &end);
-  g_time_keygen += (end.tv_sec - start.tv_sec) + (end.tv_nsec - start.tv_nsec) / 1e9;
-  g_time_all += g_time_keygen;
+  double t = (end.tv_sec - start.tv_sec) + (end.tv_nsec - start.tv_nsec) / 1e9;
+  g_time.keygen += t;
+  g_time.all += t;
 
   return 0;
 }
@@ -307,8 +312,9 @@ int crypto_sign_signature(uint8_t *sig,
   //printf("[Done] Signature generated successfully!\n");
 
   clock_gettime(CLOCK_MONOTONIC, &end);
-  g_time_sign += (end.tv_sec - start.tv_sec) + (end.tv_nsec - start.tv_nsec) / 1e9;
-  g_time_all += g_time_sign;
+  double t = (end.tv_sec - start.tv_sec) + (end.tv_nsec - start.tv_nsec) / 1e9;
+  g_time.sign += t;
+  g_time.all += t;
 
   return 0;
 }
@@ -467,8 +473,9 @@ int crypto_sign_verify(const uint8_t *sig,
   int valid = crypto_sign_verify_internal(sig,siglen,m,mlen,pre,2+ctxlen,pk);
 
   clock_gettime(CLOCK_MONOTONIC, &end);
-  g_time_verify += (end.tv_sec - start.tv_sec) + (end.tv_nsec - start.tv_nsec) / 1e9;
-  g_time_all += g_time_verify;
+  double t = (end.tv_sec - start.tv_sec) + (end.tv_nsec - start.tv_nsec) / 1e9;
+  g_time.verify += t;
+  g_time.all += t;
 
   return valid;
 }
@@ -511,7 +518,8 @@ int crypto_sign(uint8_t *sm,
   *smlen += mlen;
 
   clock_gettime(CLOCK_MONOTONIC, &end);
-  g_time_all += (end.tv_sec - start.tv_sec) + (end.tv_nsec - start.tv_nsec) / 1e9;
+  double t = (end.tv_sec - start.tv_sec) + (end.tv_nsec - start.tv_nsec) / 1e9;
+  g_time.all += t;
 
   return ret;
 }
@@ -556,7 +564,8 @@ int crypto_sign_open(uint8_t *m,
     for(i = 0; i < *mlen; ++i)
       m[i] = sm[CRYPTO_BYTES + i];
     clock_gettime(CLOCK_MONOTONIC, &end);
-    g_time_all += (end.tv_sec - start.tv_sec) + (end.tv_nsec - start.tv_nsec) / 1e9;
+    double t = (end.tv_sec - start.tv_sec) + (end.tv_nsec - start.tv_nsec) / 1e9;
+    g_time.all += t;
     return 0;
   }
 
@@ -567,19 +576,21 @@ badsig:
     m[i] = 0;
 
   clock_gettime(CLOCK_MONOTONIC, &end);
-  g_time_all += (end.tv_sec - start.tv_sec) + (end.tv_nsec - start.tv_nsec) / 1e9;
+  double t = (end.tv_sec - start.tv_sec) + (end.tv_nsec - start.tv_nsec) / 1e9;
+  g_time.all += t;
 
   return -1;
 }
 
-// For testing: print timing information
-void print_timing_info(void)
+// For testing: print timing information and return timing struct
+timing_info_t print_timing_info(void)
 {
-  g_time_temp = g_time_keygen + g_time_sign + g_time_verify;
-  printf("Total KeyGen time: %.6f seconds (%.2f ms)\n", g_time_keygen, g_time_keygen * 1000);
-  printf("Total Signing time: %.6f seconds (%.2f ms)\n", g_time_sign, g_time_sign * 1000);
-  printf("Total Verification time: %.6f seconds (%.2f ms)\n", g_time_verify, g_time_verify * 1000);
-  printf("Total time (not include packing and unpacking): %.6f seconds (%.2f ms)\n", g_time_temp, g_time_temp * 1000);
-  printf("Total time (NIST compliance): %.6f seconds (%.2f ms)\n", g_time_all, g_time_all * 1000);
+  g_time.temp = g_time.keygen + g_time.sign + g_time.verify;
+  /* printf("Total KeyGen time: %.6f seconds (%.2f ms)\n", g_time.keygen, g_time.keygen * 1000);
+  printf("Total Signing time: %.6f seconds (%.2f ms)\n", g_time.sign, g_time.sign * 1000);
+  printf("Total Verification time: %.6f seconds (%.2f ms)\n", g_time.verify, g_time.verify * 1000);
+  printf("Total time (not include packing and unpacking): %.6f seconds (%.2f ms)\n", g_time.temp, g_time.temp * 1000);
+  printf("Total time (NIST compliance): %.6f seconds (%.2f ms)\n", g_time.all, g_time.all * 1000); */
+  return g_time;
 }
 

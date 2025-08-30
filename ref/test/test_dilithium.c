@@ -5,7 +5,7 @@
 #include "../sign.h"
 
 #define MLEN 1200 // limit input for testing
-#define NTESTS 1000
+#define NTESTS 1000 // test count
 
 void run_test(FILE *fout, const uint8_t *m, size_t mlen, int test_idx) {
   // KeyGen
