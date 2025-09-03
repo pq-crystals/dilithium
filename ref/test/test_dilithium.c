@@ -70,7 +70,7 @@ int main(void)
   printf("Average KeyGen time: %.6fs (%.2f ms)\n", t.keygen / NTESTS, (t.keygen / NTESTS) * 1000);
   printf("Average Signing time: %.6fs (%.2f ms)\n", t.sign / NTESTS, (t.sign / NTESTS) * 1000);
   printf("Average Verification time: %.6fs (%.2f ms)\n", t.verify / NTESTS, (t.verify / NTESTS) * 1000);
-  printf("Average sum time (3 stages): %.6fs (%.2f ms)\n", t.temp / NTESTS, (t.temp / NTESTS) * 1000);
+  //printf("Average sum time (3 stages): %.6fs (%.2f ms)\n", t.temp / NTESTS, (t.temp / NTESTS) * 1000);
   printf("Average all time (NIST compliance): %.6fs (%.2f ms)\n", t.all / NTESTS, (t.all / NTESTS) * 1000);
   printf("Public key bytes = %d\n", CRYPTO_PUBLICKEYBYTES);
   printf("Secret key bytes = %d\n", CRYPTO_SECRETKEYBYTES);
