@@ -306,7 +306,6 @@ int crypto_sign_signature(uint8_t *sig,
   clock_gettime(CLOCK_MONOTONIC, &end);
   double t = (end.tv_sec - start.tv_sec) + (end.tv_nsec - start.tv_nsec) / 1e9;
   g_time.sign += t;
-  g_time.all += t;
 
   return 0;
 }
@@ -467,7 +466,6 @@ int crypto_sign_verify(const uint8_t *sig,
   clock_gettime(CLOCK_MONOTONIC, &end);
   double t = (end.tv_sec - start.tv_sec) + (end.tv_nsec - start.tv_nsec) / 1e9;
   g_time.verify += t;
-  g_time.all += t;
 
   return valid;
 }
