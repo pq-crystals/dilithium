@@ -75,6 +75,7 @@ int main(void)
   printf("Public key bytes = %d\n", CRYPTO_PUBLICKEYBYTES);
   printf("Secret key bytes = %d\n", CRYPTO_SECRETKEYBYTES);
   printf("Signature bytes = %d\n", CRYPTO_BYTES);
+  printf("Message bytes = %zu\n", mlen);
 
   return 0;
 }
