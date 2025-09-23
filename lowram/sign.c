@@ -59,12 +59,10 @@ int crypto_sign_keypair(uint8_t *pk, uint8_t *sk) {
   pack_pk_rho(pk, rho);
 
   /* Matrix-vector multiplication */
-  for (i = 0; i < K; i++)
-  {
+  for(i = 0; i < K; i++) {
     /* Expand part of s1 */
     poly_uniform_eta(tC, rhoprime, 0);
-    if (i == 0)
-    {
+    if(i == 0) {
       pack_sk_s1(sk, tC, 0);
     }
     poly_ntt(tC);
@@ -72,12 +70,10 @@ int crypto_sign_keypair(uint8_t *pk, uint8_t *sk) {
     poly_uniform(&tB, rho, (i << 8) + 0);
     /* partial matrix-vector multiplication */
     poly_pointwise_montgomery(&tA, &tB, tC);
-    for(j = 1; j < L; j++)
-    {
+    for(j = 1; j < L; j++) {
       /* Expand part of s1 */
       poly_uniform_eta(tC, rhoprime, j);
-      if (i == 0)
-      {
+      if(i == 0) {
         pack_sk_s1(sk, tC, j);
       }
       poly_ntt(tC);
@@ -131,8 +127,8 @@ int crypto_sign_signature(uint8_t *sig,
                           size_t mlen,
                           const uint8_t *ctx,
                           size_t ctxlen,
-                          const uint8_t *sk)
-{
+                          const uint8_t *sk) {
+  unsigned int i, k_idx, l_idx;
   uint8_t buf[2 * CRHBYTES];
   uint8_t *mu, *rhoprime, *rnd;
   const uint8_t *rho, *tr, *key;
@@ -197,25 +193,25 @@ int crypto_sign_signature(uint8_t *sig,
   shake256_squeeze(rhoprime, CRHBYTES, &state.s256);
 
 rej:  
-    for (size_t k_idx = 0; k_idx < K; k_idx++) {
-      for(size_t i=0;i<768;i++){
+    for(k_idx = 0; k_idx < K; k_idx++) {
+      for(i = 0; i < 768; i++) {
         wcomp[k_idx][i] = 0;
       }
     }
 
-      for (size_t l_idx = 0; l_idx < L; l_idx++) {
+      for(l_idx = 0; l_idx < L; l_idx++) {
         /* Sample intermediate vector y */
         poly_uniform_gamma1_lowram(tmp0, rhoprime, L*nonce + l_idx, &state.s256);
         poly_ntt(tmp0);
 
         /* Matrix-vector multiplication */
-        for (size_t k_idx = 0; k_idx < K; k_idx++) {
+        for(k_idx = 0; k_idx < K; k_idx++) {
           /* sampling of y and packing into wcomp inlined into the basemul */
           poly_uniform_pointwise_montgomery_polywadd_lowram(wcomp[k_idx], tmp0, rho, (k_idx << 8) + l_idx, &state.s128);
         }
       }
       nonce++;
-      for (size_t k_idx = 0; k_idx < K; k_idx++) {
+      for(k_idx = 0; k_idx < K; k_idx++) {
         polyw_unpack(tmp0, wcomp[k_idx]);
         poly_invntt_tomont(tmp0);
         poly_caddq(tmp0);
@@ -235,8 +231,8 @@ rej:
   poly_challenge_compress(ccomp, tmp0);
   
   /* Compute z, reject if it reveals secret */
-  for(size_t l_idx=0;l_idx < L; l_idx++){
-  if(l_idx != 0){
+  for(l_idx = 0; l_idx < L; l_idx++) {
+  if(l_idx != 0) {
     poly_challenge_decompress(tmp0, ccomp);
   }
     poly_small_ntt_copy(scp, tmp0);
@@ -261,7 +257,7 @@ rej:
   /* Check that subtracting cs2 does not change high bits of w and low bits
    * do not reveal secret information */
   
-  for(unsigned int k_idx = 0; k_idx < K; ++k_idx) {
+  for(k_idx = 0; k_idx < K; ++k_idx) {
     poly_challenge_decompress(tmp0, ccomp);
     poly_small_ntt_copy(scp, tmp0);
 
@@ -276,7 +272,7 @@ rej:
 
     poly_lowbits(tmp0, tmp0);
     poly_reduce(tmp0);
-    if(poly_chknorm(tmp0, GAMMA2 - BETA)){
+    if(poly_chknorm(tmp0, GAMMA2 - BETA)) {
       goto rej;
     }
 
@@ -291,7 +287,7 @@ rej:
 
     hint_n += poly_make_hint_lowram(tmp0, tmp0, wcomp[k_idx]);
 
-    if (hint_n > OMEGA) {
+    if(hint_n > OMEGA) {
       goto rej;
     }
     pack_sig_h(sig, tmp0, k_idx, &hints_written);
@@ -325,8 +321,7 @@ int crypto_sign(uint8_t *sm,
                 size_t mlen,
                 const uint8_t *ctx,
                 size_t ctxlen,
-                const uint8_t *sk)
-{
+                const uint8_t *sk) {
   int ret;
   size_t i;
 
@@ -358,9 +353,8 @@ int crypto_sign_verify(const uint8_t *sig,
                        size_t mlen,
                        const uint8_t *ctx,
                        size_t ctxlen,
-                       const uint8_t *pk)
-{
-  unsigned int i;
+                       const uint8_t *pk) {
+  unsigned int i, k_idx, l_idx, widx;
   
   poly p;
 
@@ -416,8 +410,8 @@ int crypto_sign_verify(const uint8_t *sig,
   poly_challenge_lowram(&p, sig);
   poly_challenge_compress(ccomp, &p);
 
-  for (size_t k_idx = 0; k_idx < K; k_idx++) {
-    for(size_t widx=0;widx<768;widx++){
+  for(k_idx = 0; k_idx < K; k_idx++) {
+    for(widx = 0; widx < 768; widx++) {
         wcomp[widx] = 0;
     }
 
@@ -428,7 +422,7 @@ int crypto_sign_verify(const uint8_t *sig,
     
     poly_uniform_pointwise_montgomery_polywadd_lowram(wcomp, &p, pk, (k_idx << 8) + 0, s128);
 
-    for (size_t l_idx = 1; l_idx < L; l_idx++) {
+    for(l_idx = 1; l_idx < L; l_idx++) {
       polyz_unpack(&p, sig + CTILDEBYTES + l_idx*POLYZ_PACKEDBYTES);
       if(poly_chknorm(&p, GAMMA1 - BETA))
         return -1;
@@ -448,8 +442,7 @@ int crypto_sign_verify(const uint8_t *sig,
     /* Reconstruct w1 */
     poly_caddq(&p);
 
-    if (unpack_sig_h_indices(hint_ones, &i, k_idx, sig) != 0)
-    {
+    if(unpack_sig_h_indices(hint_ones, &i, k_idx, sig) != 0) {
       return -1;
     }
     poly_use_hint_lowram(&p, &p, hint_ones, i);
@@ -490,8 +483,7 @@ int crypto_sign_open(uint8_t *m,
                      size_t smlen,
                      const uint8_t *ctx,
                      size_t ctxlen,
-                     const uint8_t *pk)
-{
+                     const uint8_t *pk) {
   size_t i;
 
   if(smlen < CRYPTO_BYTES)

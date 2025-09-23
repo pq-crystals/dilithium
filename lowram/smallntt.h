@@ -29,8 +29,11 @@ viable. */
 
 extern const int16_t small_zetas[128];
 
+#define small_ntt DILITHIUM_NAMESPACE(small_ntt)
 void small_ntt(int16_t r[N]);
+#define small_invntt_tomont DILITHIUM_NAMESPACE(small_invntt_tomont)
 void small_invntt_tomont(int16_t r[N]);
+#define small_basemul DILITHIUM_NAMESPACE(small_basemul)
 void small_basemul(int16_t r[2], const int16_t a[2], const int16_t b[2], int16_t zeta);
 
 #endif
