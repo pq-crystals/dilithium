@@ -7,10 +7,6 @@
 #include "randombytes.h"
 #include "symmetric.h"
 #include "fips202.h"
-#include "smallpoly.h"
-#include "lowram.h"
-
-#include "smallntt.h"
 
 /*************************************************
 * Name:        crypto_sign_keypair
@@ -237,7 +233,7 @@ rej:
   }
     poly_small_ntt_copy(scp, tmp0);
     unpack_sk_s1(stmp0, sk, l_idx);
-    small_ntt(stmp0->coeffs);
+    poly_small_ntt(stmp0);
     poly_small_basemul_invntt(tmp0, scp, stmp0);
 
     poly_uniform_gamma1_add_lowram(tmp0, tmp0, rhoprime, L*(nonce-1) + l_idx, &state.s256);
@@ -262,7 +258,7 @@ rej:
     poly_small_ntt_copy(scp, tmp0);
 
     unpack_sk_s2(stmp0, sk, k_idx);
-    small_ntt(stmp0->coeffs);
+    poly_small_ntt(stmp0);
     poly_small_basemul_invntt(tmp0, scp, stmp0);
 
     polyw_sub(tmp0, wcomp[k_idx], tmp0);
