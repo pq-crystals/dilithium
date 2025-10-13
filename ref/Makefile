@@ -1,6 +1,7 @@
-CC ?= /usr/bin/cc
+CC = gcc
 CFLAGS += -Wall -Wextra -Wpedantic -Wmissing-prototypes -Wredundant-decls \
-  -Wshadow -Wvla -Wpointer-arith -O3 -fomit-frame-pointer
+  -Wshadow -Wvla -Wpointer-arith -O3 -fomit-frame-pointer \
+  -z noexecstack
 NISTFLAGS += -Wno-unused-result -O3 -fomit-frame-pointer
 SOURCES = sign.c packing.c polyvec.c poly.c ntt.c reduce.c rounding.c
 HEADERS = config.h params.h api.h sign.h packing.h polyvec.h poly.h ntt.h \

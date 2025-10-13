@@ -68,6 +68,6 @@ extern timing_info_t g_time;
 // Print and return timing info
 timing_info_t print_timing_info(void);
 
-void run_test(FILE *fout, const uint8_t *m, size_t mlen, int test_idx);
+void run_test(const uint8_t *m, size_t mlen, int test_idx);
 
 #endif

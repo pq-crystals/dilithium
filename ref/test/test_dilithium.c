@@ -7,13 +7,14 @@
 #define MLEN 1200 // limit input for testing
 #define NTESTS 1 // test count
 
-void run_test(FILE *fout, const uint8_t *m, size_t mlen, int test_idx) 
+void run_test(const uint8_t *m, size_t mlen, int test_idx) 
 {
   // KeyGen
   uint8_t pk[CRYPTO_PUBLICKEYBYTES];
   uint8_t sk[CRYPTO_SECRETKEYBYTES];
   crypto_sign_keypair(pk, sk);
 
+  /*
   fprintf(fout, "Test #%d\n", test_idx+1);
   fprintf(fout, "KeyGen Stage:\n- Input: None\n- Output:\n");
   fprintf(fout, "* Public Key: ");
@@ -21,21 +22,25 @@ void run_test(FILE *fout, const uint8_t *m, size_t mlen, int test_idx)
   fprintf(fout, "\n* Secret Key: ");
   for (int i = 0; i < CRYPTO_SECRETKEYBYTES; i++) fprintf(fout, "%02x", sk[i]);
   fprintf(fout, "\n\n");
+  */
 
   // Signing (NIST API)
   uint8_t sm[MLEN + CRYPTO_BYTES];
   size_t smlen = 0;
   crypto_sign(sm, &smlen, m, mlen, NULL, 0, sk);
 
+  /*
   fprintf(fout, "Signing Stage (NIST API):\n- Input: input.txt, sk\n- Output:\n");
   fprintf(fout, "* Signed Message: ");
   for (size_t i = 0; i < smlen; i++) fprintf(fout, "%02x", sm[i]);
   fprintf(fout, "\n\n");
+  */
 
   // Open/Verify (NIST API)
   uint8_t m2[MLEN + CRYPTO_BYTES] = {0};
   size_t m2len = 0;
   int valid = crypto_sign_open(m2, &m2len, sm, smlen, NULL, 0, pk);
+  /*
   fprintf(fout, "Verifying Stage (NIST API):\n- Input: signed message, pk\n- Output: %s\n", valid == 0 ? "Valid" : "Invalid");
   if (!valid) {
     fprintf(fout, "* Opened Message: ");
@@ -43,13 +48,17 @@ void run_test(FILE *fout, const uint8_t *m, size_t mlen, int test_idx)
     fprintf(fout, "\n");
   }
   fprintf(fout, "\n");
+  */
+ 
+  (void)valid;
+  (void)test_idx;
 }
 
 int main(void)
 {
   FILE *fin = fopen("test/input.txt", "rb");
-  FILE *fout = fopen("test/output.txt", "w");
-  if (!fin || !fout) {
+  //FILE *fout = fopen("test/output.txt", "w");
+  if (!fin /*|| !fout*/) {
     printf("File error\n");
     return 1;
   }
@@ -60,9 +69,9 @@ int main(void)
   fclose(fin);
 
   for (int test = 0; test < NTESTS; ++test) {
-    run_test(fout, m, mlen, test);
+    run_test(m, mlen, test);
   }
-  fclose(fout);
+  //fclose(fout);
 
   // Print testing information
   printf("\n[Testing Information - %d runs]\n\n", NTESTS);
