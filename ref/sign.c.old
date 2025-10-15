@@ -11,8 +11,10 @@
 #include "symmetric.h"
 #include "fips202.h"
 
-// global timing struct now defined in sign.h
-timing_info_t g_time = {0};
+// global timing variables
+double g_time_keygen = 0.0;
+double g_time_sign = 0.0;
+double g_time_verify = 0.0;
 
 /*************************************************
 * Name:        crypto_sign_keypair
@@ -38,71 +40,70 @@ int crypto_sign_keypair(uint8_t *pk, uint8_t *sk)
   polyvecl s1, s1hat;
   polyveck s2, t1, t0;
 
-  //printf("\n====== KEY GENERATION STAGE ======\n\n");
+  printf("\n====== KEY GENERATION STAGE ======\n\n");
   /* Get randomness for rho, rhoprime and key */
   randombytes(seedbuf, SEEDBYTES);
-  /* printf("[Step 1] Seed generated. First 8 bytes: ");
+  printf("[Step 1] Seed generated. First 8 bytes: ");
   for(int i=0;i<8;i++) printf("%02x", seedbuf[i]);
-  printf("...\n"); */
+  printf("...\n");
   seedbuf[SEEDBYTES+0] = K;
   seedbuf[SEEDBYTES+1] = L;
   shake256(seedbuf, 2*SEEDBYTES + CRHBYTES, seedbuf, SEEDBYTES+2);
   rho = seedbuf;
   rhoprime = rho + SEEDBYTES;
   key = rhoprime + CRHBYTES;
-  //printf("[Step 2] Derived rho, rhoprime, key from SHAKE256(seedbuf).\n");
+  printf("[Step 2] Derived rho, rhoprime, key from SHAKE256(seedbuf).\n");
 
-  polyvec_matrix_expand(mat, rho); // expand matrix
-  //printf("[Step 3] Matrix A expanded from rho.\n");
+  /* Expand matrix */
+  polyvec_matrix_expand(mat, rho);
+  printf("[Step 3] Matrix A expanded from rho.\n");
 
-  // Sample short vectors s1 and s2 
+  /* Sample short vectors s1 and s2 */
   polyvecl_uniform_eta(&s1, rhoprime, 0);
   polyveck_uniform_eta(&s2, rhoprime, L);
-  //printf("[Step 4] Secret vectors s1, s2 generated.\n");
+  printf("[Step 4] Secret vectors s1, s2 generated.\n");
 
-  // Matrix-vector multiplication 
-  //printf("[Step 5] Compute t = A*s1 + s2\n");
+  /* Matrix-vector multiplication */
+  printf("[Step 5] Compute t = A*s1 + s2\n");
   s1hat = s1;
   polyvecl_ntt(&s1hat);
   polyvec_matrix_pointwise_montgomery(&t1, mat, &s1hat);
   polyveck_reduce(&t1);
   polyveck_invntt_tomont(&t1);
-  /* printf("[Step 5] Computed t = A*s1.\n"); 
+  printf("[Step 5] Computed t = A*s1.\n");
   printf("[Step 5] t (first 8 coeffs of t1): "); // Print the initial values of t1
   for(int i=0;i<8;i++) printf("%08x ", t1.vec[0].coeffs[i]);
-  printf("...\n"); */
+  printf("...\n");
 
-  polyveck_add(&t1, &t1, &s2); // Add error vector s2
-  /* printf("[Step 5] Added s2 to t.\n");
+  /* Add error vector s2 */
+  polyveck_add(&t1, &t1, &s2);
+  printf("[Step 5] Added s2 to t.\n");
   printf("[Step 5] t (first 8 coeffs of t1 after adding s2): ");
   for(int i=0;i<8;i++) printf("%08x ", t1.vec[0].coeffs[i]);
-  printf("...\n"); */
+  printf("...\n");
 
   /* Extract t1 and write public key */
   polyveck_caddq(&t1);
   polyveck_power2round(&t1, &t0, &t1);
-  /*printf("[Step 6] Split t into t1, t0.\n");
+  printf("[Step 6] Split t into t1, t0.\n");
   printf("[Step 6] t1 (first 8 coeffs): ");
   for(int i=0;i<8;i++) printf("%08x ", t1.vec[0].coeffs[i]);
   printf("...\n");
   printf("[Step 6] t0 (first 8 coeffs): ");
   for(int i=0;i<8;i++) printf("%08x ", t0.vec[0].coeffs[i]);
-  printf("...\n"); */
-
+  printf("...\n");
   pack_pk(pk, rho, &t1);
-  //printf("[Step 7] Packed public key pk.\n"); 
+  printf("[Step 7] Packed public key pk.\n");
 
   /* Compute H(rho, t1) and write secret key */
   shake256(tr, TRBYTES, pk, CRYPTO_PUBLICKEYBYTES);
-  //printf("[Step 8] Hashed pk to tr.\n");
+  printf("[Step 8] Hashed pk to tr.\n");
   pack_sk(sk, rho, tr, key, &t0, &s1, &s2);
-  //printf("[Step 9] Packed secret key sk.\n");
-  //printf("[Done] Key generation completed successfully!\n");
+  printf("[Step 9] Packed secret key sk.\n");
+  printf("[Done] Key generation completed successfully!\n");
 
   clock_gettime(CLOCK_MONOTONIC, &end);
-  double t = (end.tv_sec - start.tv_sec) + (end.tv_nsec - start.tv_nsec) / 1e9;
-  g_time.keygen += t;
-  g_time.all += t;
+  g_time_keygen += (end.tv_sec - start.tv_sec) + (end.tv_nsec - start.tv_nsec) / 1e9;
 
   return 0;
 }
@@ -142,9 +143,9 @@ int crypto_sign_signature_internal(uint8_t *sig,
   poly cp;
   keccak_state state;
 
-  //printf("\n====== SIGNING STAGE ======\n\n");
+  printf("\n====== SIGNING STAGE ======\n\n");
   // Step 1: Unpack secret key
-  //printf("[Step 1] Unpack secret key (unpack_sk)\n");
+  printf("[Step 1] Unpack secret key (unpack_sk)\n");
   rho = seedbuf;
   tr = rho + SEEDBYTES;
   key = tr + TRBYTES;
@@ -153,7 +154,7 @@ int crypto_sign_signature_internal(uint8_t *sig,
   unpack_sk(rho, tr, key, &t0, &s1, &s2, sk);
 
   // Step 2: Hash tr, pre, m to get mu
-  //printf("[Step 2] Hash tr, pre, m to get mu (SHAKE256)\n");
+  printf("[Step 2] Hash tr, pre, m to get mu (SHAKE256)\n");
   shake256_init(&state);
   shake256_absorb(&state, tr, TRBYTES);
   shake256_absorb(&state, pre, prelen);
@@ -162,7 +163,7 @@ int crypto_sign_signature_internal(uint8_t *sig,
   shake256_squeeze(mu, CRHBYTES, &state);
 
   // Step 3: Hash key, rnd, mu to get rhoprime
-  //printf("[Step 3] Hash key, rnd, mu to get rhoprime (SHAKE256)\n");
+  printf("[Step 3] Hash key, rnd, mu to get rhoprime (SHAKE256)\n");
   shake256_init(&state);
   shake256_absorb(&state, key, SEEDBYTES);
   shake256_absorb(&state, rnd, RNDBYTES);
@@ -179,11 +180,11 @@ int crypto_sign_signature_internal(uint8_t *sig,
 rej:
 
   // Step 4: Sample vector y (rejection sampling loop)
-  //printf("[Step 4] Create sample vector y (start rejection sampling loop)\n");
+  printf("[Step 4] Create sample vector y (start rejection sampling loop)\n");
   polyvecl_uniform_gamma1(&y, rhoprime, nonce++);
 
   // Step 5: Compute w1 and w0 from matrix A and vector y
-  //printf("[Step 5] Compute w1 and w0 from matrix A and vector y\n");
+  printf("[Step 5] Compute w1 and w0 from matrix A and vector y\n");
   z = y;
   polyvecl_ntt(&z);
   polyvec_matrix_pointwise_montgomery(&w1, mat, &z);
@@ -195,7 +196,7 @@ rej:
   polyveck_pack_w1(sig, &w1);
 
   // Step 6: Create challenge c from cp (c_tilde)
-  //printf("[Step 6] Create challenge c from cp (c')\n");
+  printf("[Step 6] Create challenge c from cp (c')\n");
   shake256_init(&state);
   shake256_absorb(&state, mu, CRHBYTES);
   shake256_absorb(&state, sig, K*POLYW1_PACKEDBYTES);
@@ -205,49 +206,49 @@ rej:
   poly_ntt(&cp);
 
   // Step 7: Compute z = y + c*s1
-  //printf("[Step 7] Compute z = y + c*s1\n");
+  printf("[Step 7] Compute z = y + c*s1\n");
   polyvecl_pointwise_poly_montgomery(&z, &cp, &s1);
   polyvecl_invntt_tomont(&z);
   polyvecl_add(&z, &z, &y);
   polyvecl_reduce(&z);
 
-  //printf("[Step 8] Check norm(z)\n");
+  printf("[Step 8] Check norm(z)\n");
   if(polyvecl_chknorm(&z, GAMMA1 - BETA)) {
-    //printf("[Step 8] z rejected, retrying...\n");
+    printf("[Step 8] z rejected, retrying...\n");
     goto rej;
   }
 
   // Step 9: Compute and check w0' = w0 - c*s2
-  //printf("[Step 9] Compute and check w0' = w0 - c*s2\n");
+  printf("[Step 9] Compute and check w0' = w0 - c*s2\n");
   polyveck_pointwise_poly_montgomery(&h, &cp, &s2);
   polyveck_invntt_tomont(&h);
   polyveck_sub(&w0, &w0, &h);
   polyveck_reduce(&w0);
   if(polyveck_chknorm(&w0, GAMMA2 - BETA)) {
-    //printf("[Step 9] w0' rejected, retrying...\n");
+    printf("[Step 9] w0' rejected, retrying...\n");
     goto rej;
   }
 
   // Step 10: Compute hints for w1
-  //printf("[Step 10] Compute hints for w1\n");
+  printf("[Step 10] Compute hints for w1\n");
   polyveck_pointwise_poly_montgomery(&h, &cp, &t0);
   polyveck_invntt_tomont(&h);
   polyveck_reduce(&h);
   if(polyveck_chknorm(&h, GAMMA2)) {
-    //printf("[Step 10] hint rejected, retrying...\n");
+    printf("[Step 10] hint rejected, retrying...\n");
     goto rej;
   }
 
-  //printf("[Step 11] Check hints for w0 and w1\n");
+  printf("[Step 11] Check hints for w0 and w1\n");
   polyveck_add(&w0, &w0, &h);
   n = polyveck_make_hint(&h, &w0, &w1);
   if(n > OMEGA) {
-    //printf("[Step 11] Too many hints, retrying...\n");
+    printf("[Step 11] Too many hints, retrying...\n");
     goto rej;
   }
 
   // Step 12: Pack signature
-  //printf("[Step 12] Pack signature (pack_sig)\n");
+  printf("[Step 12] Pack signature (pack_sig)\n");
   pack_sig(sig, sig, &z, &h);
   *siglen = CRYPTO_BYTES;
 
@@ -301,12 +302,11 @@ int crypto_sign_signature(uint8_t *sig,
   #endif
 
   crypto_sign_signature_internal(sig,siglen,m,mlen,pre,2+ctxlen,rnd,sk);
-  //printf("[Done] Signature generated successfully!\n");
+  printf("[Done] Signature generated successfully!\n");
 
   clock_gettime(CLOCK_MONOTONIC, &end);
-  double t = (end.tv_sec - start.tv_sec) + (end.tv_nsec - start.tv_nsec) / 1e9;
-  g_time.sign += t;
-
+  g_time_sign += (end.tv_sec - start.tv_sec) + (end.tv_nsec - start.tv_nsec) / 1e9;
+  
   return 0;
 }
 
@@ -344,36 +344,36 @@ int crypto_sign_verify_internal(const uint8_t *sig,
   polyveck t1, w1, h;
   keccak_state state;
 
-  //printf("\n====== VERIFYING STAGE ======\n\n");
+  printf("\n====== VERIFYING STAGE ======\n\n");
   // Auxiliary: Check signature length
-  //printf("Check signature length\n");
+  printf("Check signature length\n");
   if(siglen != CRYPTO_BYTES) {
-    //printf("Invalid signature length!\n");
+    printf("Invalid signature length!\n");
     return -1;
   }
 
   // Step 1: Unpack pk and sig 
-  //printf("[Step 1] Unpack pk and sig (unpack_pk, unpack_sig)\n");
+  printf("[Step 1] Unpack pk and sig (unpack_pk, unpack_sig)\n");
   unpack_pk(rho, &t1, pk);
   if(unpack_sig(c, &z, &h, sig)) {
-    //printf("[Step 1] unpack_sig failed!\n");
+    printf("[Step 1] unpack_sig failed!\n");
     return -1;
   }
 
   // Step 2: Check z 
-  //printf("[Step 2] Check z (polyvecl_chknorm)\n");
+  printf("[Step 2] Check z (polyvecl_chknorm)\n");
   if(polyvecl_chknorm(&z, GAMMA1 - BETA)) {
-    //printf("[Step 2] z out of bounds!\n");
+    printf("[Step 2] z out of bounds!\n");
     return -1;
   }
 
   // Step 3: Reconstruct matrix A
-  //printf("[Step 3] Reconstruct matrix A\n");
+  printf("[Step 3] Reconstruct matrix A\n");
   poly_challenge(&cp, c);
   polyvec_matrix_expand(mat, rho);
 
   // Step 4: Reconstruct mu = CRH(H(rho, t1), pre, msg)
-  //printf("[Step 4] Reconstruct mu = CRH(H(rho, t1), pre, msg)\n");
+  printf("[Step 4] Reconstruct mu = CRH(H(rho, t1), pre, msg)\n");
   shake256(mu, TRBYTES, pk, CRYPTO_PUBLICKEYBYTES);
   shake256_init(&state);
   shake256_absorb(&state, mu, TRBYTES);
@@ -383,7 +383,7 @@ int crypto_sign_verify_internal(const uint8_t *sig,
   shake256_squeeze(mu, CRHBYTES, &state);
 
   // Step 5: Compute w1' = A*z - c*t1
-  //printf("[Step 5] Compute w1' = A*z - c*t1 to reconstruct w1\n");
+  printf("[Step 5] Compute w1' = A*z - c*t1 to reconstruct w1\n");
   polyvecl_ntt(&z);
   polyvec_matrix_pointwise_montgomery(&w1, mat, &z);
 
@@ -397,13 +397,13 @@ int crypto_sign_verify_internal(const uint8_t *sig,
   polyveck_invntt_tomont(&w1);
 
   // Step 6: Use hint to reconstruct w1 
-  //printf("[Step 6] Use hint to reconstruct w1 without knowing secret vectors\n");
+  printf("[Step 6] Use hint to reconstruct w1 without knowing secret vectors\n");
   polyveck_caddq(&w1);
   polyveck_use_hint(&w1, &w1, &h);
   polyveck_pack_w1(buf, &w1);
 
   // Step 7: Recompute challenge c'' (c_tilde_prime)
-  //printf("[Step 7] Recompute challenge c''\n");
+  printf("[Step 7] Recompute challenge c''\n");
   shake256_init(&state);
   shake256_absorb(&state, mu, CRHBYTES);
   shake256_absorb(&state, buf, K*POLYW1_PACKEDBYTES);
@@ -411,15 +411,15 @@ int crypto_sign_verify_internal(const uint8_t *sig,
   shake256_squeeze(c2, CTILDEBYTES, &state);
 
   // Step 8: Compare challenges
-  //printf("[Step 8] Compare c' (from sig) and c'' (recomputed) \n");
+  printf("[Step 8] Compare c' (from sig) and c'' (recomputed) \n");
   for(i = 0; i < CTILDEBYTES; ++i) {
     if(c[i] != c2[i]) {
-      //printf("[Done] Challenge mismatch, verification failed!\n");
+      printf("[Done] Challenge mismatch, verification failed!\n");
       return -1; 
     }
   }
 
-  //printf("[Done] Signature verification successful!\n");
+  printf("[Done] Signature verification successful!\n");
   
   return 0;
 }
@@ -464,8 +464,7 @@ int crypto_sign_verify(const uint8_t *sig,
   int valid = crypto_sign_verify_internal(sig,siglen,m,mlen,pre,2+ctxlen,pk);
 
   clock_gettime(CLOCK_MONOTONIC, &end);
-  double t = (end.tv_sec - start.tv_sec) + (end.tv_nsec - start.tv_nsec) / 1e9;
-  g_time.verify += t;
+  g_time_verify += (end.tv_sec - start.tv_sec) + (end.tv_nsec - start.tv_nsec) / 1e9;
 
   return valid;
 }
@@ -496,9 +495,6 @@ int crypto_sign(uint8_t *sm,
                 size_t ctxlen,
                 const uint8_t *sk)
 {
-  struct timespec start, end;
-  clock_gettime(CLOCK_MONOTONIC, &start);
-
   int ret;
   size_t i;
 
@@ -506,10 +502,6 @@ int crypto_sign(uint8_t *sm,
     sm[CRYPTO_BYTES + mlen - 1 - i] = m[mlen - 1 - i];
   ret = crypto_sign_signature(sm, smlen, sm + CRYPTO_BYTES, mlen, ctx, ctxlen, sk);
   *smlen += mlen;
-
-  clock_gettime(CLOCK_MONOTONIC, &end);
-  double t = (end.tv_sec - start.tv_sec) + (end.tv_nsec - start.tv_nsec) / 1e9;
-  g_time.all += t;
 
   return ret;
 }
@@ -538,9 +530,6 @@ int crypto_sign_open(uint8_t *m,
                      size_t ctxlen,
                      const uint8_t *pk)
 {
-  struct timespec start, end;
-  clock_gettime(CLOCK_MONOTONIC, &start);
-
   size_t i;
 
   if(smlen < CRYPTO_BYTES)
@@ -553,11 +542,6 @@ int crypto_sign_open(uint8_t *m,
     /* All good, copy msg, return 0 */
     for(i = 0; i < *mlen; ++i)
       m[i] = sm[CRYPTO_BYTES + i];
-    
-    clock_gettime(CLOCK_MONOTONIC, &end);
-    double t = (end.tv_sec - start.tv_sec) + (end.tv_nsec - start.tv_nsec) / 1e9;
-    g_time.all += t;
-
     return 0;
   }
 
@@ -567,22 +551,13 @@ badsig:
   for(i = 0; i < smlen; ++i)
     m[i] = 0;
 
-  clock_gettime(CLOCK_MONOTONIC, &end);
-  double t = (end.tv_sec - start.tv_sec) + (end.tv_nsec - start.tv_nsec) / 1e9;
-  g_time.all += t;
-
   return -1;
 }
 
-// For testing: print timing information and return timing struct
-timing_info_t print_timing_info(void)
+// For testing: print timing information
+void print_timing_info(void)
 {
-  g_time.temp = g_time.keygen + g_time.sign + g_time.verify;
-  /* printf("Total KeyGen time: %.6f seconds (%.2f ms)\n", g_time.keygen, g_time.keygen * 1000);
-  printf("Total Signing time: %.6f seconds (%.2f ms)\n", g_time.sign, g_time.sign * 1000);
-  printf("Total Verification time: %.6f seconds (%.2f ms)\n", g_time.verify, g_time.verify * 1000);
-  printf("Total time (not include packing and unpacking): %.6f seconds (%.2f ms)\n", g_time.temp, g_time.temp * 1000);
-  printf("Total time (NIST compliance): %.6f seconds (%.2f ms)\n", g_time.all, g_time.all * 1000); */
-  return g_time;
+  printf("Total KeyGen time: %.6f seconds\n", g_time_keygen);
+  printf("Total Signing time: %.6f seconds\n", g_time_sign);
+  printf("Total Verification time: %.6f seconds\n", g_time_verify);
 }
-

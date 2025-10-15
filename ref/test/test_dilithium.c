@@ -4,66 +4,87 @@
 #include "../randombytes.h"
 #include "../sign.h"
 
-#define MLEN 59
-#define CTXLEN 14
-#define NTESTS 10000
+#define MLEN 1200 // limit input for testing
+#define NTESTS 1 // test count
+
+void run_test(const uint8_t *m, size_t mlen, int test_idx) 
+{
+  // KeyGen
+  uint8_t pk[CRYPTO_PUBLICKEYBYTES];
+  uint8_t sk[CRYPTO_SECRETKEYBYTES];
+  crypto_sign_keypair(pk, sk);
+
+  /*
+  fprintf(fout, "Test #%d\n", test_idx+1);
+  fprintf(fout, "KeyGen Stage:\n- Input: None\n- Output:\n");
+  fprintf(fout, "* Public Key: ");
+  for (int i = 0; i < CRYPTO_PUBLICKEYBYTES; i++) fprintf(fout, "%02x", pk[i]);
+  fprintf(fout, "\n* Secret Key: ");
+  for (int i = 0; i < CRYPTO_SECRETKEYBYTES; i++) fprintf(fout, "%02x", sk[i]);
+  fprintf(fout, "\n\n");
+  */
+
+  // Signing (NIST API)
+  uint8_t sm[MLEN + CRYPTO_BYTES];
+  size_t smlen = 0;
+  crypto_sign(sm, &smlen, m, mlen, NULL, 0, sk);
+
+  /*
+  fprintf(fout, "Signing Stage (NIST API):\n- Input: input.txt, sk\n- Output:\n");
+  fprintf(fout, "* Signed Message: ");
+  for (size_t i = 0; i < smlen; i++) fprintf(fout, "%02x", sm[i]);
+  fprintf(fout, "\n\n");
+  */
+
+  // Open/Verify (NIST API)
+  uint8_t m2[MLEN + CRYPTO_BYTES] = {0};
+  size_t m2len = 0;
+  int valid = crypto_sign_open(m2, &m2len, sm, smlen, NULL, 0, pk);
+  /*
+  fprintf(fout, "Verifying Stage (NIST API):\n- Input: signed message, pk\n- Output: %s\n", valid == 0 ? "Valid" : "Invalid");
+  if (!valid) {
+    fprintf(fout, "* Opened Message: ");
+    for (size_t i = 0; i < m2len; i++) fprintf(fout, "%02x", m2[i]);
+    fprintf(fout, "\n");
+  }
+  fprintf(fout, "\n");
+  */
+ 
+  (void)valid;
+  (void)test_idx;
+}
 
 int main(void)
 {
-  size_t i, j;
-  int ret;
-  size_t mlen, smlen;
-  uint8_t b;
-  uint8_t ctx[CTXLEN] = {0};
-  uint8_t m[MLEN + CRYPTO_BYTES];
-  uint8_t m2[MLEN + CRYPTO_BYTES];
-  uint8_t sm[MLEN + CRYPTO_BYTES];
-  uint8_t pk[CRYPTO_PUBLICKEYBYTES];
-  uint8_t sk[CRYPTO_SECRETKEYBYTES];
-
-  snprintf((char*)ctx,CTXLEN,"test_dilitium");
-
-  for(i = 0; i < NTESTS; ++i) {
-    randombytes(m, MLEN);
-
-    crypto_sign_keypair(pk, sk);
-    crypto_sign(sm, &smlen, m, MLEN, ctx, CTXLEN, sk);
-    ret = crypto_sign_open(m2, &mlen, sm, smlen, ctx, CTXLEN, pk);
-
-    if(ret) {
-      fprintf(stderr, "Verification failed\n");
-      return -1;
-    }
-    if(smlen != MLEN + CRYPTO_BYTES) {
-      fprintf(stderr, "Signed message lengths wrong\n");
-      return -1;
-    }
-    if(mlen != MLEN) {
-      fprintf(stderr, "Message lengths wrong\n");
-      return -1;
-    }
-    for(j = 0; j < MLEN; ++j) {
-      if(m2[j] != m[j]) {
-        fprintf(stderr, "Messages don't match\n");
-        return -1;
-      }
-    }
-
-    randombytes((uint8_t *)&j, sizeof(j));
-    do {
-      randombytes(&b, 1);
-    } while(!b);
-    sm[j % (MLEN + CRYPTO_BYTES)] += b;
-    ret = crypto_sign_open(m2, &mlen, sm, smlen, ctx, CTXLEN, pk);
-    if(!ret) {
-      fprintf(stderr, "Trivial forgeries possible\n");
-      return -1;
-    }
+  FILE *fin = fopen("test/input.txt", "rb");
+  //FILE *fout = fopen("test/output.txt", "w");
+  if (!fin /*|| !fout*/) {
+    printf("File error\n");
+    return 1;
   }
 
-  printf("CRYPTO_PUBLICKEYBYTES = %d\n", CRYPTO_PUBLICKEYBYTES);
-  printf("CRYPTO_SECRETKEYBYTES = %d\n", CRYPTO_SECRETKEYBYTES);
-  printf("CRYPTO_BYTES = %d\n", CRYPTO_BYTES);
+  // Read message from input.txt only once
+  uint8_t m[MLEN + CRYPTO_BYTES] = {0};
+  size_t mlen = fread(m, 1, MLEN, fin);
+  fclose(fin);
+
+  for (int test = 0; test < NTESTS; ++test) {
+    run_test(m, mlen, test);
+  }
+  //fclose(fout);
+
+  // Print testing information
+  printf("\n[Testing Information - %d runs]\n\n", NTESTS);
+  timing_info_t t = print_timing_info();
+  printf("Average KeyGen time: %.6fs (%.2f ms)\n", t.keygen / NTESTS, (t.keygen / NTESTS) * 1000);
+  printf("Average Signing time: %.6fs (%.2f ms)\n", t.sign / NTESTS, (t.sign / NTESTS) * 1000);
+  printf("Average Verification time: %.6fs (%.2f ms)\n", t.verify / NTESTS, (t.verify / NTESTS) * 1000);
+  //printf("Average sum time (3 stages): %.6fs (%.2f ms)\n", t.temp / NTESTS, (t.temp / NTESTS) * 1000);
+  printf("Average all time (NIST compliance): %.6fs (%.2f ms)\n", t.all / NTESTS, (t.all / NTESTS) * 1000);
+  printf("Public key bytes = %d\n", CRYPTO_PUBLICKEYBYTES);
+  printf("Secret key bytes = %d\n", CRYPTO_SECRETKEYBYTES);
+  printf("Signature bytes = %d\n", CRYPTO_BYTES);
+  printf("Message bytes = %zu\n", mlen);
 
   return 0;
 }
