@@ -53,4 +53,21 @@ int crypto_sign_open(uint8_t *m, size_t *mlen,
                      const uint8_t *ctx, size_t ctxlen,
                      const uint8_t *pk);
 
+// Timing struct for benchmarking
+typedef struct {
+    double keygen;
+    double sign;
+    double verify;
+    double all;
+    double temp;
+} timing_info_t;
+
+// Expose global timing variable for test aggregation
+extern timing_info_t g_time;
+
+// Print and return timing info
+timing_info_t print_timing_info(void);
+
+void run_test(const uint8_t *m, size_t mlen, int test_idx);
+
 #endif

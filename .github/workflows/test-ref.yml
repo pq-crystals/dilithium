@@ -1,0 +1,29 @@
+name: Tests for Dilithium ref implementation
+
+on:
+  - push
+  - pull_request
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        level: [2, 3, 5]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run make
+        run: |
+          make -C ref clean
+          make -C ref nistkat
+      - name: Copy req file
+        run: |
+          cp Dilithium_KAT/Dilithium${{ matrix.level }}/PQCsignKAT_Dilithium${{ matrix.level }}.req ref/
+      - name: Run PQCgenKAT_sign
+        run: |
+          cd ref
+          chmod +x ./nistkat/PQCgenKAT_sign${{ matrix.level }}
+          ./nistkat/PQCgenKAT_sign${{ matrix.level }}
+      - name: Verify KAT output
+        run: |
+          diff ref/PQCsignKAT_Dilithium${{ matrix.level }}.rsp Dilithium_KAT/Dilithium${{ matrix.level }}/PQCsignKAT_Dilithium${{ matrix.level }}.rsp
