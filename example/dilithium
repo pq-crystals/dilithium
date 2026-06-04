@@ -1,0 +1,82 @@
+#!/usr/bin/env bash
+
+# Function to print usage
+print_usage() {
+    echo "Usage:"
+    echo "  Generate keypair:  $0 --keygen -v VERSION -p pubkey -s seckey"
+    echo "  Sign message:      $0 --sign -v VERSION -s seckey -i message -o signature"
+    echo "  Verify signature:  $0 --verify -v VERSION -p pubkey -i message -S signature"
+    echo ""
+    echo "Options:"
+    echo "  -v VERSION      Dilithium version (2, 3, or 5)"
+    echo "  -p pubkey       Public key file"
+    echo "  -s seckey       Secret key file"
+    echo "  -i message      Input message file"
+    echo "  -o signature    Output signature file"
+    echo "  -S signature    Signature file (for verify)"
+}
+
+# Get the action first
+ACTION=""
+case "$1" in
+    --keygen) ACTION="keygen" ;;
+    --sign) ACTION="sign" ;;
+    --verify) ACTION="verify" ;;
+    *)
+        echo "Error: Must specify --keygen, --sign, or --verify" >&2
+        print_usage
+        exit 1
+        ;;
+esac
+shift  # Remove the action argument
+
+# Parse remaining arguments
+VERSION=""
+while getopts ":v:p:s:i:o:S:" opt; do
+    case $opt in
+        v) VERSION="$OPTARG" ;;
+        p|s|i|o|S) ;; # Valid options, handled later
+        \?) 
+            echo "Invalid option: -$OPTARG" >&2
+            print_usage
+            exit 1
+            ;;
+        :)
+            echo "Option -$OPTARG requires an argument." >&2
+            print_usage
+            exit 1
+            ;;
+    esac
+done
+
+# Validate version
+if [[ ! "$VERSION" =~ ^[235]$ ]]; then
+    echo "Error: Version must be 2, 3, or 5" >&2
+    print_usage
+    exit 1
+fi
+
+export LD_LIBRARY_PATH=LD_LIBRARY_PATH
+
+# Get the binary path
+BINARY_DIR="$(dirname "$0")"
+BINARY="$BINARY_DIR/dilithium${VERSION}-${ACTION}"
+
+if [ ! -x "$BINARY" ]; then
+    echo "Error: Binary not found at $BINARY" >&2
+    exit 1
+fi
+
+# Reset argument parsing to pass all arguments except -v and the action
+OPTIND=1
+args=()
+while [ "$#" -gt 0 ]; do
+    if [ "$1" = "-v" ]; then
+        shift 2
+    else
+        args+=("$1")
+        shift
+    fi
+done
+
+exec "$BINARY" "${args[@]}"

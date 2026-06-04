@@ -4,6 +4,26 @@
 
 This repository contains the official reference implementation of the [Dilithium](https://www.pq-crystals.org/dilithium/) signature scheme, and an optimized implementation for x86 CPUs supporting the AVX2 instruction set. Dilithium is standardized as [FIPS 204](https://csrc.nist.gov/pubs/fips/204/final).
 
+## Running Dilithium
+
+Dilithium can be used via Nix flakes. Make sure you have Nix [installed with flakes enabled](https://nixos.org/manual/nix/stable/installation/installing-binary.html#installation-with-flakes).
+
+To try Dilithium directly on the command line without cloning this repository, run:
+```sh
+nix run github:pq-crystals/dilithium -- --help
+```
+
+The following commands create a signing key and a signature for a file "message.txt":
+```sh
+nix run github:pq-crystals/dilithium -- --keygen -v 2 -p public.key -s secret.key
+nix run github:pq-crystals/dilithium -- --sign -v 2 -p public.key -s secret.key -i message.txt -S signature.bin
+```
+
+Use the `--verify` flag to verify a signature:
+```sh
+nix run github:pq-crystals/dilithium -- --verify -v 2 -p public.key -i message.txt -S signature.bin
+```
+
 ## Build instructions
 
 The implementations contain several test and benchmarking programs and a Makefile to facilitate compilation.
@@ -55,6 +75,60 @@ for all parameter sets `$ALG` as above. The programs report the median and avera
 Please note that the reference implementation in `ref/` is not optimized for any platform, and, since it prioritises clean code, is significantly slower than a trivially optimized but still platform-independent implementation. Hence benchmarking the reference code does not provide representative results.
 
 Our Dilithium implementations are contained in the [SUPERCOP](https://bench.cr.yp.to) benchmarking framework. See [here](http://bench.cr.yp.to/results-sign.html#amd64-kizomba) for current cycle counts on an Intel KabyLake CPU.
+
+## Development using Nix
+
+This repository provides a Nix flake with the following outputs:
+
+- `packages.dilithium`: The main Dilithium CLI tools
+- `packages.dilithium-lib`: The Dilithium shared libraries
+- `devShells.default`: A development environment with all dependencies
+
+### Flake Usage Examples
+
+To use Dilithium as a dependency in your own flake:
+```nix
+{
+  inputs.dilithium.url = "github:pq-crystals/dilithium";
+  
+  outputs = { self, nixpkgs, dilithium }: {
+    # Use the library
+    packages.default = pkgs.stdenv.mkDerivation {
+      buildInputs = [ dilithium.packages.${system}.dilithium-lib ];
+      # ...
+    };
+  };
+}
+```
+
+The following command will enter the development shell and provide the necessary environment variables (CFLAGS and LDFLAGS required to link against Dilithium and OpenSSL):
+```sh
+nix develop github:pq-crystals/dilithium
+```
+
+The development shell provides:
+- All build dependencies
+- Dilithium libraries and headers
+- Proper environment variables (CFLAGS, LDFLAGS, etc.)
+
+To compile and run tests described above, the same make commands work in either directory:
+```sh
+make
+```
+
+This produces the same test executables:
+```sh
+test/test_dilithium$ALG
+test/test_vectors$ALG
+```
+where `$ALG` ranges over the parameter sets 2, 3, and 5.
+
+For performance benchmarking, you can additionally run and execute the speed tests:
+```sh
+make speed
+test/test_speed$ALG
+```
+These programs measure performance using the CPU's Time Step Counter (TSC) by default, reporting median and average cycle counts over 10000 executions of key operations.
 
 ## Randomized signing
 

@@ -7,3 +7,7 @@ PQCsignKAT_Dilithium5.rsp
 tvecs2
 tvecs3
 tvecs5
+result
+example/dilithium2*
+example/dilithium3*
+example/dilithium5*
