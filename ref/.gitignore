@@ -1,2 +1,12 @@
 *.so
 *.o
+test/test_vectors*
+test/test_dilithium*
+test/test_speed*
+test/test_mul
+test/output.txt
+nistkat/*.req
+nistkat/*.rsp
+nistkat/PQCgenKAT_sign2
+nistkat/PQCgenKAT_sign3
+nistkat/PQCgenKAT_sign5

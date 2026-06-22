@@ -1,3 +1,18 @@
+# Custom Dilithium Implementation for PQC Research & Benchmarking
+
+This repository is a fork of the official [Dilithium](https://github.com/pq-crystals/dilithium) implementation, customized by **quannguyen247** for the purpose of experimenting with, modifying, and benchmarking Post-Quantum Cryptography (PQC) algorithms.
+
+## Purpose
+The primary goal of this fork is to provide a flexible framework for research and detailed performance analysis. Key objectives include:
+- **Algorithmic Experimentation:** Facilitating modifications to core components such as hash functions and matrix operations to study their impact on security and efficiency.
+- **Comparative Analysis:** Enabling side-by-side performance comparisons of different implementation strategies and optimizations.
+- **Performance Metrics:** Precise execution time measurement for key generation, signing, and verification.
+
+## Key Modifications
+Significant changes have been made to the `ref` implementation to support these goals. For a detailed list of all modifications, please refer to the [CHANGELOG.md](CHANGELOG.md) file.
+
+---
+
 # Dilithium
 
 [![Build Status](https://travis-ci.org/pq-crystals/dilithium.svg?branch=master)](https://travis-ci.org/pq-crystals/dilithium) [![Coverage Status](https://coveralls.io/repos/github/pq-crystals/dilithium/badge.svg?branch=master)](https://coveralls.io/github/pq-crystals/dilithium?branch=master)
