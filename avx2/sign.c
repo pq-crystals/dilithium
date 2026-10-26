@@ -170,6 +170,11 @@ int crypto_sign_signature_internal(uint8_t *sig, size_t *siglen, const uint8_t *
   } tmpv;
   keccak_state state;
 
+  if(prelen > SIZE_MAX - TRBYTES)
+    return -1;
+  if(mlen > SIZE_MAX - TRBYTES - prelen)
+    return -1;
+
   rho = seedbuf;
   tr = rho + SEEDBYTES;
   key = tr + TRBYTES;
@@ -311,6 +316,8 @@ int crypto_sign_signature(uint8_t *sig, size_t *siglen, const uint8_t *m, size_t
 
   if(ctxlen > 255)
     return -1;
+  if(mlen > SIZE_MAX - (TRBYTES + 2 + ctxlen))
+    return -1;
 
   /* Prepare pre = (0, ctxlen, ctx) */
   pre[0] = 0;
@@ -351,6 +358,11 @@ int crypto_sign(uint8_t *sm, size_t *smlen, const uint8_t *m, size_t mlen, const
   size_t i;
   int ret;
 
+  if(ctxlen > 255)
+    return -1;
+  if(mlen > SIZE_MAX - CRYPTO_BYTES)
+    return -1;
+
   for(i = 0; i < mlen; ++i)
     sm[CRYPTO_BYTES + mlen - 1 - i] = m[mlen - 1 - i];
   ret = crypto_sign_signature(sm, smlen, sm + CRYPTO_BYTES, mlen, ctx, ctxlen, sk);
@@ -387,6 +399,11 @@ int crypto_sign_verify_internal(const uint8_t *sig, size_t siglen, const uint8_t
   keccak_state state;
 
   if(siglen != CRYPTO_BYTES)
+    return -1;
+
+  if(prelen > SIZE_MAX - TRBYTES)
+    return -1;
+  if(mlen > SIZE_MAX - TRBYTES - prelen)
     return -1;
 
   /* Compute CRH(H(rho, t1), pre, msg) */
@@ -481,6 +498,8 @@ int crypto_sign_verify(const uint8_t *sig, size_t siglen, const uint8_t *m, size
   uint8_t pre[257];
 
   if(ctxlen > 255)
+    return -1;
+  if(mlen > SIZE_MAX - (TRBYTES + 2 + ctxlen))
     return -1;
 
   pre[0] = 0;
