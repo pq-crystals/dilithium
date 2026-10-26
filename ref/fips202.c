@@ -377,16 +377,19 @@ static unsigned int keccak_absorb(uint64_t s[25],
                                   size_t inlen)
 {
   unsigned int i;
+  size_t take;
 
-  while(pos+inlen >= r) {
+  /* pos < r is an invariant; avoid pos+inlen, which can wrap. */
+  while(inlen >= r - pos) {
+    take = r - pos;
     for(i=pos;i<r;i++)
       s[i/8] ^= (uint64_t)*in++ << 8*(i%8);
-    inlen -= r-pos;
+    inlen -= take;
     KeccakF1600_StatePermute(s);
     pos = 0;
   }
 
-  for(i=pos;i<pos+inlen;i++)
+  for(i=pos;inlen>0;i++,inlen--)
     s[i/8] ^= (uint64_t)*in++ << 8*(i%8);
 
   return i;
